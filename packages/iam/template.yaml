@@ -1,0 +1,355 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform:
+  - AWS::Serverless-2016-10-31
+
+Description: iam policies
+
+Parameters:
+  Stage:
+    Type: String
+  Stack:
+    Type: String
+  GitHubRepoOwner:
+    Type: String
+  GitHubRepo:
+    Type: String
+
+Metadata:
+  expand:
+    plugins:
+      - '@starterstack/sam-expand/plugins/stack-stage-overrides'
+        #- '/Users/jameskyburz/Documents/src/starterstack-sam/packages/git.mjs'
+      - '../git.mjs'
+    config:
+      stack-stage-overrides:
+        region: us-east-1
+        suffix-stage: false
+        config-env: global
+        stage: global
+
+Resources:
+  GitHubOidc:
+    Type: AWS::IAM::OIDCProvider
+    Properties:
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList:
+        - sts.amazonaws.com
+      ThumbprintList:
+        - 6938fd4d98bab03faadb97b34396831e3780aea1
+        - 1c58a3a8518e8759bf075b76b750d4f2df264fcd
+      Tags:
+        - Key: 'Name'
+          Value: !Sub '${Stack}-github-oidc-provider'
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+  CiPolicy:
+    Type: AWS::IAM::Policy
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - cloudformation:Describe*
+              - cloudformation:List*
+              - cloudformation:Get*
+              - cloudformation:CreateStack
+              - cloudformation:UpdateStack
+              - cloudformation:DeleteStack
+              - cloudformation:DeleteChangeSet
+              - cloudformation:CreateChangeSet
+              - cloudformation:ExecuteChangeSet
+            Resource:
+              - !Sub arn:${AWS::Partition}:cloudformation:*:${AWS::AccountId}:stack/${Stack}*
+          - Effect: Allow
+            Action:
+              - cloudformation:ListExports
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - cloudformation:DescribeChangeSet
+              - cloudformation:ListChangeSets
+              - cloudformation:DeleteChangeSet
+              - cloudformation:CreateChangeSet
+              - cloudformation:ExecuteChangeSet
+            Resource:
+              - !Sub arn:${AWS::Partition}:cloudformation:*:aws:transform/LanguageExtensions
+          - Effect: Allow
+            Action:
+              - s3:*
+            Resource:
+              - !Sub arn:${AWS::Partition}:s3:::${Stack}*
+          - Effect: Allow
+            Action:
+              - logs:CreateLogGroup
+              - logs:CreateLogStream
+              - logs:DeleteLogGroup
+              - logs:DeleteLogStream
+              - logs:DescribeLogStreams
+              - logs:FilterLogEvents
+              - logs:DeleteRetentionPolicy
+              - logs:PutRetentionPolicy
+              - logs:PutSubscriptionFilter
+              - logs:DescribeSubscriptionFilters
+              - logs:DeleteSubscriptionFilter
+            Resource:
+              - !Sub arn:${AWS::Partition}:logs:*:${AWS::AccountId}:log-group:/aws/lambda/${Stack}*:log-stream:*
+              - !Sub arn:${AWS::Partition}:logs:*:${AWS::AccountId}:log-group:/aws/apigateway/*
+              - !Sub arn:${AWS::Partition}:logs:*:${AWS::AccountId}:log-group:/aws/vendedlogs/states/${Stack}*
+              - !Sub arn:${AWS::Partition}:logs:*:${AWS::AccountId}:log-group:aws-waf-logs-*
+          - Effect: Allow
+            Action:
+              - logs:CreateLogDelivery
+              - logs:PutResourcePolicy
+              - logs:UpdateLogDelivery
+              - logs:DeleteLogDelivery
+              - logs:CreateLogGroup
+              - logs:DescribeResourcePolicies
+              - logs:DescribeLogGroups
+              - logs:GetLogDelivery
+              - logs:ListLogDeliveries
+            Resource:
+              - '*'
+          - Effect: Allow
+            Action:
+              - pipes:CreatePipe
+              - pipes:DeletePipe
+              - pipes:DescribePipe
+              - pipes:ListPipes
+              - pipes:ListTagsForResource
+              - pipes:StartPipe
+              - pipes:StopPipe
+              - pipes:TagResource
+              - pipes:UntagResource
+              - pipes:UpdatePipe
+            Resource:
+              - '*'
+          - Effect: Allow
+            Action:
+              - budgets:ViewBudget
+              - budgets:ModifyBudget
+              - aws-portal:ViewBilling
+              - aws-portal:ModifyBilling
+            Resource:
+              - !Sub 'arn:${AWS::Partition}:budgets::${AWS::AccountId}:budget/*'
+          - Effect: Allow
+            Action:
+              - lambda:ListTags
+              - lambda:TagResource
+              - lambda:UntagResource
+              - lambda:GetAccountSettings
+            Resource:
+              - '*'
+          - Effect: Allow
+            Action:
+              - lambda:GetFunction
+              - lambda:CreateFunction
+              - lambda:DeleteFunction
+              - lambda:PutFunctionEventInvokeConfig
+              - lambda:UpdateFunctionEventInvokeConfig
+              - lambda:DeleteFunctionEventInvokeConfig
+              - lambda:UpdateFunctionConfiguration
+              - lambda:UpdateFunctionCode
+              - lambda:ListVersionsByFunction
+              - lambda:PublishVersion
+              - lambda:CreateAlias
+              - lambda:DeleteAlias
+              - lambda:UpdateAlias
+              - lambda:GetFunctionConfiguration
+              - lambda:AddPermission
+              - lambda:RemovePermission
+              - lambda:InvokeFunction
+              - lambda:ListAliases
+            Resource:
+              - !Sub arn:${AWS::Partition}:lambda:*:${AWS::AccountId}:function:${Stack}*
+          - Effect: Allow
+            Action:
+              - lambda:CreateEventSourceMapping
+              - lambda:DeleteEventSourceMapping
+              - lambda:UpdateEventSourceMapping
+            Resource: '*'
+            Condition:
+              StringLike:
+                lambda:FunctionArn: !Sub arn:${AWS::Partition}:lambda:*:${AWS::AccountId}:function:${Stack}*
+          - Effect: Allow
+            Action:
+              - states:CreateStateMachine
+              - states:UpdateStateMachine
+              - states:DeleteStateMachine
+              - states:DescribeStateMachine
+              - states:DescribeStateMachineForExecution
+              - states:StartExecution
+              - states:StopExecution
+              - states:UpdateMapRun
+              - states:DescribeExecution
+              - states:DescribeActivity
+              - states:DescribeMapRun
+              - states:GetExecutionHistory
+              - states:TagResource
+              - states:UntagResource
+            Resource:
+              - !Sub arn:${AWS::Partition}:states:*:${AWS::AccountId}:stateMachine:*
+              - !Sub arn:${AWS::Partition}:states:*:${AWS::AccountId}:execution:*
+          - Effect: Allow
+            Action:
+              - states:ListStateMachines
+              - states:ListExecutions
+              - states:ListTagsForResource
+            Resource: '*'
+          - Effect: Allow
+            Action:
+              - iam:GetRole
+              - iam:PassRole
+              - iam:CreateRole
+              - iam:DeleteRole
+              - iam:DetachRolePolicy
+              - iam:PutRolePolicy
+              - iam:AttachRolePolicy
+              - iam:DeleteRolePolicy
+              - iam:UpdateAssumeRolePolicy
+              - iam:TagRole
+              - iam:UntagRole
+              - iam:GetRolePolicy
+            Resource:
+              - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${Stack}*
+          - Effect: Allow
+            Action:
+              - apigateway:GET
+              - apigateway:POST
+              - apigateway:PUT
+              - apigateway:DELETE
+              - apigateway:PATCH
+              - apigateway:TagResource
+            Resource:
+              - !Sub arn:${AWS::Partition}:apigateway:*::/restapis*
+              - !Sub arn:${AWS::Partition}:apigateway:*::/apikeys*
+              - !Sub arn:${AWS::Partition}:apigateway:*::/usageplans*
+              - !Sub arn:${AWS::Partition}:apigateway:*::/apis*
+              - !Sub arn:${AWS::Partition}:apigateway:*::/account*
+              - !Sub arn:${AWS::Partition}:apigateway:*::/tags*
+
+          - Effect: Allow
+            Action:
+              - iam:CreateServiceLinkedRole
+              - iam:AttachRolePolicy
+              - iam:PutRolePolicy
+              - iam:UpdateRoleDescription
+              - iam:DeleteServiceLinkedRole
+              - iam:GetServiceLinkedRoleDeletionStatus
+              - iam:ListRoles
+              - iam:PassRole
+            Resource:
+              - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/ops.apigateway.amazonaws.com/AWSServiceRoleForAPIGateway
+
+          - Effect: Allow
+            Action:
+              - cloudformation:ValidateTemplate
+              - events:*
+              - cloudwatch:*
+              - cloudfront:*
+              - dynamodb:*
+              - application-autoscaling:*
+              - dax:*
+              - sqs:*
+              - sns:*
+              - acm:*
+              - cloudtrail:*
+              - route53:*
+              - ses:*
+              - ssm:*
+              - kms:*
+              - scheduler:*
+              - lambda:GetEventSourceMapping
+              - lambda:ListEventSourceMappings
+              - wafv2:PutLoggingConfiguration
+              - wafv2:DeleteLoggingConfiguration
+              - apigateway:SetWebACL
+              - wafv2:AssociateWebACL
+              - wafv2:CreateIPSet
+              - wafv2:CreateRegexPatternSet
+              - wafv2:CreateRuleGroup
+              - wafv2:CreateWebACL
+              - wafv2:UpdateWebACL
+              - wafv2:DeleteIPSet
+              - wafv2:DeleteLoggingConfiguration
+              - wafv2:DeleteRegexPatternSet
+              - wafv2:DeleteRuleGroup
+              - wafv2:DeleteWebACL
+              - wafv2:DisassociateWebACL
+              - wafv2:GetWebACL
+              - wafv2:GetWebACLForResource
+              - wafv2:ListTagsForResource
+              - wafv2:GetLoggingConfiguration
+            Resource:
+              - '*'
+      PolicyName: !Sub '${Stack}-ci'
+      Roles:
+        - !Ref CiRole
+  CiRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'sts:AssumeRoleWithWebIdentity'
+            Principal:
+              Federated: !Ref GitHubOidc
+            Condition:
+              StringLike:
+                token.actions.githubusercontent.com:sub: !Sub 'repo:${GitHubRepoOwner}/${GitHubRepo}:*'
+          - Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:${AWS::Partition}:iam::${AWS::AccountId}:root'
+            Action:
+              - 'sts:TagSession'
+
+      Description: !Sub 'Created by Serverless Framework by ${AWS::StackName} to assume ci read only role'
+      MaxSessionDuration: 3600
+      Tags:
+        - Key: 'Name'
+          Value: !Sub '${Stack}-ci'
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+  CiReadOnlyRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'sts:AssumeRoleWithWebIdentity'
+            Principal:
+              Federated: !Ref GitHubOidc
+            Condition:
+              StringLike:
+                token.actions.githubusercontent.com:sub: !Sub 'repo:${GitHubRepoOwner}/${GitHubRepo}:*'
+          - Effect: Allow
+            Principal:
+              AWS: !Sub 'arn:${AWS::Partition}:iam::${AWS::AccountId}:root'
+            Action:
+              - 'sts:TagSession'
+      Path: /
+      ManagedPolicyArns:
+        - >-
+          arn:aws:iam::aws:policy/ReadOnlyAccess
+      Description: !Sub 'Created by Serverless Framework by ${AWS::StackName} to assume ci read only role'
+      MaxSessionDuration: 3600
+      Tags:
+        - Key: 'Name'
+          Value: !Sub '${Stack}-ci-read-only'
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+Outputs:
+  CiRole:
+    Description: ci role
+    Value: !GetAtt CiRole.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}CIRole'
+  CiReadOnlyRole:
+    Description: ci read only role
+    Value: !GetAtt CiReadOnlyRole.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}CIReadOnlyRole'

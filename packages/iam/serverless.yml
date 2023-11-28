@@ -1,0 +1,18 @@
+service: ${file(../settings.js):stackName}-iam
+frameworkVersion: ${file(../settings.js):serverlessFrameworkVersion}
+configValidationMode: error
+package:
+  individually: true
+plugins:
+  - ../default-tags.mjs
+provider:
+  name: aws
+  stackName: ${file(../settings.js):stackName}-iam
+  region: us-east-1
+  stage: global
+  deploymentBucket: ${file(../settings.js):deploymentBucket}
+  tags: ${file(../settings.js):defaultTags}
+  stackTags: ${file(../settings.js):stackTags}
+  notificationArns:
+    - ${file(../settings.js):snsOpsTopic}
+resources: ${file(./resources.yml)}

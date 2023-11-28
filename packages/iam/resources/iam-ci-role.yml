@@ -1,0 +1,33 @@
+Type: AWS::IAM::Role
+Properties:
+  AssumeRolePolicyDocument:
+    Version: '2012-10-17'
+    Statement:
+      - Effect: Allow
+        Action:
+          - 'sts:AssumeRoleWithWebIdentity'
+        Principal:
+          Federated: !Ref githubOidc
+        Condition:
+          StringLike:
+            token.actions.githubusercontent.com:sub: !Join
+              - ''
+              - - 'repo:'
+                - ${file(../settings.json):owner}
+                - '/'
+                - ${file(../settings.json):repo}
+                - ':*'
+
+      - Effect: Allow
+        Principal:
+          AWS: !Sub 'arn:${AWS::Partition}:iam::${AWS::AccountId}:root'
+        Action:
+          - 'sts:TagSession'
+
+  Description: !Sub 'Created by Serverless Framework by ${AWS::StackName} to assume ci role'
+  MaxSessionDuration: 3600
+  Tags:
+    - Key: 'Name'
+      Value: '${file(../settings.js):stackName}-ci'
+    - Key: 'ManagedBy'
+      Value: '${file(../settings.js):stackName}'

@@ -1,0 +1,242 @@
+Type: AWS::IAM::Policy
+Properties:
+  PolicyDocument:
+    Version: '2012-10-17'
+    Statement:
+      - Effect: Allow
+        Action:
+          - cloudformation:Describe*
+          - cloudformation:List*
+          - cloudformation:Get*
+          - cloudformation:CreateStack
+          - cloudformation:UpdateStack
+          - cloudformation:DeleteStack
+          - cloudformation:DeleteChangeSet
+          - cloudformation:CreateChangeSet
+          - cloudformation:ExecuteChangeSet
+        Resource:
+          - !Sub arn:${AWS::Partition}:cloudformation:*:${AWS::AccountId}:stack/${file(../settings.js):stackName}*
+      - Effect: Allow
+        Action:
+          - cloudformation:ListExports
+        Resource: '*'
+      - Effect: Allow
+        Action:
+          - cloudformation:DescribeChangeSet
+          - cloudformation:ListChangeSets
+          - cloudformation:DeleteChangeSet
+          - cloudformation:CreateChangeSet
+          - cloudformation:ExecuteChangeSet
+        Resource:
+          - !Sub arn:${AWS::Partition}:cloudformation:*:aws:transform/LanguageExtensions
+      - Effect: Allow
+        Action:
+          - s3:*
+        Resource:
+          - !Sub arn:${AWS::Partition}:s3:::${file(../settings.js):stackName}*
+      - Effect: Allow
+        Action:
+          - logs:CreateLogGroup
+          - logs:CreateLogStream
+          - logs:DeleteLogGroup
+          - logs:DeleteLogStream
+          - logs:DescribeLogStreams
+          - logs:FilterLogEvents
+          - logs:DeleteRetentionPolicy
+          - logs:PutRetentionPolicy
+          - logs:PutSubscriptionFilter
+          - logs:DescribeSubscriptionFilters
+          - logs:DeleteSubscriptionFilter
+        Resource:
+          - !Sub arn:${AWS::Partition}:logs:*:${AWS::AccountId}:log-group:/aws/lambda/${file(../settings.js):stackName}*:log-stream:*
+          - !Sub arn:${AWS::Partition}:logs:*:${AWS::AccountId}:log-group:/aws/apigateway/*
+          - !Sub arn:${AWS::Partition}:logs:*:${AWS::AccountId}:log-group:/aws/vendedlogs/states/${file(../settings.js):stackName}*
+          - !Sub arn:${AWS::Partition}:logs:*:${AWS::AccountId}:log-group:aws-waf-logs-*
+      - Effect: Allow
+        Action:
+          - logs:CreateLogDelivery
+          - logs:PutResourcePolicy
+          - logs:UpdateLogDelivery
+          - logs:DeleteLogDelivery
+          - logs:CreateLogGroup
+          - logs:DescribeResourcePolicies
+          - logs:DescribeLogGroups
+          - logs:GetLogDelivery
+          - logs:ListLogDeliveries
+        Resource:
+          - '*'
+      - Effect: Allow
+        Action:
+          - pipes:CreatePipe
+          - pipes:DeletePipe
+          - pipes:DescribePipe
+          - pipes:ListPipes
+          - pipes:ListTagsForResource
+          - pipes:StartPipe
+          - pipes:StopPipe
+          - pipes:TagResource
+          - pipes:UntagResource
+          - pipes:UpdatePipe
+        Resource:
+          - '*'
+      - Effect: Allow
+        Action:
+          - budgets:ViewBudget
+          - budgets:ModifyBudget
+          - aws-portal:ViewBilling
+          - aws-portal:ModifyBilling
+        Resource:
+          - !Sub 'arn:${AWS::Partition}:budgets::${AWS::AccountId}:budget/*'
+      - Effect: Allow
+        Action:
+          - lambda:ListTags
+          - lambda:TagResource
+          - lambda:UntagResource
+          - lambda:GetAccountSettings
+        Resource:
+          - '*'
+      - Effect: Allow
+        Action:
+          - lambda:GetFunction
+          - lambda:CreateFunction
+          - lambda:DeleteFunction
+          - lambda:PutFunctionEventInvokeConfig
+          - lambda:UpdateFunctionEventInvokeConfig
+          - lambda:DeleteFunctionEventInvokeConfig
+          - lambda:UpdateFunctionConfiguration
+          - lambda:UpdateFunctionCode
+          - lambda:ListVersionsByFunction
+          - lambda:PublishVersion
+          - lambda:CreateAlias
+          - lambda:DeleteAlias
+          - lambda:UpdateAlias
+          - lambda:GetFunctionConfiguration
+          - lambda:AddPermission
+          - lambda:RemovePermission
+          - lambda:InvokeFunction
+          - lambda:ListAliases
+        Resource:
+          - !Sub arn:${AWS::Partition}:lambda:*:${AWS::AccountId}:function:${file(../settings.js):stackName}*
+      - Effect: Allow
+        Action:
+          - lambda:CreateEventSourceMapping
+          - lambda:DeleteEventSourceMapping
+          - lambda:UpdateEventSourceMapping
+        Resource: '*'
+        Condition:
+          StringLike:
+            lambda:FunctionArn: !Sub arn:${AWS::Partition}:lambda:*:${AWS::AccountId}:function:${file(../settings.js):stackName}*
+      - Effect: Allow
+        Action:
+          - states:CreateStateMachine
+          - states:UpdateStateMachine
+          - states:DeleteStateMachine
+          - states:DescribeStateMachine
+          - states:DescribeStateMachineForExecution
+          - states:StartExecution
+          - states:StopExecution
+          - states:UpdateMapRun
+          - states:DescribeExecution
+          - states:DescribeActivity
+          - states:DescribeMapRun
+          - states:GetExecutionHistory
+          - states:TagResource
+          - states:UntagResource
+        Resource:
+          - !Sub arn:${AWS::Partition}:states:*:${AWS::AccountId}:stateMachine:*
+          - !Sub arn:${AWS::Partition}:states:*:${AWS::AccountId}:execution:*
+      - Effect: Allow
+        Action:
+          - states:ListStateMachines
+          - states:ListExecutions
+          - states:ListTagsForResource
+        Resource: '*'
+      - Effect: Allow
+        Action:
+          - iam:GetRole
+          - iam:PassRole
+          - iam:CreateRole
+          - iam:DeleteRole
+          - iam:DetachRolePolicy
+          - iam:PutRolePolicy
+          - iam:AttachRolePolicy
+          - iam:DeleteRolePolicy
+          - iam:UpdateAssumeRolePolicy
+          - iam:TagRole
+          - iam:UntagRole
+          - iam:GetRolePolicy
+        Resource:
+          - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${file(../settings.js):stackName}*
+      - Effect: Allow
+        Action:
+          - apigateway:GET
+          - apigateway:POST
+          - apigateway:PUT
+          - apigateway:DELETE
+          - apigateway:PATCH
+          - apigateway:TagResource
+        Resource:
+          - !Sub arn:${AWS::Partition}:apigateway:*::/restapis*
+          - !Sub arn:${AWS::Partition}:apigateway:*::/apikeys*
+          - !Sub arn:${AWS::Partition}:apigateway:*::/usageplans*
+          - !Sub arn:${AWS::Partition}:apigateway:*::/apis*
+          - !Sub arn:${AWS::Partition}:apigateway:*::/account*
+          - !Sub arn:${AWS::Partition}:apigateway:*::/tags*
+
+      - Effect: Allow
+        Action:
+          - iam:CreateServiceLinkedRole
+          - iam:AttachRolePolicy
+          - iam:PutRolePolicy
+          - iam:UpdateRoleDescription
+          - iam:DeleteServiceLinkedRole
+          - iam:GetServiceLinkedRoleDeletionStatus
+          - iam:ListRoles
+          - iam:PassRole
+        Resource:
+          - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/aws-service-role/ops.apigateway.amazonaws.com/AWSServiceRoleForAPIGateway
+
+      - Effect: Allow
+        Action:
+          - cloudformation:ValidateTemplate
+          - events:*
+          - cloudwatch:*
+          - cloudfront:*
+          - dynamodb:*
+          - application-autoscaling:*
+          - dax:*
+          - sqs:*
+          - sns:*
+          - acm:*
+          - cloudtrail:*
+          - route53:*
+          - ses:*
+          - ssm:*
+          - kms:*
+          - scheduler:*
+          - lambda:GetEventSourceMapping
+          - lambda:ListEventSourceMappings
+          - wafv2:PutLoggingConfiguration
+          - wafv2:DeleteLoggingConfiguration
+          - apigateway:SetWebACL
+          - wafv2:AssociateWebACL
+          - wafv2:CreateIPSet
+          - wafv2:CreateRegexPatternSet
+          - wafv2:CreateRuleGroup
+          - wafv2:CreateWebACL
+          - wafv2:UpdateWebACL
+          - wafv2:DeleteIPSet
+          - wafv2:DeleteLoggingConfiguration
+          - wafv2:DeleteRegexPatternSet
+          - wafv2:DeleteRuleGroup
+          - wafv2:DeleteWebACL
+          - wafv2:DisassociateWebACL
+          - wafv2:GetWebACL
+          - wafv2:GetWebACLForResource
+          - wafv2:ListTagsForResource
+          - wafv2:GetLoggingConfiguration
+        Resource:
+          - '*'
+  PolicyName: ${file(../settings.js):stackName}-ci
+  Roles:
+    - !Ref ciRole
