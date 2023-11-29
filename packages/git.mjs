@@ -1,20 +1,27 @@
 // @ts-check
 
-import { promisify } from 'node:util'
-import { exec } from 'node:child_process'
-
 /** @type {import('@starterstack/sam-expand/plugins').Lifecycles} */
-export const lifecycles = ['pre:package']
+export const lifecycles = ['pre:expand']
 
 /** @type {import('@starterstack/sam-expand/plugins').Plugin} */
 export const lifecycle = async function runScriptHook({
+  command,
   template,
-  log,
+  spawn,
+  log
 }) {
-  const { stdout } = await promisify(exec)('git rev-parse HEAD')
+  const stdout = await spawn('git', ['rev-parse', 'HEAD'], { shell: true })
   const shaCommit = stdout.replace(/[\r\n]/g, '').trim()
-  log('adding git commit to outputs %O', { shaCommit })
+  log('adding git commit to outputs %O', { shaCommit, command })
 
   template.Outputs ||= {}
-  template.Outputs['DeployedCommit'] = shaCommit
+  template.Outputs['DeployedCommit'] = {
+    Description: 'git commit sha deployed',
+    Value: shaCommit,
+    Export: {
+      Name: {
+        'Fn::Sub': '${AWS::StackName}DeployedCommit'
+      }
+    }
+  }
 }

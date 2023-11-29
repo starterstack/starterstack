@@ -18,8 +18,8 @@ Metadata:
   expand:
     plugins:
       - '@starterstack/sam-expand/plugins/stack-stage-overrides'
-        #- '/Users/jameskyburz/Documents/src/starterstack-sam/packages/git.mjs'
       - '../git.mjs'
+      - '../hash.mjs'
     config:
       stack-stage-overrides:
         region: us-east-1
