@@ -4,16 +4,18 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "setup": "node ./scripts/setup.mjs"
   },
   "keywords": [],
   "author": "",
   "license": "Apache-2.0",
-  "dependencies": {
-    "@starterstack/sam-expand": "0.0.12"
-  },
   "private": true,
   "devDependencies": {
+    "@actions/github": "6.0.0",
+    "@aws-sdk/client-sts": "3.468.0",
+    "@starterstack/sam-expand": "0.0.23",
+    "esbuild": "0.19.8",
+    "inquirer": "9.2.12",
     "prettier": "3.1.0",
     "prettier-config-standard": "7.0.0"
   }

@@ -43,3 +43,4 @@ packages/region-*
 docs/structurizr/.structurizr
 email.eml
 *.war
+.aws-sam

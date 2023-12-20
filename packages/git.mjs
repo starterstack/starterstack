@@ -10,7 +10,8 @@ export const lifecycle = async function runScriptHook({
   spawn,
   log
 }) {
-  const stdout = await spawn('git', ['rev-parse', 'HEAD'], { shell: true })
+  const stdout = String(await spawn('git', ['rev-parse', 'HEAD'], { shell: true }))
+
   const shaCommit = stdout.replace(/[\r\n]/g, '').trim()
   log('adding git commit to outputs %O', { shaCommit, command })
 

@@ -17,14 +17,24 @@ Parameters:
 Metadata:
   expand:
     plugins:
-      - '@starterstack/sam-expand/plugins/stack-stage-overrides'
+      - '@starterstack/sam-expand/plugins/parameter-overrides'
       - '../git.mjs'
       - '../hash.mjs'
+      - '../stack-stage-config.mjs'
     config:
-      stack-stage-overrides:
+      parameterOverrides:
+        - name: GitHubRepoOwner
+          file:
+            location: ../settings.json
+            exportName: owner
+        - name: GitHubRepo
+          file:
+            location: ../settings.json
+            exportName: repo
+      stackStageConfig:
         region: us-east-1
-        suffix-stage: false
-        config-env: global
+        suffixStage: false
+        configEnv: global
         stage: global
 
 Resources:
