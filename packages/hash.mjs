@@ -16,6 +16,10 @@ export const lifecycle = async function runScriptHook({
   template,
   log
 }) {
+  if (command !== 'build') {
+    log('skipping hash %O', { command })
+    return
+  }
   const sha1 = await calculateHash({
     root: process.cwd(),
     packagesRoot: __dirname

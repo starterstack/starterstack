@@ -2,21 +2,18 @@
 # https://docs.aws.amazon.com/serverless-application-model/latest/developerguide/serverless-sam-cli-config.html
 version = 0.1
 
-[global]
-[global.global.parameters]
+[default]
+[default.default.parameters]
 resolve_s3 = true
 
-[global.build.parameters]
+[default.build.parameters]
 cached = true
 parallel = true
 
-[global.validate.parameters]
+[default.validate.parameters]
 lint = true
 
-[global.deploy.parameters]
+[default.deploy.parameters]
 capabilities = "CAPABILITY_IAM CAPABILITY_AUTO_EXPAND"
 confirm_changeset = false
 fail_on_empty_changeset = false
-
-[global.delete.parameters]
-prompts = false

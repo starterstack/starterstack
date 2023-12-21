@@ -10,6 +10,10 @@ export const lifecycle = async function runScriptHook({
   spawn,
   log
 }) {
+  if (command !== 'build') {
+    log('skipping git commit %O', { command })
+    return
+  }
   const stdout = String(await spawn('git', ['rev-parse', 'HEAD'], { shell: true }))
 
   const shaCommit = stdout.replace(/[\r\n]/g, '').trim()

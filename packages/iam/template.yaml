@@ -34,7 +34,6 @@ Metadata:
       stackStageConfig:
         region: us-east-1
         suffixStage: false
-        configEnv: global
         stage: global
 
 Resources:
