@@ -1,9 +1,6 @@
-'use strict'
+import sodium from 'libsodium-wrappers'
 
-// @ts-ignore
-const sodium = require('libsodium-wrappers')
-
-module.exports = async function updateRepoSecret({
+export default async function updateRepoSecret({
   github,
   context,
   name,

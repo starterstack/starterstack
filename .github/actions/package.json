@@ -1,17 +1,14 @@
 {
   "name": "actions",
+  "type": "module",
   "dependencies": {
-    "@aws-sdk/client-cloudformation": "^3.468.0",
-    "@serverless/utils": "6.15.0",
-    "esbuild": "^0.19.8",
-    "js-yaml": "^4.1.0",
-    "libsodium-wrappers": "^0.7.13",
-    "node-fetch": "3.3.2"
+    "esbuild": "0.19.8",
+    "libsodium-wrappers": "0.7.13"
   },
   "author": "James Kyburz <james.kyburz@gmail.com>",
   "license": "Apache-2.0",
   "private": true,
   "devDependencies": {
-    "@types/libsodium-wrappers": "^0.7.13"
+    "@types/libsodium-wrappers": "0.7.13"
   }
 }
