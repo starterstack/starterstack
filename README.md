@@ -1,0 +1,3 @@
+# ⚡ serverless monorepo stack ⚡
+
+WIP

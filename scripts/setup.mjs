@@ -7,7 +7,7 @@ import github from '@actions/github'
 import crypto from 'node:crypto'
 import { STSClient, GetCallerIdentityCommand } from '@aws-sdk/client-sts'
 
-const updateRepoSecret = require('../.github/actions/dist/update-repo-secret.js')
+import updateRepoSecret from '../.github/actions/dist/update-repo-secret.js'
 
 const { stdout: origin } = await promisify(exec)('git remote get-url origin')
 

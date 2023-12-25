@@ -1,0 +1,112 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform:
+  - AWS::Serverless-2016-10-31
+
+Description: sam deployment bucket
+
+Parameters:
+  Stage:
+    Type: String
+  Stack:
+    Type: String
+Metadata:
+  expand:
+    plugins:
+      - '../git.mjs'
+      - '../hash.mjs'
+      - '../stack-stage-config.mjs'
+    config:
+      stackStageConfig:
+        regions: account
+        suffixStage: false
+        stage: global
+
+Resources:
+  SnsOpsTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      Tags:
+        - Key: 'Name'
+          Value: !Sub ${AWS::StackName}SnsOpsTopic
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+  SnsOpsTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Action:
+              - sns:Publish
+            Effect: Allow
+            Resource: !Ref SnsOpsTopic
+            Principal:
+              Service:
+                - cloudformation.amazonaws.com
+            Condition:
+              StringEquals:
+                AWS:SourceAccount: !Sub '${AWS::AccountId}'
+      Topics:
+        - !Ref SnsOpsTopic
+  S3DeploymentBucket:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: TransitionToIntelligentTiering
+            Status: Enabled
+            Transitions:
+              - StorageClass: INTELLIGENT_TIERING
+                TransitionInDays: 0
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - BucketKeyEnabled: true
+            ServerSideEncryptionByDefault:
+              SSEAlgorithm: 'AES256'
+      VersioningConfiguration:
+        Status: Enabled
+      Tags:
+        - Key: 'Name'
+          Value: !Sub ${AWS::StackName}S3DeploymentBucket
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+  S3DeploymentBucketPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref S3DeploymentBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: serverlessrepo.amazonaws.com
+            Action: s3:GetObject
+            Resource: !Sub arn:${AWS::Partition}:s3:::${S3DeploymentBucket}/*
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Sub ${AWS::AccountId}
+          - Effect: Deny
+            Principal: '*'
+            Action: s3:*
+            Resource:
+              - !Sub arn:${AWS::Partition}:s3:::${S3DeploymentBucket}
+              - !Sub arn:${AWS::Partition}:s3:::${S3DeploymentBucket}/*
+            Condition:
+              Bool:
+                'aws:SecureTransport': false
+Outputs:
+  S3DeploymentBucket:
+    Description: s3 bucket for deployment artifacts
+    Value: !Ref S3DeploymentBucket
+    Export:
+      Name: !Sub '${AWS::StackName}S3DeploymentBucket'
+  SnsOpsTopic:
+    Description: sns topic for ops
+    Value: !Ref SnsOpsTopic
+    Export:
+      Name: !Sub '${AWS::StackName}SnsOpsTopic'

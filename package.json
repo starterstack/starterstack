@@ -12,7 +12,8 @@
   "private": true,
   "devDependencies": {
     "@actions/github": "6.0.0",
-    "@aws-sdk/client-sts": "3.468.0",
+    "@aws-sdk/client-cloudformation": "3.478.0",
+    "@aws-sdk/client-sts": "3.478.0",
     "@starterstack/sam-expand": "0.0.23",
     "esbuild": "0.19.8",
     "inquirer": "9.2.12",

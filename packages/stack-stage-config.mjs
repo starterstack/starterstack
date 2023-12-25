@@ -8,22 +8,45 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import process from 'node:process'
 import * as parse from '@starterstack/sam-expand/parse'
+import { STSClient, GetCallerIdentityCommand } from '@aws-sdk/client-sts'
+import {
+  CloudFormationClient,
+  DescribeStacksCommand
+} from '@aws-sdk/client-cloudformation'
+
+/** @type {Map<string, CloudFormationClient>} */
+const clients = new Map()
+
+/** @type {Map<string, import('@aws-sdk/client-cloudformation').DescribeStacksOutput>} */
+const cloudformationResults = new Map()
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
-const { stackName } = JSON.parse(
+const settings = JSON.parse(
   await readFile(path.join(__dirname, 'settings.json'), 'utf8')
 )
+
+const sts = new STSClient({ region: 'us-east-1' })
+
+let accountId
 
 /** @type {import('@starterstack/sam-expand/plugins').Lifecycles} */
 export const lifecycles = ['pre:expand']
 
-/** @type {import('@starterstack/sam-expand/plugins').PluginSchema<{ region?: string, 'suffixStage': boolean, 'configEnv'?: string, stage?: string }>} */
+/** @type {import('@starterstack/sam-expand/plugins').PluginSchema<{ region?: string, 'suffixStage': boolean, stage?: string, regions?: string }>} */
 export const schema = {
   type: 'object',
   properties: {
     region: {
       type: 'string',
       nullable: true
+    },
+    regions: {
+      type: 'string',
+      nullable: true,
+      enum: [
+        "stage",
+        "account",
+      ]
     },
     name: {
       type: 'string',
@@ -44,57 +67,127 @@ export const schema = {
 export const metadataConfig = 'stackStageConfig'
 
 /** @type {import('@starterstack/sam-expand/plugins').Plugin} */
-export const lifecycle = async function stackStageConfig({ command, argv, region, template, log }) {
-  if (command === 'package') {
-    throw new TypeError ('unsupported, use sam-expand deploy instead')
+export const lifecycle = async function stackStageConfig({ command, argv, template, log }) {
+  if (!['deploy', 'build', 'delete']) {
+    return
   }
-  if (!process.env.CI && (!region || argv.length === 0)) {
-    const { stage } = await inquirer.prompt({ name: 'stage', message: 'stage' })
+  if (!process.env.CI && (!argv.includes('--stack-name') || !argv.includes('--region'))) {
+    const stackStageConfig = await getStackStageConfig(template)
+    const { stage } = stackStageConfig.stage === 'global' ? { stage: 'global' } : await inquirer.prompt({ name: 'stage', message: 'stage' })
     if (!stage) {
       throw new TypeError('missing stage')
     }
-    const { region } = await inquirer.prompt({ name: 'region', message: 'region' })
-    if (!region) {
-      throw new TypeError('missing region')
-    }
-    const config = await getConfig({ stage, region, template })
+
+    const config = await getConfig({ stage, template })
+
+    const { region } = config.regions.length === 1 ? { region: config.regions.at(0) } : await inquirer.prompt({ name: 'region', type: 'list', message: 'region', choices: config.regions })
     if (['build', 'deploy'].includes(command)) {
-      argv.push(...['--parameter-overrides', `Stack=${stackName}`, `Stage=${stage}`])
+      argv.push(...['--parameter-overrides', `Stack=${settings.stackName}`, `Stage=${stage}`])
     }
     if (['deploy', 'delete'].includes(command)) {
       argv.push(...['--stack-name', config.stackName])
+      if (config.s3DeploymentBucket[region]) {
+        argv.push(...['--s3-bucket', config.s3DeploymentBucket[region]])
+      }
     }
     if (['build', 'deploy', 'delete'].includes(command)) {
-      argv.push(...['--region', config.region])
+      argv.push(...['--region', region])
+    }
+    if (command === 'deploy' && config.snsOpsTopic[region]) {
+      argv.push(...['--notification-arns', config.snsOpsTopic[region]])
     }
     log('applied stack stage config %O', { config, argv })
   }
 }
 
 /**
- * @param {{ stage: string, region: string, template: any }} options
- * @returns {Promise<{ stackName: string, stage: string, region: string }>}
+ * @param {{ stage: string, template: any, directory?: string }} options
+ * @returns {Promise<{ stackName: string, stage: string, regions: string[], s3DeploymentBucket: Record<string, string>, snsOpsTopic: Record<string, string> }>}
  **/
-export async function getConfig({ stage, region, template }) {
+export async function getConfig({ stage, template, directory }) {
+  const config = await getStackStageConfig({ template, directory })
+  const name = config.name ?? path.basename(directory ?? process.cwd())
+  const stackStage = config.stage ?? stage
+  const cloudformationStackName = config.suffixStage ? `${settings.stackName}-${name}-${stackStage}` : `${settings.stackName}-${name}`
+
+  if (!accountId) {
+    const { Account: account } = await sts.send(new GetCallerIdentityCommand({}))
+
+    if (!account) {
+      throw new TypeError('missing aws credentials')
+    }
+
+    accountId = account
+  }
+
+  if (!settings.awsAccounts[accountId]) {
+    throw new TypeError(`${accountId} not known in settings.awsAccounts`)
+  }
+
+  const stageName = settings.stages.includes(stage) ? stage : 'feature'
+
+  const regions = settings.accountPerStage
+    ? [settings.regions[settings.awsAccounts[accountId].stage]]
+    : Object.values(settings.regions)
+
+  const stackRegion = settings.regions[stageName]
+  const stackRegions = config.regions === 'account'
+      ? [...new Set(['us-east-1', 'eu-west-1', ...regions])]
+      : [config.region ?? stackRegion]
+
+  /** @type {Record<string, string>} */
+  const s3DeploymentBucket = {}
+
+  /** @type {Record<string, string>} */
+  const snsOpsTopic = {}
+
+  await Promise.all(stackRegions.map(async function getDeploymentBucket(region) {
+    const stackName = `${settings.stackName}-deployment`
+    let result = cloudformationResults.get(`${region}.${stackName}`)
+    if (!result) {
+      let client = clients.get(region)
+      if (!client) {
+        client = new CloudFormationClient({ region })
+        clients.set(region, client)
+      }
+      result = await client.send(
+        new DescribeStacksCommand({
+          StackName: stackName,
+        })
+      )
+      cloudformationResults.set(`${region}.${stackName}`, result)
+    }
+    for (const output of result?.Stacks?.[0]?.Outputs ?? []) {
+      if (output.OutputKey === 'S3DeploymentBucket' && output.OutputValue) {
+        s3DeploymentBucket[region] = output.OutputValue
+      } else if (output.OutputKey === 'SnsOpsTopic' && output.OutputValue) {
+        snsOpsTopic[region] = output.OutputValue
+      }
+    }
+  }))
+
+  return {
+    stackName: cloudformationStackName,
+    stage: stackStage,
+    regions: stackRegions,
+    s3DeploymentBucket,
+    snsOpsTopic
+  }
+}
+
+/**
+ * @param {{ template: any, directory?: string }} options
+ * @returns Promise<{import('@starterstack/sam-expand/plugins').PluginSchema<{ region?: string, 'suffixStage': boolean, stage?: string, regions?: string }>}>}
+**/
+async function getStackStageConfig({ template, directory }) {
   if (!template) {
-    const templateFile = path.join(process.cwd(), 'template.yaml')
+    const templateFile = path.join(directory ?? process.cwd(), 'template.yaml')
     try {
-      await stat(path.join(process.cwd(), 'template.yaml'))
+      await stat(templateFile)
     } catch {
       throw new TypeError('no template.yaml found')
     }
     template = await parse.template(templateFile)
   }
-
-  const config = template.Metadata.expand.config.stackStageConfig
-  const name = config.name ?? path.basename(process.cwd())
-  const stackRegion = config.region ?? region
-  const stackStage = config.stage ?? stage
-  const cloudformationStackName = config.suffixStage ? `${stackName}-${name}-${stackStage}` : `${stackName}-${name}`
-
-  return {
-    stackName: cloudformationStackName,
-    stage: stackStage,
-    region: stackRegion
-  }
+  return template.Metadata.expand.config.stackStageConfig
 }
