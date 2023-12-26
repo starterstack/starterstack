@@ -5,8 +5,6 @@ Transform:
 Description: sam deployment bucket
 
 Parameters:
-  Stage:
-    Type: String
   Stack:
     Type: String
 Metadata:

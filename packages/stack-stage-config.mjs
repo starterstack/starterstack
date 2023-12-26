@@ -21,6 +21,7 @@ const clients = new Map()
 const cloudformationResults = new Map()
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
+
 const settings = JSON.parse(
   await readFile(path.join(__dirname, 'settings.json'), 'utf8')
 )
@@ -58,6 +59,10 @@ export const schema = {
     },
     'suffixStage': {
       type: 'boolean'
+    },
+    addMappings: {
+      type: 'boolean',
+      nullable: true
     }
   },
   required: ['suffixStage'],
@@ -68,11 +73,12 @@ export const metadataConfig = 'stackStageConfig'
 
 /** @type {import('@starterstack/sam-expand/plugins').Plugin} */
 export const lifecycle = async function stackStageConfig({ command, argv, template, log }) {
-  if (!['deploy', 'build', 'delete']) {
-    return
+  const stackStageConfig = await getStackStageConfig(template)
+  if (command === 'build' && stackStageConfig.addMappings) {
+    template.Mappings ||= {}
+    template.Mappings.AWSAccounts = settings.awsAccounts
   }
-  if (!process.env.CI && (!argv.includes('--stack-name') || !argv.includes('--region'))) {
-    const stackStageConfig = await getStackStageConfig(template)
+  if (!process.env.CI && command !== 'validate' && (!argv.includes('--stack-name') || !argv.includes('--region'))) {
     const { stage } = stackStageConfig.stage === 'global' ? { stage: 'global' } : await inquirer.prompt({ name: 'stage', message: 'stage' })
     if (!stage) {
       throw new TypeError('missing stage')
@@ -90,11 +96,12 @@ export const lifecycle = async function stackStageConfig({ command, argv, templa
         argv.push(...['--s3-bucket', config.s3DeploymentBucket[region]])
       }
     }
-    if (['build', 'deploy', 'delete'].includes(command)) {
+    if (['build', 'deploy', 'delete', 'validate'].includes(command)) {
       argv.push(...['--region', region])
     }
     if (command === 'deploy' && config.snsOpsTopic[region]) {
       argv.push(...['--notification-arns', config.snsOpsTopic[region]])
+      argv.push(...['--tags', `STAGE=${stage}`, `ManagedBy=${settings.stackName}`, `Name=${config.stackName}`])
     }
     log('applied stack stage config %O', { config, argv })
   }
@@ -102,7 +109,7 @@ export const lifecycle = async function stackStageConfig({ command, argv, templa
 
 /**
  * @param {{ stage: string, template: any, directory?: string }} options
- * @returns {Promise<{ stackName: string, stage: string, regions: string[], s3DeploymentBucket: Record<string, string>, snsOpsTopic: Record<string, string> }>}
+ * @returns {Promise<{ addMappings: boolean, addMissings: true, stackName: string, stage: string, regions: string[], s3DeploymentBucket: Record<string, string>, snsOpsTopic: Record<string, string> }>}
  **/
 export async function getConfig({ stage, template, directory }) {
   const config = await getStackStageConfig({ template, directory })
@@ -112,12 +119,11 @@ export async function getConfig({ stage, template, directory }) {
 
   if (!accountId) {
     const { Account: account } = await sts.send(new GetCallerIdentityCommand({}))
+    accountId = account
 
-    if (!account) {
+    if (!accountId) {
       throw new TypeError('missing aws credentials')
     }
-
-    accountId = account
   }
 
   if (!settings.awsAccounts[accountId]) {
@@ -125,9 +131,10 @@ export async function getConfig({ stage, template, directory }) {
   }
 
   const stageName = settings.stages.includes(stage) ? stage : 'feature'
+  const accountStage = settings.regions[settings.awsAccounts[accountId]?.stage]
 
   const regions = settings.accountPerStage
-    ? [settings.regions[settings.awsAccounts[accountId].stage]]
+    ? [accountStage]
     : Object.values(settings.regions)
 
   const stackRegion = settings.regions[stageName]
@@ -171,13 +178,14 @@ export async function getConfig({ stage, template, directory }) {
     stage: stackStage,
     regions: stackRegions,
     s3DeploymentBucket,
-    snsOpsTopic
+    snsOpsTopic,
+    addMappings: config.addMappings
   }
 }
 
 /**
  * @param {{ template: any, directory?: string }} options
- * @returns Promise<{import('@starterstack/sam-expand/plugins').PluginSchema<{ region?: string, 'suffixStage': boolean, stage?: string, regions?: string }>}>}
+ * @returns Promise<{import('@starterstack/sam-expand/plugins').PluginSchema<{ addMappings: boolean, region?: string, 'suffixStage': boolean, stage?: string, regions?: string }>}>}
 **/
 async function getStackStageConfig({ template, directory }) {
   if (!template) {
@@ -191,3 +199,39 @@ async function getStackStageConfig({ template, directory }) {
   }
   return template.Metadata.expand.config.stackStageConfig
 }
+
+/** @type {import('@starterstack/sam-expand/resolve').FileResolver} */
+export default async function getSettings({ template, templateDirectory, argv, region: defaultRegion }) {
+  const region = argv[argv.indexOf('--region') + 1] ?? defaultRegion
+  const stage = argv[argv.findIndex(x => x.startsWith('Stage='))]
+
+  if (!region) {
+    throw new TypeError('missing region')
+  }
+
+  if (!stage) {
+    throw new TypeError('missing stage')
+  }
+
+  const config = await getConfig({ stage: stage.slice('Stage='.length), template, directory: templateDirectory })
+
+  return {
+    get logRetentionInDays() {
+      return settings.defaultLogRetentionInDays
+    },
+    get stackDisplayName() {
+      return settings.stackDisplayName
+    },
+    get accountRegion() {
+      return settings.regions[settings.awsAccounts[accountId].stage]
+    },
+    get accountPerStage() {
+      return String(settings.accountPerStage)
+    },
+    get snsOpsTopic() {
+      return config.snsOpsTopic?.[region]
+    }
+  }
+}
+
+

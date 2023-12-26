@@ -5,8 +5,6 @@ Transform:
 Description: iam policies
 
 Parameters:
-  Stage:
-    Type: String
   Stack:
     Type: String
   GitHubRepoOwner:

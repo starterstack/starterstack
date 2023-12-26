@@ -1,0 +1,88 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform:
+  - AWS::LanguageExtensions
+  - AWS::Serverless-2016-10-31
+
+Description: sam deployment bucket
+
+Parameters:
+  Stack:
+    Type: String
+  LogRetentionInDays:
+    Type: String
+  AccountRegion:
+    Type: String
+  AccountPerStage:
+    Type: String
+Metadata:
+  expand:
+    plugins:
+      - '../git.mjs'
+      - '../hash.mjs'
+      - '../stack-stage-config.mjs'
+      - '@starterstack/sam-expand/plugins/parameter-overrides'
+    config:
+      stackStageConfig:
+        regions: account
+        suffixStage: false
+        stage: global
+      parameterOverrides:
+        - name: AccountRegion
+          file:
+            location: ../stack-stage-config.mjs
+            exportName: accountRegion
+        - name: AccountPerStage
+          file:
+            location: ../stack-stage-config.mjs
+            exportName: accountPerStage
+        - name: LogRetentionInDays
+          file:
+            location: ../stack-stage-config.mjs
+            exportName: logRetentionInDays
+
+Conditions:
+  IsStackRegion: !Or
+    - !Equals
+      - !Ref AccountPerStage
+      - 'false'
+    - !Equals
+      - !Sub ${AWS::Region}
+      - !Ref AccountRegion
+
+Resources:
+  LogResourcePolicy:
+    Type: AWS::Logs::ResourcePolicy
+    Properties:
+      PolicyName: !Sub '${AWS::StackName}-log-resource-policy'
+      PolicyDocument:
+        Fn::ToJsonString:
+          Version: '2012-10-17'
+          Statement:
+            - Sid: 'LogDeliveryWrite'
+              Effect: 'Allow'
+              Principal:
+                Service: 'delivery.logs.amazonaws.com'
+              Action:
+                - 'logs:CreateLogStream'
+                - 'logs:PutLogEvents'
+              Resource:
+                - !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/apigateway/http-api/${Stack}-cdn-*:log-stream:*'
+                - !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:aws-waf-logs*${Stack}*:log-stream:*'
+                - !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:log-group:/aws/vendedlogs/states/${Stack}*:log-stream:*'
+              Condition:
+                StringEquals:
+                  'aws:SourceAccount': !Sub '${AWS::AccountId}'
+                ArnLike:
+                  'aws:SourceArn': !Sub 'arn:${AWS::Partition}:logs:${AWS::Region}:${AWS::AccountId}:*'
+  ApiGatewayWelcomeLogGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: IsStackRegion
+    Properties:
+      LogGroupName: '/aws/apigateway/welcome'
+      RetentionInDays: !Ref LogRetentionInDays
+      Tags:
+        - Key: 'Name'
+          Value: !Sub '${AWS::StackName} api gateway welcome log group'
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+Outputs:
