@@ -1,0 +1,219 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform:
+  - AWS::Serverless-2016-10-31
+
+Description: sam deployment bucket
+
+Parameters:
+  Stack:
+    Type: String
+  ProductionStage:
+    Type: String
+  ProductionAccountId:
+    Type: String
+  ProductionRegion:
+    Type: String
+Metadata:
+  expand:
+    plugins:
+      - '../git.mjs'
+      - '../hash.mjs'
+      - '../stack-stage-config.mjs'
+      - '@starterstack/sam-expand/plugins/parameter-overrides'
+    config:
+      stackStageConfig:
+        addMappings: true
+        suffixStage: false
+        stage: global
+      parameterOverrides:
+        - name: ProductionStage
+          file:
+            location: ../stack-stage-config.mjs
+            exportName: productionStage
+        - name: ProductionAccountId
+          file:
+            location: ../stack-stage-config.mjs
+            exportName: productionAccountId
+        - name: ProductionRegion
+          file:
+            location: ../stack-stage-config.mjs
+            exportName: productionRegion
+
+Conditions:
+  IsBackupAccount: !Equals
+    - !FindInMap
+      - AWSAccounts
+      - !Ref 'AWS::AccountId'
+      - isBackupAccount
+    - true
+
+Resources:
+  S3Backup:
+    Type: AWS::S3::Bucket
+    Condition: IsBackupAccount
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: TransitionToInfrequentAccessTier
+            Status: Enabled
+            Transitions:
+              - StorageClass: STANDARD_IA
+                TransitionInDays: 30
+          - Id: ExpireDynamoDBBackups
+            Status: Enabled
+            ExpirationInDays: 31
+            Prefix: !Sub ${Stack}-cdn-${ProductionStage}-s3protectedmedia/AWSDynamoDB
+          - Id: ExpireCloudFrontLogs
+            Status: Enabled
+            ExpirationInDays: 90
+            Prefix: !Sub ${Stack}-cdn-${ProductionStage}-s3cloudfrontlogs
+          - Id: NonCurrentRetention
+            Status: Enabled
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 1
+          - Id: DeleteNonCurrent
+            ExpiredObjectDeleteMarker: true
+            Status: Enabled
+      VersioningConfiguration:
+        Status: Enabled
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - BucketKeyEnabled: true
+            ServerSideEncryptionByDefault:
+              SSEAlgorithm: 'AES256'
+      Tags:
+        - Key: 'Name'
+          Value: !Sub '${AWS::StackName}-s3-backup'
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+  S3BackupPolicy:
+    Type: AWS::S3::BucketPolicy
+    Condition: IsBackupAccount
+    Properties:
+      Bucket: !Ref S3Backup
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Deny
+            Action: 's3:*'
+            Resource:
+              - !Sub ${S3Backup.Arn}
+              - !Sub ${S3Backup.Arn}/*
+            Principal: '*'
+            Condition:
+              Bool:
+                'aws:SecureTransport': false
+          - Action:
+              - s3:PutObject
+            Effect: Allow
+            Resource:
+              - !Sub ${S3Backup.Arn}/${Stack}-${ProductionStage}-s3cloudfrontlogs/*
+            Condition:
+              Bool:
+                aws:SecureTransport: true
+              StringEquals:
+                s3:x-amz-acl: bucket-owner-full-control
+                aws:PrincipalArn: !Sub arn:${AWS::Partition}:iam::${ProductionAccountId}:role/${Stack}-cdn-${ProductionStage}-s3-replicate-${ProductionRegion}-lambdaRole
+            Principal:
+              AWS: '*'
+          - Action:
+              - s3:PutObject
+            Effect: Allow
+            Resource:
+              - !Sub ${S3Backup.Arn}/${Stack}-cdn-${ProductionStage}-s3media/media/*
+            Condition:
+              Bool:
+                aws:SecureTransport: true
+              StringEquals:
+                s3:x-amz-acl: bucket-owner-full-control
+                aws:PrincipalArn: !Sub arn:${AWS::Partition}:iam::${ProductionAccountId}:role/${Stack}-media-${ProductionStage}-s3-replicate-${ProductionRegion}-lambdaRole
+            Principal:
+              AWS: '*'
+          - Action:
+              - s3:PutObject
+            Effect: Allow
+            Resource:
+              - !Sub ${S3Backup.Arn}/${Stack}-cdn-${ProductionStage}-s3protectedmedia/media/*
+              - !Sub ${S3Backup.Arn}/${Stack}-cdn-${ProductionStage}-s3protectedmedia/AWSDynamoDB/*
+            Condition:
+              Bool:
+                aws:SecureTransport: true
+              StringEquals:
+                s3:x-amz-acl: bucket-owner-full-control
+                aws:PrincipalArn: !Sub arn:${AWS::Partition}:iam::${ProductionAccountId}:role/${Stack}-media-${ProductionStage}-s3-replicate-${ProductionRegion}-lambdaRole
+            Principal:
+              AWS: '*'
+          - Action:
+              - s3:PutObject
+            Effect: Allow
+            Resource:
+              - !Sub ${S3Backup.Arn}/${Stack}-ses-${ProductionStage}-s3mail/*
+            Condition:
+              Bool:
+                aws:SecureTransport: true
+              StringEquals:
+                s3:x-amz-acl: bucket-owner-full-control
+                aws:PrincipalArn: !Sub arn:${AWS::Partition}:iam::${ProductionAccountId}:role/${Stack}-ses-${ProductionStage}-s3-replicate-eu-west-1-lambdaRole
+            Principal:
+              AWS: '*'
+          - Action:
+              - s3:PutObjectTagging
+            Effect: Allow
+            Resource:
+              - !Sub ${S3Backup.Arn}/${Stack}-cdn-${ProductionStage}-s3cloudfrontlogs/*
+            Condition:
+              Bool:
+                aws:SecureTransport: true
+              StringEquals:
+                aws:PrincipalArn: !Sub arn:${AWS::Partition}:iam::${ProductionAccountId}:role/${Stack}-cdn-${ProductionStage}-s3-replicate-${ProductionRegion}-lambdaRole
+            Principal:
+              AWS: '*'
+          - Action:
+              - s3:PutObjectTagging
+            Effect: Allow
+            Resource:
+              - !Sub ${S3Backup.Arn}/${Stack}-cdn-${ProductionStage}-s3media/media/*
+            Condition:
+              Bool:
+                aws:SecureTransport: true
+              StringEquals:
+                aws:PrincipalArn: !Sub arn:${AWS::Partition}:iam::${ProductionAccountId}:role/${Stack}-media-${ProductionStage}-s3-replicate-${ProductionRegion}-lambdaRole
+            Principal:
+              AWS: '*'
+          - Action:
+              - s3:PutObjectTagging
+            Effect: Allow
+            Resource:
+              - !Sub ${S3Backup.Arn}/${Stack}-cdn-${ProductionStage}-s3protectedmedia/media/*
+              - !Sub ${S3Backup.Arn}/${Stack}-cdn-${ProductionStage}-s3protectedmedia/AWSDynamoDB/*
+            Condition:
+              Bool:
+                aws:SecureTransport: true
+              StringEquals:
+                aws:PrincipalArn: !Sub arn:${AWS::Partition}:iam::${ProductionAccountId}:role/${Stack}-media-${ProductionStage}-s3-replicate-${ProductionRegion}-lambdaRole
+            Principal:
+              AWS: '*'
+          - Action:
+              - s3:PutObjectTagging
+            Effect: Allow
+            Resource:
+              - !Sub ${S3Backup.Arn}/${Stack}-ses-${ProductionStage}-s3mail/*
+            Condition:
+              Bool:
+                aws:SecureTransport: true
+              StringEquals:
+                aws:PrincipalArn: !Sub arn:${AWS::Partition}:iam::${ProductionAccountId}:role/${Stack}-ses-${ProductionStage}-s3-replicate-eu-west-1-lambdaRole
+            Principal:
+              AWS: '*'
+Outputs:
+  S3Backup:
+    Description: s3 bucket for backups
+    Value: !Ref S3Backup
+    Condition: IsBackupAccount
+    Export:
+      Name: !Sub '${AWS::StackName}S3Backup'

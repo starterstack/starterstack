@@ -130,17 +130,19 @@ export async function getConfig({ stage, template, directory }) {
     throw new TypeError(`${accountId} not known in settings.awsAccounts`)
   }
 
-  const stageName = settings.stages.includes(stage) ? stage : 'feature'
+  const stageName = stage === 'global' ? 'global' : settings.stages.includes(stage) ? stage : 'feature'
   const accountStage = settings.regions[settings.awsAccounts[accountId]?.stage]
 
   const regions = settings.accountPerStage
     ? [accountStage]
     : Object.values(settings.regions)
 
+  const accountRegion = settings.regions[settings.awsAccounts[accountId].stage]
+
   const stackRegion = settings.regions[stageName]
   const stackRegions = config.regions === 'account'
       ? [...new Set(['us-east-1', 'eu-west-1', ...regions])]
-      : [config.region ?? stackRegion]
+      : [config.region ?? stackRegion ?? accountRegion]
 
   /** @type {Record<string, string>} */
   const s3DeploymentBucket = {}
@@ -148,30 +150,32 @@ export async function getConfig({ stage, template, directory }) {
   /** @type {Record<string, string>} */
   const snsOpsTopic = {}
 
-  await Promise.all(stackRegions.map(async function getDeploymentBucket(region) {
-    const stackName = `${settings.stackName}-deployment`
-    let result = cloudformationResults.get(`${region}.${stackName}`)
-    if (!result) {
-      let client = clients.get(region)
-      if (!client) {
-        client = new CloudFormationClient({ region })
-        clients.set(region, client)
+  if (path.basename(directory ?? process.cwd()) !== 'deployment') {
+    await Promise.all(stackRegions.map(async function getDeploymentBucket(region) {
+      const stackName = `${settings.stackName}-deployment`
+      let result = cloudformationResults.get(`${region}.${stackName}`)
+      if (!result) {
+        let client = clients.get(region)
+        if (!client) {
+          client = new CloudFormationClient({ region })
+          clients.set(region, client)
+        }
+        result = await client.send(
+          new DescribeStacksCommand({
+            StackName: stackName,
+          })
+        )
+        cloudformationResults.set(`${region}.${stackName}`, result)
       }
-      result = await client.send(
-        new DescribeStacksCommand({
-          StackName: stackName,
-        })
-      )
-      cloudformationResults.set(`${region}.${stackName}`, result)
-    }
-    for (const output of result?.Stacks?.[0]?.Outputs ?? []) {
-      if (output.OutputKey === 'S3DeploymentBucket' && output.OutputValue) {
-        s3DeploymentBucket[region] = output.OutputValue
-      } else if (output.OutputKey === 'SnsOpsTopic' && output.OutputValue) {
-        snsOpsTopic[region] = output.OutputValue
+      for (const output of result?.Stacks?.[0]?.Outputs ?? []) {
+        if (output.OutputKey === 'S3DeploymentBucket' && output.OutputValue) {
+          s3DeploymentBucket[region] = output.OutputValue
+        } else if (output.OutputKey === 'SnsOpsTopic' && output.OutputValue) {
+          snsOpsTopic[region] = output.OutputValue
+        }
       }
-    }
-  }))
+    }))
+  }
 
   return {
     stackName: cloudformationStackName,
@@ -216,6 +220,20 @@ export default async function getSettings({ template, templateDirectory, argv, r
   const config = await getConfig({ stage: stage.slice('Stage='.length), template, directory: templateDirectory })
 
   return {
+    get productionStage() {
+      return 'prod'
+    },
+    get productionRegion() {
+      return settings.regions.prod
+    },
+    get productionAccountId() {
+      const [productionAccountId] = Object.entries(settings.awsAccounts).find(
+        function isProduction([_, { stage }]) {
+          return stage === 'prod'
+        }
+      ) ?? []
+      return productionAccountId
+    },
     get logRetentionInDays() {
       return settings.defaultLogRetentionInDays
     },
