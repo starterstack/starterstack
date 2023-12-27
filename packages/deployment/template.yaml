@@ -20,15 +20,15 @@ Metadata:
         stage: global
 
 Resources:
-  SnsOpsTopic:
+  SNSOpsTopic:
     Type: AWS::SNS::Topic
     Properties:
       Tags:
         - Key: 'Name'
-          Value: !Sub ${AWS::StackName}SnsOpsTopic
+          Value: !Sub ${AWS::StackName}SNSOpsTopic
         - Key: 'ManagedBy'
           Value: !Ref Stack
-  SnsOpsTopicPolicy:
+  SNSOpsTopicPolicy:
     Type: AWS::SNS::TopicPolicy
     Properties:
       PolicyDocument:
@@ -37,7 +37,7 @@ Resources:
           - Action:
               - sns:Publish
             Effect: Allow
-            Resource: !Ref SnsOpsTopic
+            Resource: !Ref SNSOpsTopic
             Principal:
               Service:
                 - cloudformation.amazonaws.com
@@ -45,7 +45,7 @@ Resources:
               StringEquals:
                 AWS:SourceAccount: !Sub '${AWS::AccountId}'
       Topics:
-        - !Ref SnsOpsTopic
+        - !Ref SNSOpsTopic
   S3DeploymentBucket:
     Type: AWS::S3::Bucket
     Properties:
@@ -103,8 +103,8 @@ Outputs:
     Value: !Ref S3DeploymentBucket
     Export:
       Name: !Sub '${AWS::StackName}S3DeploymentBucket'
-  SnsOpsTopic:
+  SNSOpsTopic:
     Description: sns topic for ops
-    Value: !Ref SnsOpsTopic
+    Value: !Ref SNSOpsTopic
     Export:
-      Name: !Sub '${AWS::StackName}SnsOpsTopic'
+      Name: !Sub '${AWS::StackName}SNSOpsTopic'
