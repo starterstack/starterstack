@@ -39,7 +39,8 @@ Metadata:
         - name: S3LogBucket
           file:
             location: ../stack-stage-config.mjs
-            exportName: ssmS3BackupBucket
+            exportName: ssmS3LogBucket
+            defaultValue: cloudTrailS3Logs-missing-in-ssm
 
 Conditions:
   ShouldCreateBucket: !Or
@@ -48,12 +49,24 @@ Conditions:
         - AWSAccounts
         - !Ref 'AWS::AccountId'
         - isLogAccount
-      - 'true'
+      - true
     - !Equals
       - !Ref AccountPerStage
-      - 'true'
+      - 'false'
 
 Resources:
+  S3WaitHandle:
+    Type: AWS::CloudFormation::WaitConditionHandle
+    Condition: ShouldCreateBucket
+    DependsOn: S3CloudTrailLogsPolicy
+  WaitHandle:
+    Type: AWS::CloudFormation::WaitConditionHandle
+  S3Wait:
+    Type: AWS::CloudFormation::WaitCondition
+    Properties:
+      Handle: !If [ShouldCreateBucket, !Ref S3WaitHandle, !Ref WaitHandle]
+      Timeout: 60
+      Count: 0
   S3CloudTrailLogs:
     Type: AWS::S3::Bucket
     Condition: ShouldCreateBucket
@@ -114,7 +127,9 @@ Resources:
             Principal:
               Service:
                 - cloudtrail.amazonaws.com
+
   CloudTrail:
+    DependsOn: S3Wait
     Type: AWS::CloudTrail::Trail
     Properties:
       IsMultiRegionTrail: true
@@ -124,7 +139,7 @@ Resources:
       S3BucketName: !If
         - ShouldCreateBucket
         - !Ref S3CloudTrailLogs
-        - !Sub '{{resolve:ssm:${S3LogBucket}}}'
+        - !Ref S3LogBucket
       Tags:
         - Key: 'Name'
           Value: !Sub '${AWS::StackName}-CloudTrail'
@@ -133,7 +148,6 @@ Resources:
 
 Outputs:
   CloudTrail:
-    Description: cloudtrail
     Value: !GetAtt CloudTrail.Arn
     Export:
       Name: !Sub '${AWS::StackName}CloudTrail'

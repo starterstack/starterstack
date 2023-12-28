@@ -14,6 +14,12 @@ import {
   DescribeStacksCommand
 } from '@aws-sdk/client-cloudformation'
 
+import {
+  SSMClient,
+  GetParameterCommand,
+  ParameterNotFound,
+} from '@aws-sdk/client-ssm'
+
 /** @type {Map<string, CloudFormationClient>} */
 const clients = new Map()
 
@@ -27,6 +33,7 @@ const settings = JSON.parse(
 )
 
 const sts = new STSClient({ region: 'us-east-1' })
+const ssm = new SSMClient({ region: 'us-east-1' })
 
 let accountId
 
@@ -221,9 +228,6 @@ export default async function getSettings({ template, templateDirectory, argv, r
 
   const config = await getConfig({ stage: stage.slice('Stage='.length), template, directory: templateDirectory })
 
-  // TODO
-  // output S3CloudTrailLogs in stackname-cloudtrail
-
   return {
     get productionStage() {
       return 'prod'
@@ -258,12 +262,33 @@ export default async function getSettings({ template, templateDirectory, argv, r
       return Object.keys(settings.awsAccounts).join(',')
     },
     get ssmS3LogBucket() {
-      return `/${settings.stackName}/global/S3_LOG_BUCKET`
+      return getParameter(`/${settings.stackName}/global/S3_LOG_BUCKET`)
     },
     get ssmS3BackupBucket() {
-      return `/${settings.stackName}/global/S3_BACKUP_BUCKET`
+      return getParameter(`/${settings.stackName}/global/S3_BACKUP_BUCKET`)
     }
   }
 }
 
+/**
+ * @param {string} name
+ * @returns {Promise<string | undefined>}
+ **/
 
+async function getParameter(name) {
+    try {
+      const { Parameter: parameter } = await ssm.send(
+        new GetParameterCommand({
+          Name: name,
+          WithDecryption: true
+        })
+      )
+      return parameter?.Value
+    } catch (err) {
+      if (
+        !(err instanceof ParameterNotFound)
+      ) {
+        throw err
+      }
+    }
+}
