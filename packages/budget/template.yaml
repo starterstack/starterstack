@@ -1,0 +1,47 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform:
+  - AWS::Serverless-2016-10-31
+
+Description: sam deployment bucket
+
+Parameters:
+  SNSAlarmTopic:
+    Type: String
+Metadata:
+  expand:
+    plugins:
+      - '../git.mjs'
+      - '../hash.mjs'
+      - '../stack-stage-config.mjs'
+      - '@starterstack/sam-expand/plugins/parameter-overrides'
+    config:
+      stackStageConfig:
+        region: us-east-1
+        suffixStage: false
+        stage: global
+      parameterOverrides:
+        - name: SNSAlarmTopic
+          file:
+            location: ../stack-stage-config.mjs
+            exportName: snsAlarmTopic
+
+Resources:
+  Budget:
+    Type: AWS::Budgets::Budget
+    Properties:
+      Budget:
+        BudgetType: COST
+        AutoAdjustData:
+          AutoAdjustType: HISTORICAL
+          HistoricalOptions:
+            BudgetAdjustmentPeriod: 3
+        TimeUnit: MONTHLY
+      NotificationsWithSubscribers:
+        - Notification:
+            ComparisonOperator: GREATER_THAN
+            NotificationType: FORECASTED
+            Threshold: 80
+            ThresholdType: PERCENTAGE
+          Subscribers:
+            - SubscriptionType: 'SNS'
+              Address: !Ref SNSAlarmTopic

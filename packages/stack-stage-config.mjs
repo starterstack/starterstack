@@ -258,6 +258,9 @@ export default async function getSettings({ template, templateDirectory, argv, r
     get snsOpsTopic() {
       return config.snsOpsTopic?.[region]
     },
+    get snsAlarmTopic() {
+      return undefined
+    },
     get accountIds() {
       return Object.keys(settings.awsAccounts).join(',')
     },
