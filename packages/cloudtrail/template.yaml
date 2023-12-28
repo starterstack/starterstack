@@ -1,0 +1,145 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform:
+  - AWS::LanguageExtensions
+  - AWS::Serverless-2016-10-31
+
+Description: sam deployment bucket
+
+Parameters:
+  Stack:
+    Type: String
+  AccountPerStage:
+    Type: String
+  AccountIds:
+    Type: CommaDelimitedList
+  S3LogBucket:
+    Type: String
+Metadata:
+  expand:
+    plugins:
+      - '../git.mjs'
+      - '../hash.mjs'
+      - '../stack-stage-config.mjs'
+      - '@starterstack/sam-expand/plugins/parameter-overrides'
+    config:
+      stackStageConfig:
+        region: us-east-1
+        suffixStage: false
+        stage: global
+        addMappings: true
+      parameterOverrides:
+        - name: AccountPerStage
+          file:
+            location: ../settings.json
+            exportName: accountPerStage
+        - name: AccountIds
+          file:
+            location: ../stack-stage-config.mjs
+            exportName: accountIds
+        - name: S3LogBucket
+          file:
+            location: ../stack-stage-config.mjs
+            exportName: ssmS3BackupBucket
+
+Conditions:
+  ShouldCreateBucket: !Or
+    - !Equals
+      - !FindInMap
+        - AWSAccounts
+        - !Ref 'AWS::AccountId'
+        - isLogAccount
+      - 'true'
+    - !Equals
+      - !Ref AccountPerStage
+      - 'true'
+
+Resources:
+  S3CloudTrailLogs:
+    Type: AWS::S3::Bucket
+    Condition: ShouldCreateBucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: TransitionToIntelligentTiering
+            Status: Enabled
+            Transitions:
+              - StorageClass: INTELLIGENT_TIERING
+                TransitionInDays: 0
+      Tags:
+        - Key: 'Name'
+          Value: !Sub ${AWS::StackName}S3CloudTrailLogs
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+  S3CloudTrailLogsPolicy:
+    Type: AWS::S3::BucketPolicy
+    Condition: ShouldCreateBucket
+    Properties:
+      Bucket: !Ref S3CloudTrailLogs
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Deny
+            Action: 's3:*'
+            Resource:
+              - !Sub ${S3CloudTrailLogs.Arn}
+              - !Sub ${S3CloudTrailLogs.Arn}/*
+            Principal: '*'
+            Condition:
+              Bool:
+                'aws:SecureTransport': false
+          - Action:
+              - s3:GetBucketAcl
+            Effect: Allow
+            Resource:
+              - !Sub ${S3CloudTrailLogs.Arn}
+            Principal:
+              Service:
+                - cloudtrail.amazonaws.com
+          - Action:
+              - s3:PutObject
+            Effect: Allow
+            Resource:
+              - !Sub ${S3CloudTrailLogs.Arn}/AWSLogs/*
+            Condition:
+              Bool:
+                'aws:SecureTransport': true
+              StringEquals:
+                s3:x-amz-acl: bucket-owner-full-control
+                AWS:SourceAccount: !Ref AccountIds
+            Principal:
+              Service:
+                - cloudtrail.amazonaws.com
+  CloudTrail:
+    Type: AWS::CloudTrail::Trail
+    Properties:
+      IsMultiRegionTrail: true
+      IsLogging: true
+      EnableLogFileValidation: true
+      IncludeGlobalServiceEvents: true
+      S3BucketName: !If
+        - ShouldCreateBucket
+        - !Ref S3CloudTrailLogs
+        - !Sub '{{resolve:ssm:${S3LogBucket}}}'
+      Tags:
+        - Key: 'Name'
+          Value: !Sub '${AWS::StackName}-CloudTrail'
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+
+Outputs:
+  CloudTrail:
+    Description: cloudtrail
+    Value: !GetAtt CloudTrail.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}CloudTrail'
+  S3CloudTrailLogs:
+    Description: s3 bucket for cloudtrail logs
+    Value: !Ref S3CloudTrailLogs
+    Condition: ShouldCreateBucket
+    Export:
+      Name: !Sub '${AWS::StackName}S3CloudTrailLogs'

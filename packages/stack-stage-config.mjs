@@ -78,7 +78,7 @@ export const lifecycle = async function stackStageConfig({ command, argv, templa
     template.Mappings ||= {}
     template.Mappings.AWSAccounts = settings.awsAccounts
   }
-  if (!process.env.CI && command !== 'validate' && (!argv.includes('--stack-name') || !argv.includes('--region'))) {
+  if (!process.env.CI && !argv.includes('--region')) {
     const { stage } = stackStageConfig.stage === 'global' ? { stage: 'global' } : await inquirer.prompt({ name: 'stage', message: 'stage' })
     if (!stage) {
       throw new TypeError('missing stage')
@@ -109,7 +109,7 @@ export const lifecycle = async function stackStageConfig({ command, argv, templa
 
 /**
  * @param {{ stage: string, template: any, directory?: string }} options
- * @returns {Promise<{ addMappings: boolean, addMissings: true, stackName: string, stage: string, regions: string[], s3DeploymentBucket: Record<string, string>, snsOpsTopic: Record<string, string> }>}
+ * @returns {Promise<{ addMappings: boolean, stackName: string, stage: string, regions: string[], s3DeploymentBucket: Record<string, string>, snsOpsTopic: Record<string, string> }>}
  **/
 export async function getConfig({ stage, template, directory }) {
   const config = await getStackStageConfig({ template, directory })
@@ -140,6 +140,8 @@ export async function getConfig({ stage, template, directory }) {
   const accountRegion = settings.regions[settings.awsAccounts[accountId].stage]
 
   const stackRegion = settings.regions[stageName]
+
+  /** @type {string[]} */
   const stackRegions = config.regions === 'account'
       ? [...new Set(['us-east-1', 'eu-west-1', ...regions])]
       : [config.region ?? stackRegion ?? accountRegion]
@@ -170,7 +172,7 @@ export async function getConfig({ stage, template, directory }) {
       for (const output of result?.Stacks?.[0]?.Outputs ?? []) {
         if (output.OutputKey === 'S3DeploymentBucket' && output.OutputValue) {
           s3DeploymentBucket[region] = output.OutputValue
-        } else if (output.OutputKey === 'SnsOpsTopic' && output.OutputValue) {
+        } else if (output.OutputKey === 'SNSOpsTopic' && output.OutputValue) {
           snsOpsTopic[region] = output.OutputValue
         }
       }
@@ -219,6 +221,9 @@ export default async function getSettings({ template, templateDirectory, argv, r
 
   const config = await getConfig({ stage: stage.slice('Stage='.length), template, directory: templateDirectory })
 
+  // TODO
+  // output S3CloudTrailLogs in stackname-cloudtrail
+
   return {
     get productionStage() {
       return 'prod'
@@ -248,6 +253,15 @@ export default async function getSettings({ template, templateDirectory, argv, r
     },
     get snsOpsTopic() {
       return config.snsOpsTopic?.[region]
+    },
+    get accountIds() {
+      return Object.keys(settings.awsAccounts).join(',')
+    },
+    get ssmS3LogBucket() {
+      return `/${settings.stackName}/global/S3_LOG_BUCKET`
+    },
+    get ssmS3BackupBucket() {
+      return `/${settings.stackName}/global/S3_BACKUP_BUCKET`
     }
   }
 }
