@@ -243,6 +243,20 @@ export default async function getSettings({ template, templateDirectory, argv, r
       ) ?? []
       return productionAccountId
     },
+    get backupStage() {
+      return 'backup'
+    },
+    get backupRegion() {
+      return settings.regions.backup
+    },
+    get backupAccountId() {
+      const [backupAccountId] = Object.entries(settings.awsAccounts).find(
+        function isbackup([_, { stage }]) {
+          return stage === 'backup'
+        }
+      ) ?? []
+      return backupAccountId
+    },
     get logRetentionInDays() {
       return settings.defaultLogRetentionInDays
     },

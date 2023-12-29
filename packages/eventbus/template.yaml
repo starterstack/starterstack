@@ -1,0 +1,263 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform:
+  - AWS::LanguageExtensions
+  - AWS::Serverless-2016-10-31
+
+Description: sam deployment bucket
+
+Parameters:
+  Stack:
+    Type: String
+  AccountPerStage:
+    Type: String
+  ProductionAccountId:
+    Type: String
+  ProductionStage:
+    Type: String
+  ProductionRegion:
+    Type: String
+  BackupAccountId:
+    Type: String
+  BackupRegion:
+    Type: String
+  BackupStage:
+    Type: String
+Metadata:
+  expand:
+    plugins:
+      - '../git.mjs'
+      - '../hash.mjs'
+      - '../stack-stage-config.mjs'
+      - '@starterstack/sam-expand/plugins/parameter-overrides'
+    config:
+      stackStageConfig:
+        suffixStage: true
+        addMappings: true
+      parameterOverrides:
+        - name: AccountPerStage
+          file:
+            location: ../settings.json
+            exportName: accountPerStage
+        - name: ProductionAccountId
+          file:
+            location: ../stack-stage-config.mjs
+            exportName: productionAccountId
+        - name: ProductionStage
+          file:
+            location: ../stack-stage-config.mjs
+            exportName: productionStage
+        - name: ProductionRegion
+          file:
+            location: ../stack-stage-config.mjs
+            exportName: productionRegion
+        - name: BackupAccountId
+          file:
+            location: ../stack-stage-config.mjs
+            exportName: backupAccountId
+        - name: BackupRegion
+          file:
+            location: ../stack-stage-config.mjs
+            exportName: backupRegion
+        - name: BackupStage
+          file:
+            location: ../stack-stage-config.mjs
+            exportName: backupStage
+
+Conditions:
+  IsBackupAccount: !Equals
+    - !FindInMap
+      - AWSAccounts
+      - !Ref 'AWS::AccountId'
+      - isBackupAccount
+    - true
+  ShouldReplicate: !And
+    - !Equals
+      - !FindInMap
+        - AWSAccounts
+        - !Ref 'AWS::AccountId'
+        - stage
+      - prod
+    - !Equals
+      - !Ref AccountPerStage
+      - 'true'
+
+Resources:
+  EventBus:
+    Type: AWS::Events::EventBus
+    Properties:
+      Name: !Sub '${AWS::StackName}'
+  EventBusArchive:
+    Type: AWS::Events::Archive
+    Properties:
+      ArchiveName: !Sub '${AWS::StackName}-archive'
+      Description: !Sub '${AWS::StackName}-archive'
+      RetentionDays: 0
+      SourceArn: !GetAtt EventBus.Arn
+  EventsDlq:
+    Type: AWS::SQS::Queue
+    Condition: ShouldReplicate
+    Properties:
+      SqsManagedSseEnabled: true
+      Tags:
+        - Key: 'Name'
+          Value: !Sub ${AWS::StackName}-events-dlq
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+  EventsDlqPolicy:
+    Type: AWS::SQS::QueuePolicy
+    Condition: ShouldReplicate
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'sqs:SendMessage'
+            Principal:
+              Service: 'events.amazonaws.com'
+            Resource: !GetAtt EventsDlq.Arn
+            Condition:
+              ArnEquals:
+                'aws:SourceArn': !GetAtt EventsReplicate.Arn
+      Queues:
+        - !Ref EventsDlq
+
+  EventsReplicate:
+    Type: AWS::Events::Rule
+    Condition: ShouldReplicate
+    Properties:
+      Name: !Sub '${AWS::StackName}event-rule-replicate-rule-1'
+      EventPattern:
+        account:
+          - !Sub '${AWS::AccountId}'
+        replay-name:
+          - exists: false
+      EventBusName: !Ref EventBus
+      State: ENABLED
+      Targets:
+        - Arn: !Sub arn:${AWS::Partition}:events:${BackupRegion}:${BackupAccountId}:event-bus/${Stack}-eventbus-${BackupStage}
+          Id: !Sub '${AWS::StackName}event-rule-replicate-rule-1-target'
+          RoleArn: !GetAtt EventsReplicateRole.Arn
+          DeadLetterConfig:
+            Arn: !GetAtt EventsDlq.Arn
+
+  EventsReplicateRole:
+    Type: AWS::IAM::Role
+    Condition: ShouldReplicate
+    Properties:
+      RoleName: !Sub '${AWS::StackName}-replicate-${AWS::Region}-eventsRole'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'sts:AssumeRole'
+            Principal:
+              Service:
+                - events.amazonaws.com
+      Tags:
+        - Key: 'Name'
+          Value: !Sub '${AWS::StackName}-iam-replicate-role'
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+
+  EventsReplicatePolicy:
+    Type: AWS::IAM::Policy
+    Condition: ShouldReplicate
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - events:PutEvents
+            Resource:
+              - !Sub arn:${AWS::Partition}:events:${BackupRegion}:${BackupAccountId}:event-bus/${Stack}-eventbus-${BackupStage}
+      PolicyName: !Sub '${AWS::StackName}-iam-replicate-policy'
+      Roles:
+        - !Ref EventsReplicateRole
+
+  EventBusPolicy:
+    Type: AWS::Events::EventBusPolicy
+    Condition: IsBackupAccount
+    Properties:
+      StatementId: AllowProductionReplication
+      EventBusName: !Ref EventBus
+      Statement:
+        Effect: Allow
+        Action: events:PutEvents
+        Principal:
+          AWS: '*'
+        Condition:
+          StringEquals:
+            aws:PrincipalArn: !Sub arn:${AWS::Partition}:iam::${ProductionAccountId}:role/${Stack}-eventbus-${ProductionStage}-replicate-${ProductionRegion}-eventsRole
+        Resource: !GetAtt EventBus.Arn
+
+  SchedulerRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - 'scheduler.amazonaws.com'
+            Action: 'sts:AssumeRole'
+            Condition:
+              StringEquals:
+                aws:SourceAccount: !Sub '${AWS::AccountId}'
+              ArnEquals:
+                aws:SourceArn: !GetAtt SchedulerGroup.Arn
+      Policies:
+        - PolicyName: !Sub '${AWS::StackName}scheduler-dlq-policy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'sqs:SendMessage'
+                Resource:
+                  - !GetAtt SchedulerDlq.Arn
+        - PolicyName: !Sub '${AWS::StackName}scheduler-eventbridge-policy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: 'Allow'
+                Action:
+                  - 'events:PutEvents'
+                Resource:
+                  - !GetAtt EventBus.Arn
+      Tags:
+        - Key: 'Name'
+          Value: !Sub '${AWS::StackName}-scheduler-role'
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+  SchedulerDlq:
+    Type: AWS::SQS::Queue
+    Properties:
+      SqsManagedSseEnabled: true
+      Tags:
+        - Key: 'Name'
+          Value: !Sub ${AWS::StackName}-scheduler-dlq
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+  SchedulerGroup:
+    Type: AWS::Scheduler::ScheduleGroup
+    Properties:
+      Tags:
+        - Key: 'Name'
+          Value: !Sub ${AWS::StackName}-scheduler-group
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+
+Outputs:
+  EventBus:
+    Description: event bus
+    Value: !GetAtt EventBus.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}EventBus'
+  EventBusArchive:
+    Description: event bus archive
+    Value: !GetAtt EventBusArchive.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}EventBusArchive'
