@@ -101,6 +101,7 @@ export const lifecycle = async function stackStageConfig({ command, argv, templa
       argv.push(...['--stack-name', config.stackName])
       if (config.s3DeploymentBucket[region]) {
         argv.push(...['--s3-bucket', config.s3DeploymentBucket[region]])
+        argv.push(...['--s3-prefix', `${config.stackName}/${template.Outputs.DeployedCommit.Value}`])
       }
     }
     if (['build', 'deploy', 'delete', 'validate'].includes(command)) {
