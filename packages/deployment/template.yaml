@@ -61,6 +61,18 @@ Resources:
             Transitions:
               - StorageClass: INTELLIGENT_TIERING
                 TransitionInDays: 0
+          - Id: NonCurrentRetention
+            Status: Enabled
+            NoncurrentVersionExpiration:
+              NewerNoncurrentVersions: 3
+              NoncurrentDays: 7
+          - Id: AbortIncompleteMultipartUpload
+            Status: Enabled
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 1
+          - Id: DeleteNonCurrent
+            ExpiredObjectDeleteMarker: true
+            Status: Enabled
       BucketEncryption:
         ServerSideEncryptionConfiguration:
           - BucketKeyEnabled: true
