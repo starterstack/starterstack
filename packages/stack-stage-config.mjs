@@ -135,7 +135,9 @@ export const lifecycle = async function stackStageConfig({
           argv.push(
             ...[
               '--s3-prefix',
-              `${config.stackName}/${template.Outputs.DeployedCommit.Value}`
+              command === 'deploy'
+              ? `${config.stackName}/${template.Outputs.DeployedCommit.Value}`
+              : config.stackName
             ]
           )
         }
