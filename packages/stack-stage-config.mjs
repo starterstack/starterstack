@@ -287,7 +287,7 @@ export async function getConfig({ stage, template, directory }) {
     )
   }
 
-  if (path.basename(directory ?? process.cwd()) !== 'monitoring') {
+  if (!['deployment', 'monitoring'].includes(path.basename(directory ?? process.cwd()))) {
     await Promise.all(
       stackRegions.map(async function getDeploymentBucket(region) {
         const stackName = `${settings.stackName}-monitoring`
