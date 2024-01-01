@@ -197,7 +197,7 @@ Resources:
         - SQSSendMessagePolicy:
             QueueName: !GetAtt LambdaDlq.Arn
         - SSMParameterReadPolicy:
-            ParameterName: !Sub /${Stack}/global/SLACK_OPS_URL
+            ParameterName: !Sub ${Stack}/global/SLACK_OPS_URL
         - Version: 2012-10-17
           Statement:
             - Sid: CloudWatchLogGroup
@@ -238,7 +238,7 @@ Resources:
         - SQSSendMessagePolicy:
             QueueName: !GetAtt LambdaDlq.Arn
         - SSMParameterReadPolicy:
-            ParameterName: !Sub /${Stack}/global/SLACK_ALARM_URL
+            ParameterName: !Sub ${Stack}/global/SLACK_ALARM_URL
         - Version: 2012-10-17
           Statement:
             - Sid: CloudWatchLogGroup
