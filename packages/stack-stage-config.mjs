@@ -8,6 +8,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import process from 'node:process'
 import * as parse from '@starterstack/sam-expand/parse'
+import logInfo from '@starterstack/sam-expand/log'
 import { STSClient, GetCallerIdentityCommand } from '@aws-sdk/client-sts'
 import {
   CloudFormationClient,
@@ -190,6 +191,7 @@ export const lifecycle = async function stackStageConfig ({
             continue
           }
         }
+        logInfo('delete s3 object %O', { key })
         await s3Client.send(
           new DeleteObjectCommand({ Key: key, Bucket: s3Bucket })
         )
