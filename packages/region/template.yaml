@@ -3,7 +3,7 @@ Transform:
   - AWS::LanguageExtensions
   - AWS::Serverless-2016-10-31
 
-Description: sam deployment bucket
+Description: Region
 
 Parameters:
   Stack:
