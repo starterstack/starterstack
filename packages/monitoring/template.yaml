@@ -4,8 +4,26 @@ Transform:
 
 Description: Monitoring
 
+Globals:
+  Function:
+    Tracing: Active
+    Architectures:
+      - arm64
+    Runtime: nodejs20.x
+    MemorySize: 128
+    PropagateTags: true
+    Environment:
+      Variables:
+        GIT_COMMIT: !Ref GITCommit
+
 Parameters:
   Stack:
+    Type: String
+  LogRetentionInDays:
+    Type: String
+  SNSOpsTopic:
+    Type: String
+  GITCommit:
     Type: String
 Metadata:
   expand:
@@ -14,12 +32,29 @@ Metadata:
       - '../hash.mjs'
       - '../stack-stage-config.mjs'
       - './cloudwatch-alarm-lambda-concurrency.mjs'
+      - '@starterstack/sam-expand/plugins/parameter-overrides'
+      - '@starterstack/sam-expand/plugins/esbuild-node'
     config:
       stackStageConfig:
         regions: account
         suffixStage: false
         stage: global
         addMappings: true
+      esbuild:
+        config: ../esbuild-config.yaml
+      parameterOverrides:
+        - name: LogRetentionInDays
+          file:
+            location: ../stack-stage-config.mjs
+            exportName: logRetentionInDays
+        - name: SNSOpsTopic
+          file:
+            location: ../stack-stage-config.mjs
+            exportName: snsOpsTopic
+        - name: GITCommit
+          file:
+            location: ../git.mjs
+            exportName: commit
 
 Conditions:
   IsCloudwatchAlertsEnabled: !Equals
@@ -122,6 +157,99 @@ Resources:
       Period: 60
       Threshold: 0
       TreatMissingData: 'notBreaching'
+
+  CloudWatchLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}
+      RetentionInDays: !Ref LogRetentionInDays
+      Tags:
+        - Key: 'Name'
+          Value: !Sub '${AWS::StackName} lambda logs'
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+
+  StackChangeFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/stack-change/
+      Handler: index.handler
+      Description: subscription to cloudformation stack changes
+      Timeout: 30
+      Environment:
+        Variables:
+          SSM_SLACK_URL: !Sub /${Stack}/global/SLACK_OPS_URL
+      Events:
+        SNSOpsTopic:
+          Type: SNS
+          Properties:
+            Topic: !Ref SNSOpsTopic
+            RedrivePolicy:
+              deadLetterTargetArn: !GetAtt EventsDlq.Arn
+      EventInvokeConfig:
+        DestinationConfig:
+          OnFailure:
+            Type: SQS
+            TargetArn: !GetAtt LambdaDlq.Arn
+        MaximumEventAgeInSeconds: 900
+        MaximumRetryAttempts: 2
+      Policies:
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt LambdaDlq.Arn
+        - SSMParameterReadPolicy:
+            ParameterName: !Sub /${Stack}/global/SLACK_OPS_URL
+        - Version: 2012-10-17
+          Statement:
+            - Sid: CloudWatchLogGroup
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !GetAtt CloudWatchLogGroup.Arn
+              Effect: Allow
+      LoggingConfig:
+        LogGroup: !Ref CloudWatchLogGroup
+      AutoPublishAlias: live
+
+  NotifyAlarmFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/notify-alarm/
+      Handler: index.handler
+      Description: subscription to cloudformation stack alarms
+      Timeout: 30
+      Environment:
+        Variables:
+          SSM_SLACK_URL: !Sub /${Stack}/global/SLACK_ALARM_URL
+      Events:
+        SNSAlarmTopic:
+          Type: SNS
+          Properties:
+            Topic: !Ref SNSAlarmTopic
+            RedrivePolicy:
+              deadLetterTargetArn: !GetAtt EventsDlq.Arn
+      EventInvokeConfig:
+        DestinationConfig:
+          OnFailure:
+            Type: SQS
+            TargetArn: !GetAtt LambdaDlq.Arn
+        MaximumEventAgeInSeconds: 900
+        MaximumRetryAttempts: 2
+      Policies:
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt LambdaDlq.Arn
+        - SSMParameterReadPolicy:
+            ParameterName: !Sub /${Stack}/global/SLACK_ALARM_URL
+        - Version: 2012-10-17
+          Statement:
+            - Sid: CloudWatchLogGroup
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !GetAtt CloudWatchLogGroup.Arn
+              Effect: Allow
+      LoggingConfig:
+        LogGroup: !Ref CloudWatchLogGroup
+      AutoPublishAlias: live
 
 Outputs:
   SNSAlarmTopic:
