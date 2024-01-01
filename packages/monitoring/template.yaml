@@ -1,0 +1,131 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform:
+  - AWS::Serverless-2016-10-31
+
+Description: Monitoring
+
+Parameters:
+  Stack:
+    Type: String
+Metadata:
+  expand:
+    plugins:
+      - '../git.mjs'
+      - '../hash.mjs'
+      - '../stack-stage-config.mjs'
+      - './cloudwatch-alarm-lambda-concurrency.mjs'
+    config:
+      stackStageConfig:
+        regions: account
+        suffixStage: false
+        stage: global
+        addMappings: true
+
+Conditions:
+  IsCloudwatchAlertsEnabled: !Equals
+    - !FindInMap
+      - AWSAccounts
+      - !Ref 'AWS::AccountId'
+      - cloudwatchAlertsEnabled
+    - true
+
+Resources:
+  SNSAlarmTopic:
+    Type: AWS::SNS::Topic
+    Properties:
+      Tags:
+        - Key: 'Name'
+          Value: !Sub ${AWS::StackName}SNSAlarmTopic
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+  SNSAlarmTopicPolicy:
+    Type: AWS::SNS::TopicPolicy
+    Properties:
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Action:
+              - sns:Publish
+            Effect: Allow
+            Resource: !Ref SNSAlarmTopic
+            Principal:
+              Service:
+                - cloudwatch.amazonaws.com
+                - budgets.amazonaws.com
+            Condition:
+              StringEquals:
+                AWS:SourceAccount: !Sub '${AWS::AccountId}'
+      Topics:
+        - !Ref SNSAlarmTopic
+
+  EventsDlq:
+    Type: AWS::SQS::Queue
+    Properties:
+      SqsManagedSseEnabled: true
+      Tags:
+        - Key: 'Name'
+          Value: !Sub ${AWS::StackName}-events-dlq
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+
+  EventsDlqPolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'sqs:SendMessage'
+            Principal:
+              Service: 'events.amazonaws.com'
+            Resource: !GetAtt EventsDlq.Arn
+            Condition:
+              ArnEquals:
+                'aws:SourceArn':
+                  - !Sub 'arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/${AWS::StackName}*'
+          - Effect: Allow
+            Action:
+              - 'sqs:SendMessage'
+            Principal:
+              Service: 'sns.amazonaws.com'
+            Resource: !GetAtt EventsDlq.Arn
+            Condition:
+              ArnEquals:
+                'aws:SourceArn':
+                  - !Sub 'arn:${AWS::Partition}:sns:${AWS::Region}:${AWS::AccountId}:${AWS::StackName}*'
+      Queues:
+        - !Ref EventsDlq
+
+  LambdaDlq:
+    Type: AWS::SQS::Queue
+    Properties:
+      SqsManagedSseEnabled: true
+      Tags:
+        - Key: 'Name'
+          Value: !Sub ${AWS::StackName}-lambda-dlq
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+  CloudWatchAlarmDynamoDBUserErrors:
+    Type: AWS::CloudWatch::Alarm
+    Condition: IsCloudwatchAlertsEnabled
+    Properties:
+      AlarmActions:
+        - !Ref SNSAlarmTopic
+      AlarmDescription: !Sub '${AWS::StackName} dynamodb user errors > 0'
+      AlarmName: !Sub '${AWS::StackName} dynamodb user errors > 0'
+      ComparisonOperator: 'GreaterThanThreshold'
+      MetricName: 'UserErrors'
+      Namespace: 'AWS/DynamoDB'
+      Statistic: 'Sum'
+      Unit: 'Count'
+      EvaluationPeriods: 1
+      Period: 60
+      Threshold: 0
+      TreatMissingData: 'notBreaching'
+
+Outputs:
+  SNSAlarmTopic:
+    Description: sns topic for alarms
+    Value: !Ref SNSAlarmTopic
+    Export:
+      Name: !Sub '${AWS::StackName}SNSAlarmTopic'
