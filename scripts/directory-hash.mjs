@@ -154,8 +154,8 @@ async function getFileDependenciesHash({ files, packagesRoot }) {
 async function getGlobalFileHash(packagesRoot) {
   const files = [
     'stack-stage-config.mjs',
-     'git.js',
-     'hash.js',
+     'git.mjs',
+     'hash.mjs',
      'esbuild-config.yaml',
      'settings.json',
   ]
