@@ -176,22 +176,22 @@ export const lifecycle = async function stackStageConfig ({
         s3Clients.set(region, s3Client)
       }
 
-      const files = await listS3Objects({
+      const keys = await listS3Objects({
         bucket: s3Bucket,
         prefix: s3Prefix.split('/')[0],
         s3Client
       })
 
-      for (const file of files) {
+      for (const key of keys) {
         // post deploy delete files for older commits
         // post delete delete all prefix files
         if (lifecycle === 'post:deploy') {
-          if (file?.startsWith(s3Prefix)) {
+          if (key?.startsWith(s3Prefix)) {
             continue
           }
         }
         await s3Client.send(
-          new DeleteObjectCommand({ Key: file, Bucket: s3Bucket })
+          new DeleteObjectCommand({ Key: key, Bucket: s3Bucket })
         )
       }
     }
@@ -436,5 +436,5 @@ async function listS3Objects ({ s3Client, prefix, bucket }) {
     nextToken = result.NextContinuationToken
     if (!nextToken) break
   }
-  return files
+  return files.map(x => x.Key)
 }
