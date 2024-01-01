@@ -86,7 +86,7 @@ export const schema = {
 export const metadataConfig = 'stackStageConfig'
 
 /** @type {import('@starterstack/sam-expand/plugins').Plugin} */
-export const lifecycle = async function stackStageConfig ({
+export const lifecycle = async function stackStageConfig({
   command,
   argv,
   template,
@@ -114,11 +114,11 @@ export const lifecycle = async function stackStageConfig ({
         config.regions.length === 1
           ? { region: config.regions.at(0) }
           : await inquirer.prompt({
-            name: 'region',
-            type: 'list',
-            message: 'region',
-            choices: config.regions
-          })
+              name: 'region',
+              type: 'list',
+              message: 'region',
+              choices: config.regions
+            })
       if (['build', 'deploy'].includes(command)) {
         argv.push(
           ...[
@@ -202,9 +202,9 @@ export const lifecycle = async function stackStageConfig ({
 
 /**
  * @param {{ stage: string, template: any, directory?: string }} options
- * @returns {Promise<{ addMappings: boolean, stackName: string, stage: string, regions: string[], s3DeploymentBucket: Record<string, string>, snsOpsTopic: Record<string, string> }>}
+ * @returns {Promise<{ addMappings: boolean, stackName: string, stage: string, regions: string[], s3DeploymentBucket: Record<string, string>, snsOpsTopic: Record<string, string>, snsAlarmTopic: Record<string, string> }>}
  **/
-export async function getConfig ({ stage, template, directory }) {
+export async function getConfig({ stage, template, directory }) {
   const config = await getStackStageConfig({ template, directory })
   const name = config.name ?? path.basename(directory ?? process.cwd())
   const stackStage = config.stage ?? stage
@@ -255,9 +255,12 @@ export async function getConfig ({ stage, template, directory }) {
   /** @type {Record<string, string>} */
   const snsOpsTopic = {}
 
+  /** @type {Record<string, string>} */
+  const snsAlarmTopic = {}
+
   if (path.basename(directory ?? process.cwd()) !== 'deployment') {
     await Promise.all(
-      stackRegions.map(async function getDeploymentBucket (region) {
+      stackRegions.map(async function getDeploymentBucket(region) {
         const stackName = `${settings.stackName}-deployment`
         let result = cloudformationResults.get(`${region}.${stackName}`)
         if (!result) {
@@ -284,12 +287,40 @@ export async function getConfig ({ stage, template, directory }) {
     )
   }
 
+  if (path.basename(directory ?? process.cwd()) !== 'monitoring') {
+    await Promise.all(
+      stackRegions.map(async function getDeploymentBucket(region) {
+        const stackName = `${settings.stackName}-monitoring`
+        let result = cloudformationResults.get(`${region}.${stackName}`)
+        if (!result) {
+          let client = cloudFormationClients.get(region)
+          if (!client) {
+            client = new CloudFormationClient({ region })
+            cloudFormationClients.set(region, client)
+          }
+          result = await client.send(
+            new DescribeStacksCommand({
+              StackName: stackName
+            })
+          )
+          cloudformationResults.set(`${region}.${stackName}`, result)
+        }
+        for (const output of result?.Stacks?.[0]?.Outputs ?? []) {
+          if (output.OutputKey === 'SNSAlarmTopic' && output.OutputValue) {
+            snsAlarmTopic[region] = output.OutputValue
+          }
+        }
+      })
+    )
+  }
+
   return {
     stackName: cloudformationStackName,
     stage: stackStage,
     regions: stackRegions,
     s3DeploymentBucket,
     snsOpsTopic,
+    snsAlarmTopic,
     addMappings: config.addMappings
   }
 }
@@ -298,7 +329,7 @@ export async function getConfig ({ stage, template, directory }) {
  * @param {{ template: any, directory?: string }} options
  * @returns Promise<{import('@starterstack/sam-expand/plugins').PluginSchema<{ addMappings: boolean, region?: string, 'suffixStage': boolean, stage?: string, regions?: string }>}>}
  **/
-async function getStackStageConfig ({ template, directory }) {
+async function getStackStageConfig({ template, directory }) {
   if (!template) {
     const templateFile = path.join(directory ?? process.cwd(), 'template.yaml')
     try {
@@ -312,7 +343,7 @@ async function getStackStageConfig ({ template, directory }) {
 }
 
 /** @type {import('@starterstack/sam-expand/resolve').FileResolver} */
-export default async function getSettings ({
+export default async function getSettings({
   template,
   templateDirectory,
   argv,
@@ -336,15 +367,15 @@ export default async function getSettings ({
   })
 
   return {
-    get productionStage () {
+    get productionStage() {
       return 'prod'
     },
-    get productionRegion () {
+    get productionRegion() {
       return settings.regions.prod
     },
-    get productionAccountId () {
+    get productionAccountId() {
       const [productionAccountId] =
-        Object.entries(settings.awsAccounts).find(function isProduction ([
+        Object.entries(settings.awsAccounts).find(function isProduction([
           _,
           { stage }
         ]) {
@@ -352,15 +383,15 @@ export default async function getSettings ({
         }) ?? []
       return productionAccountId
     },
-    get backupStage () {
+    get backupStage() {
       return 'backup'
     },
-    get backupRegion () {
+    get backupRegion() {
       return settings.regions.backup
     },
-    get backupAccountId () {
+    get backupAccountId() {
       const [backupAccountId] =
-        Object.entries(settings.awsAccounts).find(function isbackup ([
+        Object.entries(settings.awsAccounts).find(function isbackup([
           _,
           { stage }
         ]) {
@@ -368,31 +399,31 @@ export default async function getSettings ({
         }) ?? []
       return backupAccountId
     },
-    get logRetentionInDays () {
+    get logRetentionInDays() {
       return settings.defaultLogRetentionInDays
     },
-    get stackDisplayName () {
+    get stackDisplayName() {
       return settings.stackDisplayName
     },
-    get accountRegion () {
+    get accountRegion() {
       return settings.regions[settings.awsAccounts[accountId].stage]
     },
-    get accountPerStage () {
+    get accountPerStage() {
       return String(settings.accountPerStage)
     },
-    get snsOpsTopic () {
+    get snsOpsTopic() {
       return config.snsOpsTopic?.[region]
     },
-    get snsAlarmTopic () {
-      return undefined
+    get snsAlarmTopic() {
+      return config.snsAlarmTopic?.[region]
     },
-    get accountIds () {
+    get accountIds() {
       return Object.keys(settings.awsAccounts).join(',')
     },
-    get ssmS3LogBucket () {
+    get ssmS3LogBucket() {
       return getParameter(`/${settings.stackName}/global/S3_LOG_BUCKET`)
     },
-    get ssmS3BackupBucket () {
+    get ssmS3BackupBucket() {
       return getParameter(`/${settings.stackName}/global/S3_BACKUP_BUCKET`)
     }
   }
@@ -403,7 +434,7 @@ export default async function getSettings ({
  * @returns {Promise<string | undefined>}
  **/
 
-async function getParameter (name) {
+async function getParameter(name) {
   try {
     const { Parameter: parameter } = await ssm.send(
       new GetParameterCommand({
@@ -423,7 +454,7 @@ async function getParameter (name) {
  * @param {{ s3Client: S3Client, prefix: string, bucket: string }} options
  * @returns {Promise<string[]>}
  **/
-async function listS3Objects ({ s3Client, prefix, bucket }) {
+async function listS3Objects({ s3Client, prefix, bucket }) {
   const files = []
   let nextToken
   while (true) {
@@ -438,5 +469,5 @@ async function listS3Objects ({ s3Client, prefix, bucket }) {
     nextToken = result.NextContinuationToken
     if (!nextToken) break
   }
-  return files.map(x => x.Key)
+  return files.map((x) => x.Key)
 }
