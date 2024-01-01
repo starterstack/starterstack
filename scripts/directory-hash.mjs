@@ -153,13 +153,11 @@ async function getFileDependenciesHash({ files, packagesRoot }) {
 
 async function getGlobalFileHash(packagesRoot) {
   const files = [
-    // 'default-tags.mjs',
-    // 'generate-cloudwatch-alarms.mjs',
-    // 'git.js',
-    // 'aws-account.js',
-    // 'hash.js',
-    // 'settings.js',
-    // 'settings.json'
+    'stack-stage-config.mjs',
+     'git.js',
+     'hash.js',
+     'esbuild-config.yaml',
+     'settings.json',
   ]
 
   const hashes = await Promise.all(
