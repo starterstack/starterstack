@@ -204,7 +204,7 @@ export const lifecycle = async function stackStageConfig({
 
 /**
  * @param {{ stage: string, template: any, directory?: string }} options
- * @returns {Promise<{ addMappings: boolean, stackName: string, stage: string, regions: string[], s3DeploymentBucket: Record<string, string>, snsOpsTopic: Record<string, string>, snsAlarmTopic: Record<string, string> }>}
+ * @returns {Promise<{ addMappings: boolean, stackName: string, stage: string, regions: string[], s3DeploymentBucket: Record<string, string>, snsOpsTopic: Record<string, string>, snsAlarmTopic: Record<string, string>, stackRegion: string }>}
  **/
 export async function getConfig({ stage, template, directory }) {
   const config = await getStackStageConfig({ template, directory })
@@ -320,6 +320,7 @@ export async function getConfig({ stage, template, directory }) {
     stackName: cloudformationStackName,
     stage: stackStage,
     regions: stackRegions,
+    stackRegion,
     s3DeploymentBucket,
     snsOpsTopic,
     snsAlarmTopic,

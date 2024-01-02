@@ -1,0 +1,256 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform:
+  - AWS::LanguageExtensions
+  - AWS::Serverless-2016-10-31
+
+Description: DynamoDB tables
+
+Globals:
+  Function:
+    Tracing: Active
+    Architectures:
+      - arm64
+    Runtime: nodejs20.x
+    MemorySize: 128
+    PropagateTags: true
+    Environment:
+      Variables:
+        GIT_COMMIT: !Ref GITCommit
+
+Parameters:
+  Stack:
+    Type: String
+  Stage:
+    Type: String
+  LogRetentionInDays:
+    Type: String
+  GITCommit:
+    Type: String
+  StackRegion:
+    Type: String
+Metadata:
+  expand:
+    plugins:
+      - '../git.mjs'
+      - '../hash.mjs'
+      - '../stack-stage-config.mjs'
+      - '@starterstack/sam-expand/plugins/parameter-overrides'
+      - '@starterstack/sam-expand/plugins/esbuild-node'
+    config:
+      stackStageConfig:
+        suffixStage: true
+      parameterOverrides:
+        - name: StackRegion
+          file:
+            location: ../settings.json
+            exportName: stackRegion
+        - name: LogRetentionInDays
+          file:
+            location: ../stack-stage-config.mjs
+            exportName: logRetentionInDays
+        - name: GITCommit
+          file:
+            location: ../git.mjs
+            exportName: commit
+      esbuild:
+        config: ../esbuild-config.yaml
+
+Resources:
+  CloudWatchLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}
+      RetentionInDays: !Ref LogRetentionInDays
+      Tags:
+        - Key: 'Name'
+          Value: !Sub '${AWS::StackName} lambda logs'
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+  MigrationFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/stack-change/
+      Handler: index.handler
+      Description: subscription to cloudformation stack changes
+      Timeout: 300
+      MemorySize: 512
+      Environment:
+        Variables:
+          DYNAMODB_STACK_TABLE: !Ref DynamodbStackTable
+          LOG_DEBUG: true
+          STACK_NAME: !Ref Stack
+          STAGE: !Ref Stage
+      Policies:
+        - DynamoDBCrudPolicy:
+            TableName: !Ref DynamodbStackTable
+        - Version: 2012-10-17
+          Statement:
+            - Sid: CloudWatchLogGroup
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !GetAtt CloudWatchLogGroup.Arn
+              Effect: Allow
+      LoggingConfig:
+        LogGroup: !Ref CloudWatchLogGroup
+      AutoPublishAlias: live
+
+  DynamodbStackTable:
+    Type: AWS::DynamoDB::GlobalTable
+    Properties:
+      BillingMode: 'PAY_PER_REQUEST'
+      Replicas:
+        - Region: !Ref StackRegion
+          ContributorInsightsSpecification:
+            Enabled: false
+          PointInTimeRecoverySpecification:
+            PointInTimeRecoveryEnabled: true
+          GlobalSecondaryIndexes:
+            - IndexName: 'gsi2'
+              ContributorInsightsSpecification:
+                Enabled: false
+          Tags:
+            - Key: 'Name'
+              Value: !Sub ${AWS::StackName}-stack'
+            - Key: 'ManagedBy'
+              Value: !Ref Stack
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+        - AttributeName: gsi2pk
+          AttributeType: S
+        - AttributeName: gsi2sk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: 'gsi2'
+          KeySchema:
+            - AttributeName: gsi2pk
+              KeyType: HASH
+            - AttributeName: gsi2sk
+              KeyType: RANGE
+          Projection:
+            ProjectionType: 'ALL'
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      StreamSpecification:
+        StreamViewType: NEW_AND_OLD_IMAGES
+      SSESpecification:
+        SSEEnabled: true
+  DynamodbStackAuditTable:
+    Type: AWS::DynamoDB::GlobalTable
+    Properties:
+      BillingMode: 'PAY_PER_REQUEST'
+      Replicas:
+        - Region: !Ref StackRegion
+          ContributorInsightsSpecification:
+            Enabled: false
+          PointInTimeRecoverySpecification:
+            PointInTimeRecoveryEnabled: true
+          Tags:
+            - Key: 'Name'
+              Value: !Sub ${AWS::StackName}-stack-audit'
+            - Key: 'ManagedBy'
+              Value: !Ref Stack
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      SSESpecification:
+        SSEEnabled: true
+  DynamodbWebSocketTable:
+    Type: AWS::DynamoDB::GlobalTable
+    DependsOn: DynamodbStackTable
+    Properties:
+      BillingMode: 'PAY_PER_REQUEST'
+      Replicas:
+        - Region: !Ref StackRegion
+          ContributorInsightsSpecification:
+            Enabled: false
+          PointInTimeRecoverySpecification:
+            PointInTimeRecoveryEnabled: true
+          GlobalSecondaryIndexes:
+            - IndexName: 'gsi1'
+              ContributorInsightsSpecification:
+                Enabled: false
+            - IndexName: 'gsi2'
+              ContributorInsightsSpecification:
+                Enabled: false
+          Tags:
+            - Key: 'Name'
+              Value: !Sub ${AWS::StackName}-websocket'
+            - Key: 'ManagedBy'
+              Value: !Ref Stack
+      AttributeDefinitions:
+        - AttributeName: pk
+          AttributeType: S
+        - AttributeName: sk
+          AttributeType: S
+        - AttributeName: gsi1pk
+          AttributeType: S
+        - AttributeName: gsi2pk
+          AttributeType: S
+      KeySchema:
+        - AttributeName: pk
+          KeyType: HASH
+        - AttributeName: sk
+          KeyType: RANGE
+      GlobalSecondaryIndexes:
+        - IndexName: gsi1
+          KeySchema:
+            - AttributeName: gsi1pk
+              KeyType: HASH
+          Projection:
+            ProjectionType: 'KEYS_ONLY'
+        - IndexName: gsi2
+          KeySchema:
+            - AttributeName: gsi2pk
+              KeyType: HASH
+          Projection:
+            ProjectionType: 'INCLUDE'
+            NonKeyAttributes:
+              - subscription
+              - connectionId
+      TimeToLiveSpecification:
+        AttributeName: ttl
+        Enabled: true
+      SSESpecification:
+        SSEEnabled: true
+
+Outputs:
+  DynamodbStackTable:
+    Description: dynamodb stack table
+    Value: !Ref DynamodbStackTable
+    Export:
+      Name: !Sub '${AWS::StackName}DynamoDBStackTable'
+  DynamodbStackAuditTable:
+    Description: dynamodb stack audit table
+    Value: !Ref DynamodbStackAuditTable
+    Export:
+      Name: !Sub '${AWS::StackName}DynamoDBStackAuditTable'
+  DynamodbWebSocketTable:
+    Description: dynamodb websocket table
+    Value: !Ref DynamodbWebSocketTable
+    Export:
+      Name: !Sub '${AWS::StackName}DynamoDBWebSocketTable'
+  DynamodbStackTableStream:
+    Description: dynamodb stack table stream
+    Value: !GetAtt DynamodbStackTable.StreamArn
+    Export:
+      Name: !Sub '${AWS::StackName}DynamoDBStackTableStream'

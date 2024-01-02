@@ -1,0 +1,12 @@
+{
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "new-migration": "bash ./scripts/new-migration.sh",
+    "migrations": "node ./scripts/migrations.mjs"
+  },
+  "dependencies": {
+    "aws-xray-sdk-core": "3.5.2",
+    "mime": "4.0.1"
+  }
+}
