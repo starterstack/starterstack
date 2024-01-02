@@ -11,7 +11,6 @@ Globals:
     Architectures:
       - arm64
     Runtime: nodejs20.x
-    MemorySize: 128
     PropagateTags: true
     Environment:
       Variables:
@@ -69,9 +68,9 @@ Resources:
   MigrationFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: functions/stack-change/
+      CodeUri: functions/migration/
       Handler: index.handler
-      Description: subscription to cloudformation stack changes
+      Description: dynamodb migration
       Timeout: 300
       MemorySize: 512
       Environment:
