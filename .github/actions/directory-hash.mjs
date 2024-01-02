@@ -1,0 +1,1 @@
+../../scripts/directory-hash.mjs
