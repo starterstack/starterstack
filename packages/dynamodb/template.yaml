@@ -41,7 +41,7 @@ Metadata:
       parameterOverrides:
         - name: StackRegion
           file:
-            location: ../settings.json
+            location: ../stack-stage-config.mjs
             exportName: stackRegion
         - name: LogRetentionInDays
           file:
@@ -110,7 +110,7 @@ Resources:
                 Enabled: false
           Tags:
             - Key: 'Name'
-              Value: !Sub ${AWS::StackName}-stack'
+              Value: !Sub ${AWS::StackName}-stack
             - Key: 'ManagedBy'
               Value: !Ref Stack
       AttributeDefinitions:
@@ -155,7 +155,7 @@ Resources:
             PointInTimeRecoveryEnabled: true
           Tags:
             - Key: 'Name'
-              Value: !Sub ${AWS::StackName}-stack-audit'
+              Value: !Sub ${AWS::StackName}-stack-audit
             - Key: 'ManagedBy'
               Value: !Ref Stack
       AttributeDefinitions:
@@ -193,7 +193,7 @@ Resources:
                 Enabled: false
           Tags:
             - Key: 'Name'
-              Value: !Sub ${AWS::StackName}-websocket'
+              Value: !Sub ${AWS::StackName}-websocket
             - Key: 'ManagedBy'
               Value: !Ref Stack
       AttributeDefinitions:
@@ -233,6 +233,11 @@ Resources:
         SSEEnabled: true
 
 Outputs:
+  MigrationFunction:
+    Description: dynamodb lambda migration
+    Value: !GetAtt MigrationFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}MigrationFunction'
   DynamodbStackTable:
     Description: dynamodb stack table
     Value: !Ref DynamodbStackTable

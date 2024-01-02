@@ -428,6 +428,9 @@ export default async function getSettings({
     },
     get ssmS3BackupBucket() {
       return getParameter(`/${settings.stackName}/global/S3_BACKUP_BUCKET`)
+    },
+    get stackRegion() {
+      return config.stackRegion
     }
   }
 }
