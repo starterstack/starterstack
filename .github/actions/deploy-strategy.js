@@ -1,5 +1,3 @@
-import jsYaml from 'js-yaml'
-import schema from '@serverless/utils/cloudformation-schema.js'
 import process from 'node:process'
 import fs from 'node:fs/promises'
 import path from 'node:path'
@@ -12,15 +10,16 @@ import {
 } from '@aws-sdk/client-cloudformation'
 import { createRequire } from 'node:module'
 
+import { getConfig as stackStageConfig } from './stack-stage-config.mjs'
+
 const require = createRequire(import.meta.url)
 
-const { regions, accountPerStage, stackName } = require('./settings.json')
+const { regions, accountPerStage } = require('./settings.json')
 
 export default async function deployStrategy({
   github,
   core,
   stage,
-  region,
   remove,
   npmCacheHit
 }) {
@@ -30,8 +29,9 @@ export default async function deployStrategy({
   const strategy = {
     only:
       {
-        log: ['iam', 'monitoring', 'cloudtrail', 'budget'],
+        log: ['deployment', 'iam', 'monitoring', 'cloudtrail', 'budget'],
         backup: [
+          'deployment',
           'iam',
           'monitoring',
           'cloudtrail',
@@ -41,19 +41,23 @@ export default async function deployStrategy({
         ]
       }[stage] ?? [],
     order: remove
-      ? ['iam', 'monitoring', 'stack', 'region']
+      ? ['deployment', 'iam', 'monitoring', 'stack', 'region']
       : [
+          'deployment',
           'iam',
           'monitoring',
           'stack',
           'region',
           'dynamodb',
-          'cloudfront-us-east-1'
+          // 'cloudfront-us-east-1'
         ],
     stage: remove
-      ? ['cdn', 'eventbus', 'dynamodb', 'cloudfront-us-east-1']
-      : ['cdn', 'eventbus'],
-    backend: ['rest', 'websocket', 'graphql', 'ses']
+      // ? ['cdn', 'eventbus', 'dynamodb', 'cloudfront-us-east-1']
+      // : ['cdn', 'eventbus'],
+      ? ['eventbus', 'dynamodb']
+      : ['eventbus'],
+    // backend: ['rest', 'websocket', 'graphql', 'ses']
+    backend: []
   }
 
   const deployed = await listDeployed(awsRegions)
@@ -67,10 +71,10 @@ export default async function deployStrategy({
   )
 
   const calculateChanges = await Promise.all([
-    Promise.all(strategy.order.map(calculateStackChanges)),
-    Promise.all(strategy.stage.map(calculateStackChanges)),
-    Promise.all(strategy.backend.map(calculateStackChanges)),
-    Promise.all(strategy.remaining.map(calculateStackChanges))
+    Promise.all(strategy.order.flatMap(calculateStackChanges)),
+    Promise.all(strategy.stage.flatMap(calculateStackChanges)),
+    Promise.all(strategy.backend.flatMap(calculateStackChanges)),
+    Promise.all(strategy.remaining.flatMap(calculateStackChanges))
   ])
 
   async function calculateStackChanges(name) {
@@ -80,10 +84,16 @@ export default async function deployStrategy({
     if (strategy.only.length > 0 && !strategy.only.includes(name)) {
       return
     }
-    if (!(await fs.lstat(path.join('packages', name))).isDirectory()) {
+
+    try {
+      if (!(await fs.lstat(path.join('packages', name))).isDirectory()) {
+        return
+      }
+    } catch (e) {
+      console.error(e)
       return
     }
-    const stackConfigPath = path.join('packages', name, 'serverless.yml')
+    const stackConfigPath = path.join('packages', name, 'template.yaml')
     const packageLockPath = path.join('packages', name, 'package-lock.json')
     const stackDirectory = path.dirname(stackConfigPath)
     if (!(await fs.stat(stackConfigPath).catch((_) => false))) return
@@ -99,86 +109,77 @@ export default async function deployStrategy({
       )
     }
 
-    const overrideRegionMatch = /region:\s*['"]?([a-z-\d]+)['"]?/
-    const overrideStageMatch = /stage:\s*['"]?([a-z-_\d]+)['"]?/
+    const config = await stackStageConfig({
+      stage,
+      directory: stackDirectory
+    })
 
-    const useStageOption = /stage:\s*\$\{opt:\s*stage\}/
-    const useRegionOption = /region:\s*\$\{opt:\s*region\}/
+    const result = []
 
-    const stackConfig = await fs.readFile(stackConfigPath, 'utf-8')
-    const stackRegion =
-      overrideRegionMatch.test(stackConfig) &&
-      !useRegionOption.test(stackConfig)
-        ? stackConfig.match(overrideRegionMatch)[1]
-        : region
-    const stackStage =
-      overrideStageMatch.test(stackConfig) &&
-      !useStageOption.test(stackConfigPath)
-        ? stackConfig.match(overrideStageMatch)[1]
-        : stage
-    try {
-      const stack = await jsYaml.load(stackConfig, { schema })
-      const providerStackName = replaceStackName(stack.provider?.stackName)
-      const serviceStackName = `${replaceStackName(
-        stack.service
-      )}-${stackStage}`
-      const stackName = providerStackName ?? serviceStackName
+    const stackName = config.stackName
+    const stackStage = config.stage
 
-      const deployedSha = deployed[stackRegion]?.get(
-        `${stackName}DeployedCommit`
-      )
+    for (const stackRegion of config.regions) {
+      try {
+        const deployedSha = deployed[stackRegion]?.get(
+          `${stackName}DeployedCommit`
+        )
 
-      if (remove && !deployedSha) {
-        return
-      }
+        if (remove && !deployedSha) {
+          continue
+        }
 
-      if (deployedSha) {
-        if (!remove) {
-          try {
-            // these diffs will exit 1 only if there are changes, hense the catch
-            await Promise.all([
-              execCommand(
-                `git diff ${deployedSha} -s --exit-code -- . ':!src/local-http-mock/*'`,
-                stackDirectory
-              ),
-              execCommand(
-                `git diff ${deployedSha} -s --exit-code -- ./packages/*.*`
-              ),
-              execCommand(
-                `git diff ${deployedSha} -s --exit-code -- ./packages/shared ':!packages/shared/test' ':!packages/shared/package.json'`
-              )
-            ])
-            return
-          } catch {}
-          const deployedHash = deployed[stackRegion]?.get(
-            `${stackName}DeployedHash`
-          )
+        if (deployedSha) {
+          if (!remove) {
+            try {
+              // these diffs will exit 1 only if there are changes, hense the catch
+              await Promise.all([
+                execCommand(
+                  `git diff ${deployedSha} -s --exit-code -- . ':!src/local-http-mock/*'`,
+                  stackDirectory
+                ),
+                execCommand(
+                  `git diff ${deployedSha} -s --exit-code -- ./packages/*.*`
+                ),
+                execCommand(
+                  `git diff ${deployedSha} -s --exit-code -- ./packages/shared ':!packages/shared/test' ':!packages/shared/package.json'`
+                )
+              ])
+              return
+            } catch {}
+            const deployedHash = deployed[stackRegion]?.get(
+              `${stackName}DeployedHash`
+            )
 
-          const localHash = await calculateStackHash({
-            root: stackDirectory,
-            packagesRoot: path.join(process.cwd(), 'packages')
-          })
+            const localHash = await calculateStackHash({
+              root: stackDirectory,
+              packagesRoot: path.join(process.cwd(), 'packages')
+            })
 
-          if (deployedHash && deployedHash === localHash) {
-            return
+            if (deployedHash && deployedHash === localHash) {
+              continue
+            }
           }
         }
+      } catch (e) {
+        if (github) {
+          console.error(e)
+        }
+        if (remove) {
+          continue
+        }
       }
-    } catch (e) {
-      if (github) {
-        console.error(e)
-      }
-      if (remove) {
-        return
-      }
+
+      result.push({
+        stack: name,
+        stage: stackStage,
+        region: stackRegion,
+        directory: stackDirectory,
+        'package-lock': hasPackageLock
+      })
     }
-    return {
-      stack: name,
-      stage: stackStage,
-      region: stackRegion,
-      directory: stackDirectory,
-      'package-lock': hasPackageLock
-    }
+
+    return result
   }
 
   const strategyResult = {
@@ -219,7 +220,7 @@ export default async function deployStrategy({
     'parallel-backend': calculateChanges[2],
     'parallel-remaining': calculateChanges[3]
   })) {
-    for (const value of changes.filter(Boolean)) {
+    for (const value of changes.flat().filter(Boolean)) {
       if (remove && value.stage === 'global') {
         continue
       } else {
@@ -289,8 +290,4 @@ async function listDeployed(regions) {
       if (!nextToken) break
     }
   }
-}
-function replaceStackName(name) {
-  /* eslint-disable-next-line no-template-curly-in-string */
-  return name?.replace('${file(../settings.js):stackName}', stackName)
 }

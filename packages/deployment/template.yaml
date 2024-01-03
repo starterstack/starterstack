@@ -64,8 +64,7 @@ Resources:
           - Id: NonCurrentRetention
             Status: Enabled
             NoncurrentVersionExpiration:
-              NewerNoncurrentVersions: 3
-              NoncurrentDays: 7
+              NoncurrentDays: 1
           - Id: AbortIncompleteMultipartUpload
             Status: Enabled
             AbortIncompleteMultipartUpload:

@@ -99,65 +99,79 @@ export const lifecycle = async function stackStageConfig({
       template.Mappings ||= {}
       template.Mappings.AWSAccounts = settings.awsAccounts
     }
-    if (!process.env.CI && !argv.includes('--region')) {
-      const { stage } =
-        stackStageConfig.stage === 'global'
-          ? { stage: 'global' }
-          : await inquirer.prompt({ name: 'stage', message: 'stage' })
+    const stageIndex = argv.findIndex((x) => x.startsWith('Stage='))
+    let stage = stageIndex !== -1 ? argv[stageIndex].slice('Stage='.length) : ''
+    const regionIndex = argv.indexOf('--region')
+    let region = regionIndex !== -1 ? argv[regionIndex + 1] : ''
+
+    if (['build', 'deploy'].includes(command)) {
+      if (!process.env.CI && !stage) {
+        const { stageValue } =
+          stackStageConfig.stage === 'global'
+          ? { stageValue: 'global' }
+          : await inquirer.prompt({ name: 'stageValue', message: 'stage' })
+        stage = stageValue
+      }
       if (!stage) {
         throw new TypeError('missing stage')
       }
+    }
 
-      const config = await getConfig({ stage, template })
+    const config = await getConfig({ stage, template })
 
-      const { region } =
+    if (!process.env.CI && !region) {
+      const { regionValue } =
         config.regions.length === 1
-          ? { region: config.regions.at(0) }
+          ? { regionValue: config.regions.at(0) }
           : await inquirer.prompt({
-              name: 'region',
+              name: 'regionValue',
               type: 'list',
               message: 'region',
               choices: config.regions
             })
-      if (['build', 'deploy'].includes(command)) {
-        argv.push(
-          ...[
-            '--parameter-overrides',
-            `Stack=${settings.stackName}`,
-            `Stage=${stage}`
-          ]
-        )
-      }
-      if (['deploy', 'delete'].includes(command)) {
-        argv.push(...['--stack-name', config.stackName])
-        if (config.s3DeploymentBucket[region]) {
-          argv.push(...['--s3-bucket', config.s3DeploymentBucket[region]])
-          argv.push(
-            ...[
-              '--s3-prefix',
-              command === 'deploy'
-              ? `${config.stackName}/${template.Outputs.DeployedCommit.Value}`
-              : config.stackName
-            ]
-          )
-        }
-      }
+
+      region = regionValue
       if (['build', 'deploy', 'delete', 'validate'].includes(command)) {
         argv.push(...['--region', region])
       }
-      if (command === 'deploy' && config.snsOpsTopic[region]) {
-        argv.push(...['--notification-arns', config.snsOpsTopic[region]])
+    }
+
+    if (!region) {
+      throw new TypeError('missing region')
+    }
+
+    if (['deploy', 'delete'].includes(command)) {
+      argv.push(...['--stack-name', config.stackName])
+      if (config.s3DeploymentBucket[region]) {
+        argv.push(...['--s3-bucket', config.s3DeploymentBucket[region]])
         argv.push(
           ...[
-            '--tags',
-            `STAGE=${stage}`,
-            `ManagedBy=${settings.stackName}`,
-            `Name=${config.stackName}`
+            '--s3-prefix',
+            command === 'deploy'
+              ? `${config.stackName}/${template.Outputs.DeployedCommit.Value}`
+              : config.stackName
           ]
         )
       }
-      log('applied stack stage config %O', { config, argv })
     }
+    if (command === 'deploy') {
+      if (config.snsOpsTopic[region]) {
+        argv.push(...['--notification-arns', config.snsOpsTopic[region] ?? ''])
+      }
+      argv.push(
+        ...[
+          '--tags',
+          `STAGE=${stage}`,
+          `ManagedBy=${settings.stackName}`,
+          `Name=${config.stackName}`
+        ]
+      )
+    }
+    if (['build', 'deploy'].includes(command)) {
+      addParameter({ argv, name: 'Stack', value: settings.stackName })
+      addParameter({ argv, name: 'Stage', value: stage })
+    }
+    log('applied stack stage config %O', { config, argv })
   } else {
     if (argv.includes('--s3-bucket') && argv.includes('--s3-prefix')) {
       const region = argv[argv.indexOf('--region') + 1]
@@ -260,36 +274,41 @@ export async function getConfig({ stage, template, directory }) {
   /** @type {Record<string, string>} */
   const snsAlarmTopic = {}
 
-  if (path.basename(directory ?? process.cwd()) !== 'deployment') {
-    await Promise.all(
-      stackRegions.map(async function getDeploymentBucket(region) {
-        const stackName = `${settings.stackName}-deployment`
-        let result = cloudformationResults.get(`${region}.${stackName}`)
-        if (!result) {
-          let client = cloudFormationClients.get(region)
-          if (!client) {
-            client = new CloudFormationClient({ region })
-            cloudFormationClients.set(region, client)
-          }
+  await Promise.all(
+    stackRegions.map(async function getDeploymentBucket(region) {
+      const stackName = `${settings.stackName}-deployment`
+      let result = cloudformationResults.get(`${region}.${stackName}`)
+      if (!result) {
+        let client = cloudFormationClients.get(region)
+        if (!client) {
+          client = new CloudFormationClient({ region })
+          cloudFormationClients.set(region, client)
+        }
+        try {
           result = await client.send(
             new DescribeStacksCommand({
               StackName: stackName
             })
           )
           cloudformationResults.set(`${region}.${stackName}`, result)
+        } catch {
         }
-        for (const output of result?.Stacks?.[0]?.Outputs ?? []) {
-          if (output.OutputKey === 'S3DeploymentBucket' && output.OutputValue) {
-            s3DeploymentBucket[region] = output.OutputValue
-          } else if (output.OutputKey === 'SNSOpsTopic' && output.OutputValue) {
-            snsOpsTopic[region] = output.OutputValue
-          }
+      }
+      for (const output of result?.Stacks?.[0]?.Outputs ?? []) {
+        if (output.OutputKey === 'S3DeploymentBucket' && output.OutputValue) {
+          s3DeploymentBucket[region] = output.OutputValue
+        } else if (output.OutputKey === 'SNSOpsTopic' && output.OutputValue) {
+          snsOpsTopic[region] = output.OutputValue
         }
-      })
-    )
-  }
+      }
+    })
+  )
 
-  if (!['deployment', 'monitoring'].includes(path.basename(directory ?? process.cwd()))) {
+  if (
+    !['deployment', 'monitoring'].includes(
+      path.basename(directory ?? process.cwd())
+    )
+  ) {
     await Promise.all(
       stackRegions.map(async function getDeploymentBucket(region) {
         const stackName = `${settings.stackName}-monitoring`
@@ -300,12 +319,14 @@ export async function getConfig({ stage, template, directory }) {
             client = new CloudFormationClient({ region })
             cloudFormationClients.set(region, client)
           }
-          result = await client.send(
-            new DescribeStacksCommand({
-              StackName: stackName
-            })
-          )
-          cloudformationResults.set(`${region}.${stackName}`, result)
+          try {
+            result = await client.send(
+              new DescribeStacksCommand({
+                StackName: stackName
+              })
+            )
+            cloudformationResults.set(`${region}.${stackName}`, result)
+          } catch {}
         }
         for (const output of result?.Stacks?.[0]?.Outputs ?? []) {
           if (output.OutputKey === 'SNSAlarmTopic' && output.OutputValue) {
@@ -476,4 +497,23 @@ async function listS3Objects({ s3Client, prefix, bucket }) {
     if (!nextToken) break
   }
   return files.map((x) => x.Key)
+}
+
+/**
+ * @param {{ argv: string[], name: string, value: string }} options
+ * @returns {void}
+ **/
+
+function addParameter({ argv, name, value }) {
+  if (!argv.includes('--parameter-overrides')) {
+    argv.push('--parameter-overrides')
+  }
+  const parameterIndex = argv.findIndex((x) => x.startsWith(`${name}=`))
+
+  if (parameterIndex === -1) {
+    const parameterOverridesIndex = argv.indexOf('--parameter-overrides')
+    argv.splice(parameterOverridesIndex + 1, 0, `${name}=${value}`)
+  } else {
+    argv.splice(parameterIndex, 1, `${name}=${value}`)
+  }
 }

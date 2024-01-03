@@ -2,6 +2,11 @@
   "name": "actions",
   "type": "module",
   "dependencies": {
+    "@aws-sdk/client-cloudformation": "3.484.0",
+    "@aws-sdk/client-s3": "3.484.0",
+    "@aws-sdk/client-ssm": "3.484.0",
+    "@aws-sdk/client-sts": "3.484.0",
+    "@starterstack/sam-expand": "0.0.28",
     "esbuild": "0.19.8",
     "libsodium-wrappers": "0.7.13"
   },
