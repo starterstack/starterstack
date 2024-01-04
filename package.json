@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "setup": "node ./scripts/setup.mjs"
+    "setup": "node ./scripts/setup.mjs",
+    "patch-files": "bash ./scripts/patch-files.sh"
   },
   "keywords": [],
   "author": "",
