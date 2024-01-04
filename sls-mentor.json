@@ -10,12 +10,13 @@
       "ignoredResources": ["dynamodb-(pr-)?[^-]*-dynamodb"]
     },
     "specifyDlqOnSqs": {
-      "ignoredResources": ["(events|lambda|pipes|scheduler)Dlq-"]
+      "ignoredResources": ["(Events|Lambda|Pipes|Scheduler)Dlq-"]
     },
     "encryptedSnsTopics": {
       "ignoredResources": [
         "ses-(pr-)?[^-]*-snsEmailDeliveryTopic",
-        "monitoring-region-sns(Ops|Alarm)Topic"
+        "monitoring-SNSAlarmTopic",
+        "deployment-SNSOpsTopic"
       ]
     },
     "useIntelligentTiering": {
