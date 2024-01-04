@@ -160,7 +160,7 @@ jobs:
           script: |
             const settings = require('./packages/settings.json')
             const stageName = settings.stages.includes('${{ inputs.stage }}')
-                  ? '{{ input.stage }}'
+                  ? '{{ inputs.stage }}'
                   : 'feature'
             return settings.regions[stageName]
 
