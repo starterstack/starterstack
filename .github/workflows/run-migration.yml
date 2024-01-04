@@ -33,9 +33,15 @@ jobs:
           aws-region: us-east-1
           role-duration-seconds: 900
       - run: |
-          output=$(aws lambda invoke \
+          declare -r lambda=$(aws cloudformation describe-stacks \
+            --stack-name '${{ inputs.stack-name }}-dynamodb-${{ inputs.stage }}' \
             --region '${{ inputs.aws-region }}' \
-            --function-name '${{ inputs.stack-name }}-dynamodb-${{ inputs.stage }}-migration' \
+              jq \
+                -r '.Stacks | .[] | .Outputs | .[] | select( .OutputKey == "MigrationFunction") | .OutputValue'
+          )
+          declare -r output=$(aws lambda invoke \
+            --region '${{ inputs.aws-region }}' \
+            --function-name "${lambda:?}" \
             --payload '{}' \
             --log-type 'Tail' \
             --invocation-type 'RequestResponse' \
