@@ -112,9 +112,14 @@ export const lifecycle = async function stackStageConfig({
           : await inquirer.prompt({ name: 'stageValue', message: 'stage' })
         stage = stageValue
       }
-      if (!stage) {
-        throw new TypeError('missing stage')
+    } else {
+      if (process.env.STAGE) {
+        stage = process.env.STAGE
       }
+    }
+
+    if (!stage) {
+      throw new TypeError('missing stage')
     }
 
     const config = await getConfig({ stage, template })

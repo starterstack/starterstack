@@ -1,0 +1,36 @@
+name: slack
+
+on:
+  workflow_call:
+    secrets:
+      slack-ops-url:
+        required: true
+    inputs:
+      name:
+        required: true
+        type: string
+      url:
+        required: false
+        type: string
+      success:
+        required: true
+        type: boolean
+
+jobs:
+  post:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            return await (await import('./.github/actions/dist/slack-notification')).default({
+              github,
+              context,
+              name: '${{ inputs.name }}',
+              url: '${{ inputs.url }}',
+              success: ${{ inputs.success }}
+            })
+        env:
+          SLACK_WEBHOOK_URL: ${{ secrets.slack-ops-url }}

@@ -1,0 +1,52 @@
+name: run migration
+
+on:
+  workflow_call:
+    secrets:
+      aws-ci-role:
+        required: true
+    inputs:
+      stack-name:
+        required: true
+        type: string
+      stage:
+        required: true
+        type: string
+      aws-region:
+        required: true
+        type: string
+env:
+  AWS_RETRY_MODE: standard
+  AWS_MAX_ATTEMPTS: 6
+
+jobs:
+  migration:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: aws-actions/configure-aws-credentials@v4.0.1
+        with:
+          role-to-assume: ${{ secrets.aws-ci-role }}
+          aws-region: us-east-1
+          role-duration-seconds: 900
+      - run: |
+          output=$(aws lambda invoke \
+            --region '${{ inputs.aws-region }}' \
+            --function-name '${{ inputs.stack-name }}-dynamodb-${{ inputs.stage }}-migration' \
+            --payload '{}' \
+            --log-type 'Tail' \
+            --invocation-type 'RequestResponse' \
+            /dev/null)
+
+          echo "${output}" | jq -r '{ "statusCode": .StatusCode, "errorType": .errorType, "logResult": (.LogResult|@base64d) }'
+
+          if ! echo "${output}" | grep -q '"StatusCode": 200'; then
+            echo failed run invoke lambda, bad status code
+            exit 1
+          elif echo "${output}" | grep -q 'errorType'; then
+            echo failed to run migration, lambda failed
+            exit 1
+          fi

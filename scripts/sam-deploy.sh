@@ -30,10 +30,9 @@ function deploy() {
   fi
 
   if [[ ${remove:?} -eq 1 ]]; then
-    node \
+    STAGE="${stage:?}" node \
       "$(dirname "${source:?}")/../node_modules/.bin/sam-expand" \
       delete \
-      --parameter-overrides Stage="${stage:?}" \
       --region "${region:?}" \
       --no-prompts
   else
@@ -43,7 +42,7 @@ function deploy() {
       --parameter-overrides Stage="${stage:?}" \
       --region "${region:?}"
 
-    node \
+    STAGE="${stage:?}" node \
       "$(dirname "${source:?}")/../node_modules/.bin/sam-expand" \
       validate \
       --lint \

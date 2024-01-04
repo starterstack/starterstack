@@ -1,0 +1,220 @@
+name: main
+
+on:
+  workflow_call:
+    inputs:
+      stage:
+        required: true
+        type: string
+      account:
+        required: true
+        type: string
+      sha:
+        required: true
+        type: string
+
+jobs:
+  test:
+    uses: 'starterstack/starterstack/.github/workflows/test.yml@main'
+  env:
+    needs: [test]
+    uses: 'starterstack/starterstack/.github/workflows/sls-env.yml@main'
+    with:
+      account: ${{ inputs.account || github.event.inputs.account || 'dev' }}
+      stage: ${{ inputs.stage || github.event.inputs.stage || 'dev' }}
+      sha: ${{ inputs.sha || github.event.inputs.sha || github.sha }}
+
+    secrets:
+      aws-ci-role: ${{ secrets[format('AWS_CI_ROLE_{0}', (inputs.account || github.event.inputs.account || 'dev')) ] }}
+      aws-s3-log-bucket: ${{ secrets.AWS_S3_LOG_BUCKET }}
+      aws-s3-backup-bucket: ${{ secrets.AWS_S3_BACKUP_BUCKET }}
+      api-jwt-secret: ${{ secrets[format('API_JWT_SECRET_{0}', (inputs.account || github.event.inputs.account || 'dev')) ] }}
+      api-mfa-secret: ${{ secrets[format('API_MFA_SECRET_{0}', (inputs.account || github.event.inputs.account || 'dev')) ] }}
+      stack-ssm-secret: ${{ secrets.STACK_SSM_SECRETS_JSON }}
+
+  deploy-ordered:
+    needs: [env]
+    if: ${{ needs.env.outputs.ordered == 'true' }}
+    uses: 'starterstack/starterstack/.github/workflows/sls.yml@main'
+    with:
+      sha: ${{ needs.env.outputs.sha }}
+      node-version: ${{ needs.env.outputs.node-version }}
+      strategy: ${{ needs.env.outputs.ordered-strategy }}
+    secrets:
+      aws-ci-role: ${{ secrets[format('AWS_CI_ROLE_{0}', needs.env.outputs.account)] }}
+
+  deploy-parallel-stage:
+    needs: [env, deploy-ordered]
+    if: ${{ always() && !failure() && !cancelled() && needs.env.outputs.parallel-stage == 'true' }}
+    uses: 'starterstack/starterstack/.github/workflows/sls.yml@main'
+    with:
+      sha: ${{ needs.env.outputs.sha }}
+      node-version: ${{ needs.env.outputs.node-version }}
+      strategy: ${{ needs.env.outputs.parallel-stage-strategy }}
+    secrets:
+      aws-ci-role: ${{ secrets[format('AWS_CI_ROLE_{0}', needs.env.outputs.account)] }}
+
+  deploy-parallel-backend:
+    needs: [env, deploy-ordered, deploy-parallel-stage]
+    if: ${{ always() && !failure() && !cancelled() && needs.env.outputs.parallel-backend == 'true' }}
+    uses: 'starterstack/starterstack/.github/workflows/sls.yml@main'
+    with:
+      sha: ${{ needs.env.outputs.sha }}
+      node-version: ${{ needs.env.outputs.node-version }}
+      strategy: ${{ needs.env.outputs.parallel-backend-strategy }}
+    secrets:
+      aws-ci-role: ${{ secrets[format('AWS_CI_ROLE_{0}', needs.env.outputs.account)] }}
+
+  deploy-parallel-remaining:
+    needs: [env, deploy-ordered, deploy-parallel-stage, deploy-parallel-backend]
+    if: ${{ always() && !failure() && !cancelled() && needs.env.outputs.parallel-remaining == 'true' }}
+    uses: 'starterstack/starterstack/.github/workflows/sls.yml@main'
+    with:
+      sha: ${{ needs.env.outputs.sha }}
+      node-version: ${{ needs.env.outputs.node-version }}
+      strategy: ${{ needs.env.outputs.parallel-remaining-strategy }}
+    secrets:
+      aws-ci-role: ${{ secrets[format('AWS_CI_ROLE_{0}', needs.env.outputs.account)] }}
+
+  migration:
+    needs:
+      [
+        env,
+        deploy-ordered,
+        deploy-parallel-stage,
+        deploy-parallel-backend,
+        deploy-parallel-remaining
+      ]
+    if: ${{ always() && !failure() && !cancelled() && needs.env.outputs.db-changed == 'true' }}
+    uses: 'starterstack/starterstack/.github/workflows/run-migration.yml@main'
+    with:
+      stage: ${{ needs.env.outputs.stage }}
+      stack-name: ${{ needs.env.outputs.stack-name }}
+      aws-region: ${{ needs.env.outputs.aws-region }}
+    secrets:
+      aws-ci-role: ${{ secrets[format('AWS_CI_ROLE_{0}', needs.env.outputs.account)] }}
+
+  sanity-tests:
+    needs:
+      [
+        env,
+        deploy-ordered,
+        deploy-parallel-stage,
+        deploy-parallel-backend,
+        deploy-parallel-remaining,
+        migration
+      ]
+    if: ${{ always() && !failure() && !cancelled() && needs.env.outputs.account != 'log' && needs.env.outputs.account != 'backup' }}
+    uses: 'starterstack/starterstack/.github/workflows/run-sanity-tests.yml@main'
+    with:
+      stage: ${{ needs.env.outputs.stage }}
+      stack-name: ${{ needs.env.outputs.stack-name }}
+      aws-region: ${{ needs.env.outputs.aws-region }}
+    secrets:
+      aws-ci-role: ${{ secrets[format('AWS_CI_ROLE_{0}', needs.env.outputs.account)] }}
+
+  sls-mentor:
+    needs:
+      [
+        env,
+        deploy-ordered,
+        deploy-parallel-stage,
+        deploy-parallel-backend,
+        deploy-parallel-remaining,
+        migration,
+        sanity-tests
+      ]
+    if: ${{ always() && !failure() && !cancelled() }}
+    uses: 'starterstack/starterstack/.github/workflows/sls-mentor.yml@main'
+    with:
+      aws-regions: ${{ needs.env.outputs.aws-regions }}
+    secrets:
+      aws-ci-role: ${{ secrets[format('AWS_CI_READ_ONLY_ROLE_{0}', needs.env.outputs.account)] }}
+
+  deploy-environment:
+    environment:
+      name: ${{ github.event.pull_request.head.ref || needs.env.outputs.stage }}
+      url: 'https://${{ needs.env.outputs.stage-root }}'
+    needs:
+      [
+        env,
+        deploy-ordered,
+        deploy-parallel-stage,
+        deploy-parallel-backend,
+        deploy-parallel-remaining,
+        migration,
+        sanity-tests,
+        sls-mentor
+      ]
+    if: ${{ always() && !failure() && !cancelled() && needs.env.outputs.account != 'log' && needs.env.outputs.account != 'backup' }}
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo environment deployed
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.env.outputs.sha }}
+        if: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/setup-node@v4.0.1
+        with:
+          node-version: '${{ needs.env.outputs.node-version }}'
+        if: ${{ github.event.pull_request.head.sha }}
+      - uses: actions/github-script@v7
+        if: ${{ github.event.pull_request.head.sha && !contains(github.event.pull_request.labels.*.name, 'environment deployed') }}
+        with:
+          script: |
+            const stageRoot = '${{ needs.env.outputs.stage-root }}'
+            const urls = [
+              `* https://${stageRoot}`
+            ]
+            return await (await import('./.github/actions/dist/create-pr-comment')).default({
+              github,
+              context,
+              body: `⚡ feature urls\n${urls.join('\n')}`
+            })
+      - uses: actions/github-script@v7
+        if: ${{ github.event.pull_request.head.sha && !contains(github.event.pull_request.labels.*.name, 'environment deployed') }}
+        with:
+          script: |
+            return await (await import('./.github/actions/dist/add-pr-label')).default({
+              github,
+              context,
+              label: 'environment deployed'
+            })
+
+  report-success:
+    needs:
+      [
+        env,
+        deploy-ordered,
+        deploy-parallel-stage,
+        deploy-parallel-backend,
+        deploy-parallel-remaining,
+        deploy-environment
+      ]
+    if: ${{ always() && !failure() && !cancelled() }}
+    uses: 'starterstack/starterstack/.github/workflows/slack.yml@main'
+    with:
+      name: ${{ needs.env.outputs.stage }}
+      url: 'https://${{ needs.env.outputs.stage-root }}'
+      success: true
+    secrets:
+      slack-ops-url: ${{ fromJSON(secrets.STACK_SSM_SECRETS_JSON).SLACK_OPS_URL }}
+
+  report-failure:
+    needs:
+      [
+        env,
+        deploy-ordered,
+        deploy-parallel-stage,
+        deploy-parallel-backend,
+        deploy-parallel-remaining,
+        deploy-environment
+      ]
+    if: ${{ always() && failure() && !cancelled() }}
+    uses: 'starterstack/starterstack/.github/workflows/slack.yml@main'
+    with:
+      name: ${{ needs.env.outputs.stage }}
+      success: false
+    secrets:
+      slack-ops-url: ${{ fromJSON(secrets.STACK_SSM_SECRETS_JSON).SLACK_OPS_URL }}

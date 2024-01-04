@@ -1,0 +1,23 @@
+name: release feature
+
+concurrency:
+  group: ${{ github.head_ref }}
+  cancel-in-progress: false
+
+on:
+  pull_request:
+    types: [synchronize, labeled]
+    branches:
+      - main
+    paths:
+      - 'packages/**'
+
+jobs:
+  deploy:
+    uses: 'starterstack/starterstack/.github/workflows/main.yml@main'
+    secrets: 'inherit'
+    with:
+      account: 'feature'
+      stage: 'pr-${{ github.event.pull_request.number }}'
+      sha: ${{ github.event.pull_request.head.sha }}
+    if: ${{ contains(github.event.pull_request.labels.*.name, 'feature deploy') && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]' }}

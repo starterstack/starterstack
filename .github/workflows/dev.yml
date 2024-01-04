@@ -1,0 +1,27 @@
+name: dev
+
+concurrency:
+  group: dev
+  cancel-in-progress: false
+
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: 'commit sha'
+    branches:
+      - main
+  push:
+    branches:
+      - main
+    paths:
+      - 'packages/**'
+
+jobs:
+  deploy:
+    uses: 'starterstack/starterstack/.github/workflows/main.yml@main'
+    secrets: 'inherit'
+    with:
+      account: 'dev'
+      stage: 'dev'
+      sha: ${{ github.event.inputs.sha || github.sha }}

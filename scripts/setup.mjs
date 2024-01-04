@@ -434,7 +434,7 @@ async function replaceOwnerRepository(file) {
       .map((line) => {
         if (
           line.startsWith('This project was bootstrapped with') ||
-          line.includes('create repository from dreamstack template') ||
+          line.includes('create repository from starterstack template') ||
           line.includes('install [prerequisites]')
         ) {
           return line

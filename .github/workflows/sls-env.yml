@@ -1,0 +1,210 @@
+name: sls-env
+
+on:
+  workflow_call:
+    secrets:
+      aws-ci-role:
+        required: true
+      api-jwt-secret:
+        required: true
+      api-mfa-secret:
+        required: true
+      stack-ssm-secret:
+        required: true
+      aws-s3-log-bucket:
+        required: true
+      aws-s3-backup-bucket:
+        required: true
+
+    inputs:
+      account:
+        required: true
+        type: string
+      stage:
+        required: true
+        type: string
+      sha:
+        required: true
+        type: string
+      remove:
+        type: boolean
+
+    outputs:
+      ordered-strategy:
+        value: ${{ jobs.env.outputs.ordered-strategy }}
+      parallel-stage-strategy:
+        value: ${{ jobs.env.outputs.parallel-stage-strategy }}
+      parallel-backend-strategy:
+        value: ${{ jobs.env.outputs.parallel-backend-strategy }}
+      parallel-remaining-strategy:
+        value: ${{ jobs.env.outputs.parallel-remaining-strategy }}
+      ordered:
+        value: ${{ jobs.env.outputs.ordered }}
+      parallel-stage:
+        value: ${{ jobs.env.outputs.parallel-stage }}
+      parallel-backend:
+        value: ${{ jobs.env.outputs.parallel-backend }}
+      parallel-remaining:
+        value: ${{ jobs.env.outputs.parallel-remaining }}
+      db-changed:
+        value: ${{ jobs.env.outputs.db-changed }}
+      node-version:
+        value: ${{ jobs.env.outputs.node-version }}
+      stack-name:
+        value: ${{ jobs.env.outputs.stack-name }}
+      stage-root:
+        value: ${{ jobs.env.outputs.stage-root }}
+      account:
+        value: ${{ inputs.account }}
+      stage:
+        value: ${{ jobs.env.outputs.stage }}
+      aws-region:
+        value: ${{ jobs.env.outputs.aws-region }}
+      aws-regions:
+        value: ${{ jobs.env.outputs.aws-regions }}
+      remove:
+        value: ${{ jobs.env.outputs.remove }}
+      sha:
+        value: ${{ jobs.env.outputs.sha }}
+
+env:
+  AWS_RETRY_MODE: standard
+  AWS_MAX_ATTEMPTS: 6
+
+jobs:
+  env:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    outputs:
+      ordered-strategy: ${{ steps.strategy.outputs.ordered-strategy }}
+      parallel-stage-strategy: ${{ steps.strategy.outputs.parallel-stage-strategy }}
+      parallel-backend-strategy: ${{ steps.strategy.outputs.parallel-backend-strategy }}
+      parallel-remaining-strategy: ${{ steps.strategy.outputs.parallel-remaining-strategy }}
+      ordered: '${{ steps.strategy.outputs.ordered }}'
+      parallel-stage: '${{ steps.strategy.outputs.parallel-stage }}'
+      parallel-backend: '${{ steps.strategy.outputs.parallel-backend }}'
+      parallel-remaining: '${{ steps.strategy.outputs.parallel-remaining }}'
+      db-changed: '${{ steps.strategy.outputs.db-changed }}'
+      node-version: '${{ steps.node-version.outputs.result }}'
+      stack-name: '${{ steps.stack-name.outputs.result }}'
+      stage-root: '${{ steps.stage-root.outputs.result }}'
+      stage: '${{ inputs.stage }}'
+      aws-region: '${{ steps.stack-region.outputs.result }}'
+      aws-regions: '${{ steps.strategy.outputs.aws-regions }}'
+      remove: '${{ inputs.remove }}'
+      sha: '${{ inputs.sha }}'
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.sha }}
+          fetch-depth: 0
+
+      - uses: actions/github-script@v7
+        name: get node version
+        id: node-version
+        with:
+          result-encoding: string
+          script: |
+            return await (await import('./.github/actions/dist/get-node-version')).default()
+
+      - name: get node path
+        id: node-path
+        run: |
+          echo "result=$(which node)" >> "${GITHUB_OUTPUT:?}"
+
+      - uses: actions/setup-node@v4.0.1
+        with:
+          node-version: '${{ steps.node-version.outputs.result }}'
+
+      - uses: actions/cache@v3
+        id: npm-cache
+        with:
+          path: |
+            ~/.npm
+            node_modules
+            **/node_modules
+          key: ${{ runner.os }}-node-${{ steps.node-version.outputs.result}}-v7-${{ inputs.stage }}-${{ hashFiles('package-lock.json') }}-${{ hashFiles('**/package-lock.json') }}
+
+      - name: root npm install
+        run: |
+          npm install \
+            --no-save \
+            --audit false \
+            --fund false \
+            --ignore-scripts
+          npm run patch-files
+        if: steps.npm-cache.outputs.cache-hit != 'true'
+
+      - uses: aws-actions/configure-aws-credentials@v4.0.1
+        with:
+          role-to-assume: ${{ secrets.aws-ci-role }}
+          aws-region: us-east-1
+          role-duration-seconds: 900
+
+      - uses: actions/github-script@v7
+        name: get stack name
+        id: stack-name
+        with:
+          result-encoding: string
+          script: |
+            return require('./packages/settings.js')().stackName
+
+      - uses: actions/github-script@v7
+        name: get stack region
+        id: stack-region
+        with:
+          result-encoding: string
+          script: |
+            return require('./packages/settings.js')({
+              options: { stage: '${{ inputs.stage }}' }
+            }).stackRegion
+
+      - run: |
+          ./.github/actions/ssm-parameters.sh \
+            '${{ inputs.remove }}' \
+            '${{ steps.stack-name.outputs.result }}' \
+            '${{ inputs.stage }}' \
+            '${{ steps.stack-region.outputs.result }}' \
+            '''
+            {
+              "API_JWT_SECRET": "${{ secrets.api-jwt-secret }}",
+              "API_MFA_SECRET": "${{ secrets.api-mfa-secret }}",
+              "S3_LOG_BUCKET": "${{ secrets.aws-s3-log-bucket }}",
+              "S3_BACKUP_BUCKET": "${{ secrets.aws-s3-backup-bucket }}"
+            }
+            ${{ secrets.stack-ssm-secret }}
+            '''
+        id: ssm-parameters
+        name: ssm parameters
+
+      - uses: actions/github-script@v7
+        name: deploy strategy
+        id: strategy
+        with:
+          script: |
+            return await (await import('./.github/actions/dist/deploy-strategy')).default({
+              github,
+              context,
+              core,
+              remove: ${{ inputs.remove }},
+              stage: '${{ inputs.stage }}',
+              nodePath: '${{ steps.node-path.outputs.result }}',
+              region: '${{ steps.stack-region.outputs.result }}',
+              npmCacheHit: ${{ steps.npm-cache.outputs.cache-hit == 'true' }}
+            })
+
+      - uses: actions/github-script@v7
+        id: stage-root
+        name: stage root
+        with:
+          result-encoding: string
+          script: |
+            const { stageRoot } = require('./packages/settings.js')({
+              options: {
+                stage: '${{ inputs.stage }}',
+              }
+            })
+            return stageRoot

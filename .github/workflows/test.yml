@@ -1,0 +1,13 @@
+name: test
+
+on:
+  workflow_call:
+
+jobs:
+  run-unit-tests:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - name: run tests
+        run: |
+          echo TODO

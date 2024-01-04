@@ -1,0 +1,32 @@
+name: run sanity tests
+
+on:
+  workflow_call:
+    secrets:
+      aws-ci-role:
+        required: true
+    inputs:
+      stack-name:
+        required: true
+        type: string
+      stage:
+        required: true
+        type: string
+      aws-region:
+        required: true
+        type: string
+env:
+  AWS_RETRY_MODE: standard
+  AWS_MAX_ATTEMPTS: 6
+
+jobs:
+  sanity-tests:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: run tests
+        run: |
+          echo TODO

@@ -1,0 +1,127 @@
+name: sls
+
+on:
+  workflow_call:
+    secrets:
+      aws-ci-role:
+        required: true
+
+    inputs:
+      sha:
+        required: true
+        type: string
+      node-version:
+        required: true
+        type: string
+      remove:
+        type: boolean
+      strategy:
+        type: string
+        required: true
+
+env:
+  AWS_RETRY_MODE: standard
+  AWS_MAX_ATTEMPTS: 6
+
+jobs:
+  run:
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    strategy: ${{ fromJSON( inputs.strategy ) }}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.sha }}
+
+      - uses: actions/setup-node@v4.0.1
+        with:
+          node-version: ${{ inputs.node-version }}
+
+      - uses: actions/cache@v3
+        id: npm-cache
+        with:
+          path: |
+            ~/.npm
+            node_modules
+            **/node_modules
+          key: ${{ runner.os }}-node-${{ inputs.node-version}}-v7-${{ matrix.stage }}-${{ hashFiles('package-lock.json') }}-${{ hashFiles('**/package-lock.json') }}
+
+      - name: root npm install
+        run: |
+          npm install \
+            --no-save \
+            --audit false \
+            --fund false \
+            --loglevel=error \
+            --ignore-scripts
+          npm run patch-files
+        if: steps.npm-cache.outputs.cache-hit != 'true'
+
+      - name: local npm install
+        # node_modules for the stack exists because it's created by .github/actions/deploy-strategy.js
+        if: matrix.package-lock && steps.npm-cache.outputs.cache-hit != 'true'
+        run: npm install --no-save --audit false --fund false --ignore-scripts
+        working-directory: ${{ matrix.directory }}
+
+      - uses: aws-actions/configure-aws-credentials@v4.0.1
+        with:
+          role-to-assume: ${{ secrets.aws-ci-role }}
+          aws-region: us-east-1
+          role-duration-seconds: 900
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: 3.2
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.11
+
+      - name: build
+        if: ${{ inputs.remove == false }}
+        run: |
+          PATH="${PATH}:../../node_modules/.bin"
+          npx --no-install \
+            sam-expand \
+              build \
+                --parameter-overrides Stage="${{matrix.stage}}" \
+                --region ${{matrix.region}}
+        working-directory: ${{ matrix.directory }}
+
+      - name: lint
+        if: ${{ inputs.remove == false }}
+        run: |
+          PATH="${PATH}:../../node_modules/.bin"
+          declare -r STAGE="${{matrix.stage}}"
+          npx --no-install \
+            sam-expand \
+              validate \
+                --lint \
+                -t .aws-sam/build/template.yaml \
+                --region ${{matrix.region}}
+        working-directory: ${{ matrix.directory }}
+
+      - name: deploy
+        if: ${{ inputs.remove == false }}
+        run: |
+          PATH="${PATH}:../../node_modules/.bin"
+          npx --no-install \
+            sam-expand \
+              deploy \
+                --parameter-overrides Stage="${{matrix.stage}}" \
+                --region ${{matrix.region}}
+        working-directory: ${{ matrix.directory }}
+
+      - name: remove
+        if: ${{ inputs.remove == true }}
+        run: |
+          PATH="${PATH}:../../node_modules/.bin"
+          declare -r STAGE="${{matrix.stage}}"
+          npx --no-install \
+            sam-expand \
+              delete \
+                --region ${{matrix.region}}
+        working-directory: ${{ matrix.directory }}

@@ -1,0 +1,45 @@
+{
+  "rules": {
+    "noIAMRolePolicyWithWildcardResource": {
+      "ignoredResources": [".*"]
+    },
+    "dynamodbBackupConfig": {
+      "ignoredResources": ["dynamodb-(pr-)?[^-]*-dynamodb"]
+    },
+    "enableDeletionProtectionOnDynamoDBTables": {
+      "ignoredResources": ["dynamodb-(pr-)?[^-]*-dynamodb"]
+    },
+    "specifyDlqOnSqs": {
+      "ignoredResources": ["(events|lambda|pipes|scheduler)Dlq-"]
+    },
+    "encryptedSnsTopics": {
+      "ignoredResources": [
+        "ses-(pr-)?[^-]*-snsEmailDeliveryTopic",
+        "monitoring-region-sns(Ops|Alarm)Topic"
+      ]
+    },
+    "useIntelligentTiering": {
+      "ignoredResources": [
+        "cdn-(pr-)?[^-]*-s3(protectedmedialogs|cloudfrontlogs)",
+        "-backup-s3backup-"
+      ]
+    },
+    "noMonoPackage": {
+      "ignoredResources": [
+        "graphql-(pr-)?[^-]*-http-(post|get)",
+        "-(pr-)?[^-]*-sentry",
+        "cdn-(pr-)?[^-]*-(http|webSocket)(Anonymous)?Auth",
+        "rest-(pr-)?[^-]*-session-(get|post)",
+        "graphql-(pr-)?[^-]*-broadcast",
+        "-(pr-)?[^-]*-s3-replicate",
+        "websocket-(pr-)?[^-]*-(connections|default|echo)"
+      ]
+    },
+    "lightBundle": {
+      "ignoredResources": ["dynamodb-(pr-)?[^-]*-migration", "media-(pr-)?[^-]*-s3-trigger"]
+    },
+    "asyncSpecifyFailureDestination": {
+      "ignoredResources": ["test-(pr-)?[^-]*-capture-token"]
+    }
+  }
+}
