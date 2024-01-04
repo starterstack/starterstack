@@ -150,7 +150,7 @@ jobs:
         with:
           result-encoding: string
           script: |
-            return require('./packages/settings.js')().stackName
+            return require('./packages/settings.json').stackName
 
       - uses: actions/github-script@v7
         name: get stack region
@@ -158,9 +158,11 @@ jobs:
         with:
           result-encoding: string
           script: |
-            return require('./packages/settings.js')({
-              options: { stage: '${{ inputs.stage }}' }
-            }).stackRegion
+            const settings = require('./packages/settings.json')
+            const stageName = settings.stages.includes('${{ inputs.stage }}')
+                  ? '{{ input.stage }}'
+                  : 'feature'
+            return settings.regions[stageName]
 
       - run: |
           ./.github/actions/ssm-parameters.sh \
@@ -202,9 +204,13 @@ jobs:
         with:
           result-encoding: string
           script: |
-            const { stageRoot } = require('./packages/settings.js')({
-              options: {
-                stage: '${{ inputs.stage }}',
-              }
-            })
+            const stage = '${{ inputs.stage }}'
+            const settings = require('./packages/settings.json')
+            const dynamicStage = !settings.stages.find((x) => x === stage)
+            const ROOT_DOMAIN = settings.rootDomain
+            const STACK_ROOT_DOMAIN = settings.stackRootDomain
+            const productionStage = /^(prod)(uction)?$/.test(stage)
+            const stageRoot = productionStage
+              ? STACK_ROOT_DOMAIN
+              : `${stage}${dynamicStage ? '.feature' : ''}.${STACK_ROOT_DOMAIN}`
             return stageRoot
