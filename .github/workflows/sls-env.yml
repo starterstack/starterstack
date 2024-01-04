@@ -108,7 +108,7 @@ jobs:
         with:
           result-encoding: string
           script: |
-            return await (await import('${{ github.workspace }}/.github/actions/dist/get-node-version')).default()
+            return await (await import('${{ github.workspace }}/.github/actions/dist/get-node-version.js')).default()
 
       - name: get node path
         id: node-path
@@ -185,7 +185,7 @@ jobs:
         id: strategy
         with:
           script: |
-            return await (await import('${{ github.workspace }}/.github/actions/dist/deploy-strategy')).default({
+            return await (await import('${{ github.workspace }}/.github/actions/dist/deploy-strategy.js')).default({
               github,
               context,
               core,

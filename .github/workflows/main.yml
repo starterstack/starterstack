@@ -167,7 +167,7 @@ jobs:
             const urls = [
               `* https://${stageRoot}`
             ]
-            return await (await import('${{ github.workspace }}/.github/actions/dist/create-pr-comment')).default({
+            return await (await import('${{ github.workspace }}/.github/actions/dist/create-pr-comment.js')).default({
               github,
               context,
               body: `⚡ feature urls\n${urls.join('\n')}`
@@ -176,7 +176,7 @@ jobs:
         if: ${{ github.event.pull_request.head.sha && !contains(github.event.pull_request.labels.*.name, 'environment deployed') }}
         with:
           script: |
-            return await (await import('${{ github.workspace }}/.github/actions/dist/add-pr-label')).default({
+            return await (await import('${{ github.workspace }}/.github/actions/dist/add-pr-label.js')).default({
               github,
               context,
               label: 'environment deployed'
