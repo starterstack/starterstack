@@ -724,25 +724,25 @@ async function promptSecret({ name, settings }) {
       const { stack, region, contains } = name.startsWith('AWS_CI_ROLE_')
         ? {
             stack: 'iam',
-            contains: '-ciRole-',
+            contains: '-CiRole-',
             region: 'us-east-1'
           }
         : name.startsWith('AWS_CI_READ_ONLY_ROLE_')
         ? {
             stack: 'iam',
-            contains: '-ciReadOnlyRole-',
+            contains: '-CiReadOnlyRole-',
             region: 'us-east-1'
           }
         : name === 'AWS_S3_LOG_BUCKET'
         ? {
             stack: 'cloudtrail',
-            contains: '-s3cloudtraillogs-',
+            contains: '-S3cloudtraillogs-',
             region: 'us-east-1'
           }
         : name === 'AWS_S3_BACKUP_BUCKET'
         ? {
             stack: 'backup',
-            contains: '-s3backup-',
+            contains: '-S3backup-',
             region: defaults.regions.backup
           }
         : {}
