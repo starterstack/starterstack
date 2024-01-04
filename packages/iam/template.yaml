@@ -81,6 +81,7 @@ Resources:
               - cloudformation:ExecuteChangeSet
             Resource:
               - !Sub arn:${AWS::Partition}:cloudformation:*:aws:transform/LanguageExtensions
+              - !Sub arn:${AWS::Partition}:cloudformation:*:aws:transform/Serverless-2016-10-31
           - Effect: Allow
             Action:
               - s3:*
