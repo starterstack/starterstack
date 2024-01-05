@@ -46,6 +46,15 @@ jobs:
       matrix:
         include: ${{ fromJson(needs.sls-mentor-regions.outputs.regions) }}
     steps:
+      - uses: actions/checkout@v4
+      - uses: aws-actions/configure-aws-credentials@v4.0.1
+        with:
+          role-to-assume: ${{ secrets.aws-ci-role }}
+          aws-region: us-east-1
+          role-duration-seconds: 900
       - name: run sls-mentor for ${{ matrix.region }}
         run: |
-          echo TODO
+          npx \
+            sls-mentor \
+            --aws-region '${{ matrix.region }}' \
+            --level 5
