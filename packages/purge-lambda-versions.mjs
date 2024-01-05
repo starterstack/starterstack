@@ -74,7 +74,7 @@ export const lifecycle = async function purgeLambdaVersion({
 async function purgeLambdaFunctionVersions({ keep, cloudformation, lambda, logicalId, stackName }) {
   const { StackResourceDetail: { PhysicalResourceId: resourceId = '' } = {} } = await cloudformation.send(
     new DescribeStackResourceCommand({
-      StackName: 'starterstack-sam-dynamodb-dev',
+      StackName: stackName,
       LogicalResourceId: 'MigrationFunction'
     })
   )
