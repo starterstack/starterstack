@@ -60,7 +60,7 @@ export const lifecycle = async function purgeLambdaVersion({
   /** @type {Schema} */
   const config = template.Metadata.expand.config[metadataConfig]
 
-  for (const [key, value] of template.Resources) {
+  for (const [key, value] of Object.entries(template.Resources)) {
     if (value.Type === 'AWS::Serverless::Function') {
       await purgeLambdaFunctionVersions({ keep: config.keep, cloudformation, lambda, logicalId: key, stackName })
     }
