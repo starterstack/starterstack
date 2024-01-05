@@ -59,11 +59,11 @@ Resources:
         RestrictPublicBuckets: true
       LifecycleConfiguration:
         Rules:
-          - Id: TransitionToInfrequentAccessTier
+          - Id: TransitionToIntelligentTiering
             Status: Enabled
             Transitions:
-              - StorageClass: STANDARD_IA
-                TransitionInDays: 30
+              - StorageClass: INTELLIGENT_TIERING
+                TransitionInDays: 0
           - Id: ExpireDynamoDBBackups
             Status: Enabled
             ExpirationInDays: 31

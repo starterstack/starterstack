@@ -19,12 +19,6 @@
         "deployment-SNSOpsTopic"
       ]
     },
-    "useIntelligentTiering": {
-      "ignoredResources": [
-        "cdn-(pr-)?[^-]*-s3(protectedmedialogs|cloudfrontlogs)",
-        "-backup-s3backup-"
-      ]
-    },
     "noMonoPackage": {
       "ignoredResources": [
         "graphql-(pr-)?[^-]*-http-(post|get)",
