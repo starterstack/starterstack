@@ -4,10 +4,10 @@
       "ignoredResources": [".*"]
     },
     "dynamodbBackupConfig": {
-      "ignoredResources": ["dynamodb-(pr-)?[^-]*-dynamodb"]
+      "ignoredResources": ["dynamodb-(pr-)?[^-]*-Dynamodb"]
     },
     "enableDeletionProtectionOnDynamoDBTables": {
-      "ignoredResources": ["dynamodb-(pr-)?[^-]*-dynamodb"]
+      "ignoredResources": ["dynamodb-(pr-)?[^-]*-Dynamodb"]
     },
     "specifyDlqOnSqs": {
       "ignoredResources": ["(Events|Lambda|Pipes|Scheduler)Dlq-"]
