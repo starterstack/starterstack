@@ -10,7 +10,7 @@
       "ignoredResources": ["dynamodb-(pr-)?[^-]*-Dynamodb"]
     },
     "specifyDlqOnSqs": {
-      "ignoredResources": ["(Events|Lambda|Pipes|Scheduler)Dlq-"]
+      "ignoredResources": ["(Events|Lambda|Pipes|Scheduler)Dlq-", "EventInvokeConfigOnF"]
     },
     "encryptedSnsTopics": {
       "ignoredResources": [
