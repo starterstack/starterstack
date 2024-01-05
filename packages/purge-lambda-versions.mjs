@@ -118,7 +118,7 @@ async function listLambdaVersions({ client, name }) {
       lastMarker = nextMarker
     }
   }
-  return result.sort((a, b) => a - b)
+  return result.sort((a, b) => b - a)
 }
 
 /**
