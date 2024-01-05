@@ -35,7 +35,7 @@ jobs:
       - run: |
           declare -r lambda=$(aws cloudformation describe-stacks \
             --stack-name '${{ inputs.stack-name }}-dynamodb-${{ inputs.stage }}' \
-            --region '${{ inputs.aws-region }}' \
+            --region '${{ inputs.aws-region }}' | \
               jq \
                 -r '.Stacks | .[] | .Outputs | .[] | select( .OutputKey == "MigrationFunction") | .OutputValue'
           )
