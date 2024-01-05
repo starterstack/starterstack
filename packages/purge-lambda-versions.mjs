@@ -75,7 +75,7 @@ async function purgeLambdaFunctionVersions({ keep, cloudformation, lambda, logic
   const { StackResourceDetail: { PhysicalResourceId: resourceId = '' } = {} } = await cloudformation.send(
     new DescribeStackResourceCommand({
       StackName: stackName,
-      LogicalResourceId: 'MigrationFunction'
+      LogicalResourceId: logicalId
     })
   )
   if (!resourceId) {
