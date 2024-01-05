@@ -104,7 +104,7 @@ export const lifecycle = async function stackStageConfig({
     const regionIndex = argv.indexOf('--region')
     let region = regionIndex !== -1 ? argv[regionIndex + 1] : ''
 
-    if (['build', 'deploy', 'delete'].includes(command)) {
+    if (['build', 'deploy', 'delete', 'validate'].includes(command)) {
       if (process.env.STAGE) {
         stage = process.env.STAGE
       }
