@@ -182,6 +182,9 @@ Resources:
       Environment:
         Variables:
           SSM_SLACK_URL: !Sub /${Stack}/global/SLACK_OPS_URL
+      DeadLetterQueue:
+        TargetArn: !GetAtt LambdaDlq.Arn
+        Type: SQS
       Events:
         SNSOpsTopic:
           Type: SNS
@@ -211,7 +214,6 @@ Resources:
               Effect: Allow
       LoggingConfig:
         LogGroup: !Ref CloudWatchLogGroup
-      AutoPublishAlias: live
 
   NotifyAlarmFunction:
     Type: AWS::Serverless::Function
@@ -223,6 +225,9 @@ Resources:
       Environment:
         Variables:
           SSM_SLACK_URL: !Sub /${Stack}/global/SLACK_ALARM_URL
+      DeadLetterQueue:
+        TargetArn: !GetAtt LambdaDlq.Arn
+        Type: SQS
       Events:
         SNSAlarmTopic:
           Type: SNS
@@ -252,7 +257,6 @@ Resources:
               Effect: Allow
       LoggingConfig:
         LogGroup: !Ref CloudWatchLogGroup
-      AutoPublishAlias: live
 
 Outputs:
   SNSAlarmTopic:

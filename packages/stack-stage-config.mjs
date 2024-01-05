@@ -104,17 +104,16 @@ export const lifecycle = async function stackStageConfig({
     const regionIndex = argv.indexOf('--region')
     let region = regionIndex !== -1 ? argv[regionIndex + 1] : ''
 
-    if (['build', 'deploy'].includes(command)) {
+    if (['build', 'deploy', 'delete'].includes(command)) {
+      if (process.env.STAGE) {
+        stage = process.env.STAGE
+      }
       if (!process.env.CI && !stage) {
         const { stageValue } =
           stackStageConfig.stage === 'global'
             ? { stageValue: 'global' }
             : await inquirer.prompt({ name: 'stageValue', message: 'stage' })
         stage = stageValue
-      }
-    } else {
-      if (process.env.STAGE) {
-        stage = process.env.STAGE
       }
     }
 
@@ -488,7 +487,9 @@ async function listS3Objects({ s3Client, prefix, bucket }) {
         Prefix: prefix
       })
     )
-    files.push(...result.Contents)
+    if (result?.Contents?.length > 0) {
+      files.push(...result.Contents)
+    }
     nextToken = result.NextContinuationToken
     if (!nextToken) break
   }

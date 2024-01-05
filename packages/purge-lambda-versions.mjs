@@ -107,7 +107,7 @@ async function listLambdaVersions({ client, name }) {
     }))
     if (versions.length > 0) {
       for (const version of versions) {
-        if (version.Version) {
+        if (version.Version && version.Version !== '$LATEST') {
           result.push(Number(version.Version))
         }
       }

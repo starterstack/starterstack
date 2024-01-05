@@ -95,7 +95,6 @@ Resources:
               Effect: Allow
       LoggingConfig:
         LogGroup: !Ref CloudWatchLogGroup
-      AutoPublishAlias: live
 
   DynamodbStackTable:
     Type: AWS::DynamoDB::GlobalTable
