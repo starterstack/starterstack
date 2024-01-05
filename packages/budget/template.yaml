@@ -14,6 +14,7 @@ Metadata:
       - '../hash.mjs'
       - '../stack-stage-config.mjs'
       - '@starterstack/sam-expand/plugins/parameter-overrides'
+      - '../purge-lambda-versions.mjs'
     config:
       stackStageConfig:
         region: us-east-1
@@ -24,6 +25,8 @@ Metadata:
           file:
             location: ../stack-stage-config.mjs
             exportName: snsAlarmTopic
+      purgeLambdaVersions:
+        keep: 3
 
 Resources:
   Budget:

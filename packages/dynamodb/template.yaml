@@ -35,6 +35,7 @@ Metadata:
       - '../stack-stage-config.mjs'
       - '@starterstack/sam-expand/plugins/parameter-overrides'
       - '@starterstack/sam-expand/plugins/esbuild-node'
+      - '../purge-lambda-versions.mjs'
     config:
       stackStageConfig:
         suffixStage: true
@@ -53,6 +54,8 @@ Metadata:
             exportName: commit
       esbuild:
         config: ../esbuild-config.yaml
+      purgeLambdaVersions:
+        keep: 3
 
 Resources:
   CloudWatchLogGroup:

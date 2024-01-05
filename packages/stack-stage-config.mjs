@@ -108,8 +108,8 @@ export const lifecycle = async function stackStageConfig({
       if (!process.env.CI && !stage) {
         const { stageValue } =
           stackStageConfig.stage === 'global'
-          ? { stageValue: 'global' }
-          : await inquirer.prompt({ name: 'stageValue', message: 'stage' })
+            ? { stageValue: 'global' }
+            : await inquirer.prompt({ name: 'stageValue', message: 'stage' })
         stage = stageValue
       }
     } else {
@@ -180,16 +180,8 @@ export const lifecycle = async function stackStageConfig({
   } else {
     if (argv.includes('--s3-bucket') && argv.includes('--s3-prefix')) {
       const region = argv[argv.indexOf('--region') + 1]
-      const stage = argv[argv.findIndex((x) => x.startsWith('Stage='))]
       const s3Bucket = argv[argv.indexOf('--s3-bucket') + 1]
       const s3Prefix = argv[argv.indexOf('--s3-prefix') + 1]
-
-      if (!region) {
-        throw new TypeError('missing region')
-      }
-      if (!stage) {
-        throw new TypeError('missing stage')
-      }
 
       let s3Client = s3Clients.get(region)
 
@@ -296,8 +288,7 @@ export async function getConfig({ stage, template, directory }) {
             })
           )
           cloudformationResults.set(`${region}.${stackName}`, result)
-        } catch {
-        }
+        } catch {}
       }
       for (const output of result?.Stacks?.[0]?.Outputs ?? []) {
         if (output.OutputKey === 'S3DeploymentBucket' && output.OutputValue) {

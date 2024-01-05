@@ -34,6 +34,7 @@ Metadata:
       - './cloudwatch-alarm-lambda-concurrency.mjs'
       - '@starterstack/sam-expand/plugins/parameter-overrides'
       - '@starterstack/sam-expand/plugins/esbuild-node'
+      - '../purge-lambda-versions.mjs'
     config:
       stackStageConfig:
         regions: account
@@ -55,6 +56,8 @@ Metadata:
           file:
             location: ../git.mjs
             exportName: commit
+      purgeLambdaVersions:
+        keep: 3
 
 Conditions:
   IsCloudwatchAlertsEnabled: !Equals
