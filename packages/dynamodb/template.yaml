@@ -34,7 +34,6 @@ Metadata:
       - '../hash.mjs'
       - '../stack-stage-config.mjs'
       - '@starterstack/sam-expand/plugins/parameter-overrides'
-      - '@starterstack/sam-expand/plugins/esbuild-node'
       - '../purge-lambda-versions.mjs'
     config:
       stackStageConfig:
@@ -52,8 +51,6 @@ Metadata:
           file:
             location: ../git.mjs
             exportName: commit
-      esbuild:
-        config: ../esbuild-config.yaml
       purgeLambdaVersions:
         keep: 3
 
@@ -95,6 +92,8 @@ Resources:
               Effect: Allow
       LoggingConfig:
         LogGroup: !Ref CloudWatchLogGroup
+    Metadata:
+      BuildMethod: makefile
 
   DynamodbStackTable:
     Type: AWS::DynamoDB::GlobalTable

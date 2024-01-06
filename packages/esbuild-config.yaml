@@ -1,5 +1,5 @@
 Bundle: true
-Minify: false
+Minify: true
 Format: esm
 OutExtension:
   - .js=.mjs
