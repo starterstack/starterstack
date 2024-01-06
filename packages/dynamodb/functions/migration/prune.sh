@@ -5,6 +5,9 @@ set -euo pipefail
 cd ${ARTIFACTS_DIR:?}
 
 git init
+git config init.defaultBranch main
+git config user.email "user@example.com"
+git config user.name "prune.sh"
 echo """
 .DS_Store
 .aws-sam
