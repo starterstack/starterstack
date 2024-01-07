@@ -2,12 +2,25 @@
 
 set -euo pipefail
 
+declare -r me=$(basename "$0")
+
+rm -rf node_modules
+npm install \
+	--no-save \
+	--audit false \
+	--fund false \
+	--loglevel=error \
+	--ignore-scripts \
+	--omit=dev
+
+cp -r . ${ARTIFACTS_DIR:?}
+
 cd ${ARTIFACTS_DIR:?}
 
 git init
 git config init.defaultBranch main
 git config user.email "user@example.com"
-git config user.name "prune.sh"
+git config user.name "${me:?}"
 echo """
 .DS_Store
 .aws-sam
@@ -139,7 +152,8 @@ node_modules/pdf-lib/es
 node_modules/pdf-lib/dist
 node_modules/pdf-lib/src
 .gitignore
-prune.sh
+!.include-lambda-blob-files/*
+${me:?}
 """ > .gitignore
 git add -f .gitignore
 git commit -m ".gitignore"
