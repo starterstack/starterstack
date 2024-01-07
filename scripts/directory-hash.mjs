@@ -157,6 +157,7 @@ async function getGlobalFileHash(packagesRoot) {
      'git.mjs',
      'hash.mjs',
      'esbuild-config.yaml',
+     'npm-copy.sh',
      'settings.json',
   ]
 
