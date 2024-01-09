@@ -385,7 +385,32 @@ export default async function getSettings({
     directory: templateDirectory
   })
 
+  /** @type {string[]} */
+  const stages = settings.stages
+  const dynamicStage = !stages.find((x) => x === stage)
+
+  const productionStage = settings.accountPerStage
+    ? settings.awsAccounts[accountId].stage === 'prod'
+    : stage === 'prod'
+  const stageRoot = productionStage
+    ? settings.stackRootDomain
+    : `${stage}${dynamicStage ? '.feature' : ''}.${settings.stackRootDomain}`
+
   return {
+    get rootDomain() {
+      return settings.rootDomain
+    },
+    get devRoot() {
+      return `dev.${settings.rootDomain}`
+    },
+    get wildcardCertName() {
+      return `*.feature.${settings.stackRootDomain}`
+    },
+    get stageOrStackRoot() {
+      return settings.accountPerStage === false
+        ? settings.stackRootDomain
+        : stageRoot
+    },
     get productionStage() {
       return 'prod'
     },
