@@ -35,6 +35,14 @@ jobs:
         with:
           node-version: '${{ steps.node-version.outputs.result }}'
           cache: npm
+      - name: root install
+        run: |
+          npm install \
+            --no-save \
+            --audit false \
+            --fund false \
+            --ignore-scripts
+          npm run patch-files
       - name: build actions dist
         env:
           GH_TOKEN: ${{ github.token }}
