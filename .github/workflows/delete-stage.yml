@@ -1,0 +1,164 @@
+name: delete stage
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment-name:
+        description: 'environment name'
+        required: true
+      stage:
+        description: 'stage'
+        required: true
+      account:
+        type: choice
+        description: 'account'
+        options:
+          - dev
+          - feature
+        required: true
+    branches:
+      - main
+
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+jobs:
+  check-github-env-exists:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/github-script@v7
+        id: github-env-exists
+        with:
+          result-encoding: string
+          script: |
+            return await (await import('${{ github.workspace }}/.github/actions/dist/github-environment-exists.js')).default({
+              github,
+              context,
+              environment: '${{ github.event.pull_request.head.ref || github.event.inputs.environment-name }}'
+            })
+    outputs:
+      result: ${{ steps.github-env-exists.outputs.result }}
+
+  env:
+    needs: [check-github-env-exists]
+    uses: 'starterstack/starterstack/.github/workflows/sls-env.yml@main'
+    with:
+      account: ${{ inputs.account || github.event.inputs.account || 'dev' }}
+      stage: ${{ github.event.inputs.stage || format('pr-{0}', github.event.pull_request.number) }}
+      sha: ${{ github.event.pull_request.head.sha || github.sha }}
+      remove: true
+    secrets:
+      aws-ci-role: ${{ secrets[format('AWS_CI_ROLE_{0}', (github.event.inputs.account || 'feature')) ] }}
+      aws-s3-log-bucket: ${{ secrets.AWS_S3_LOG_BUCKET }}
+      aws-s3-backup-bucket: ${{ secrets.AWS_S3_BACKUP_BUCKET }}
+      api-jwt-secret: ${{ secrets[format('API_JWT_SECRET_{0}', (github.event.inputs.account || 'feature')) ] }}
+      api-mfa-secret: ${{ secrets[format('API_MFA_SECRET_{0}', (github.event.inputs.account || 'feature')) ] }}
+      stack-ssm-secret: ${{ secrets.STACK_SSM_SECRETS_JSON }}
+    if: ${{ needs.check-github-env-exists.outputs.result == 'true' || github.event.inputs.account != ''  }}
+
+  remove-parallel-remaining:
+    needs: [check-github-env-exists, env]
+    if: ${{ needs.env.outputs.parallel-remaining == 'true' }}
+    uses: 'starterstack/starterstack/.github/workflows/sls.yml@main'
+    with:
+      sha: ${{ needs.env.outputs.sha }}
+      node-version: ${{ needs.env.outputs.node-version }}
+      strategy: ${{ needs.env.outputs.parallel-remaining-strategy }}
+      remove: true
+    secrets:
+      aws-ci-role: ${{ secrets[format('AWS_CI_ROLE_{0}', (github.event.inputs.account || 'feature')) ] }}
+
+  remove-parallel-backend:
+    needs: [check-github-env-exists, env, remove-parallel-remaining]
+    if: ${{ always() && !failure() && !cancelled() && needs.env.outputs.parallel-backend == 'true' }}
+    uses: 'starterstack/starterstack/.github/workflows/sls.yml@main'
+    with:
+      sha: ${{ needs.env.outputs.sha }}
+      node-version: ${{ needs.env.outputs.node-version }}
+      strategy: ${{ needs.env.outputs.parallel-backend-strategy }}
+      remove: true
+    secrets:
+      aws-ci-role: ${{ secrets[format('AWS_CI_ROLE_{0}', (github.event.inputs.account || 'feature')) ] }}
+
+  remove-parallel-stage:
+    needs:
+      [
+        check-github-env-exists,
+        env,
+        remove-parallel-remaining,
+        remove-parallel-backend
+      ]
+    if: ${{ always() && !failure() && !cancelled() && needs.env.outputs.parallel-stage == 'true' }}
+    uses: 'starterstack/starterstack/.github/workflows/sls.yml@main'
+    with:
+      sha: ${{ needs.env.outputs.sha }}
+      node-version: ${{ needs.env.outputs.node-version }}
+      strategy: ${{ needs.env.outputs.parallel-stage-strategy }}
+      remove: true
+    secrets:
+      aws-ci-role: ${{ secrets[format('AWS_CI_ROLE_{0}', (github.event.inputs.account || 'feature')) ] }}
+
+  cleanup-environment:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    needs:
+      [
+        check-github-env-exists,
+        env,
+        remove-parallel-remaining,
+        remove-parallel-backend,
+        remove-parallel-stage
+      ]
+    if: ${{ always() && !failure() && !cancelled() && needs.check-github-env-exists.outputs.result == 'true' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/github-script@v7
+        id: delete-github-environment
+        with:
+          github-token: ${{ secrets.PAT_GITHUB }}
+          script: |
+            return await (await import('${{ github.workspace }}/.github/actions/dist/delete-github-environment.js')).default({
+              github,
+              context,
+              environment: '${{ github.event.pull_request.head.ref || github.event.inputs.environment-name }}'
+            })
+
+  report-success:
+    needs:
+      [
+        check-github-env-exists,
+        env,
+        remove-parallel-remaining,
+        remove-parallel-backend,
+        remove-parallel-stage,
+        cleanup-environment
+      ]
+    if: ${{ always() && !failure() && !cancelled() && needs.check-github-env-exists.outputs.result == 'true' }}
+    uses: 'starterstack/starterstack/.github/workflows/slack.yml@main'
+    with:
+      name: '${{ github.event.pull_request.head.ref || github.event.inputs.environment-name }}'
+      success: true
+    secrets:
+      slack-ops-url: ${{ fromJSON(secrets.STACK_SSM_SECRETS_JSON).SLACK_OPS_URL }}
+
+  report-failure:
+    needs:
+      [
+        check-github-env-exists,
+        env,
+        remove-parallel-remaining,
+        remove-parallel-backend,
+        remove-parallel-stage,
+        cleanup-environment
+      ]
+    if: ${{ always() && failure() && !cancelled() }}
+    uses: 'starterstack/starterstack/.github/workflows/slack.yml@main'
+    with:
+      name: '${{ github.event.pull_request.head.ref || github.event.inputs.environment-name }}'
+      success: false
+    secrets:
+      slack-ops-url: ${{ fromJSON(secrets.STACK_SSM_SECRETS_JSON).SLACK_OPS_URL }}

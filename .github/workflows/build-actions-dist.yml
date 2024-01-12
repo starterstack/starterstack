@@ -1,0 +1,58 @@
+name: build actions dist
+
+concurrency:
+  group: build-actions
+  cancel-in-progress: false
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/actions/*.js'
+      - 'scripts/directory-hash.js'
+      - 'packages/settings.json'
+  workflow_dispatch:
+    branches:
+      - main
+
+jobs:
+  build:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/github-script@v7
+        id: node-version
+        with:
+          result-encoding: string
+          script: |
+            return await (await import('${{ github.workspace }}/.github/actions/dist/get-node-version.js')).default()
+      - uses: actions/setup-node@v4.0.1
+        with:
+          node-version: '${{ steps.node-version.outputs.result }}'
+          cache: npm
+      - name: build actions dist
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ./scripts/build-actions.sh
+          if ! git diff \
+            --cached \
+            -s \
+            --exit-code ./.github/actions/dist; then
+            git checkout -b chore/update-github-action-dist
+            git config user.name 'Github Actions'
+            git config user.email '<>'
+            git commit -m "chore: build github actions dist"
+            git push \
+              --set-upstream origin chore/update-github-action-dist
+            gh pr create \
+              --title "chore: update github actions dist" \
+              --base main \
+              --label dependencies \
+              --body "chore: update github actions dist"
+          fi

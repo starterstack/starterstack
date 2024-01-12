@@ -1,0 +1,23 @@
+name: pull request opened
+
+on:
+  pull_request:
+    types: [opened]
+    branches:
+      - main
+
+jobs:
+  label:
+    timeout-minutes: 10
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/github-script@v7
+        if: ${{ !contains(github.event.pull_request.labels.*.name, 'feature deploy') && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'dependabot[bot]' }}
+        with:
+          script: |
+            return await (await import('${{ github.workspace }}/.github/actions/dist/create-pr-comment.js')).default({
+              github,
+              context,
+              body: '💡 Add label *feature deploy* to test this feature ⚡'
+            })
