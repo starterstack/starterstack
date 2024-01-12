@@ -45,6 +45,7 @@ const settings = JSON.parse(
 const sts = new STSClient({ region: 'us-east-1' })
 const ssm = new SSMClient({ region: 'us-east-1' })
 
+/** @type {string} */
 let accountId
 
 /** @type {import('@starterstack/sam-expand/plugins').Lifecycles} */
@@ -283,7 +284,9 @@ export async function getConfig({ stage, template, directory }) {
             })
           )
           cloudformationResults.set(`${region}.${stackName}`, result)
-        } catch {}
+        } catch {
+          // eslint-disable-next-line no-empty
+        }
       }
       for (const output of result?.Stacks?.[0]?.Outputs ?? []) {
         if (output.OutputKey === 'S3DeploymentBucket' && output.OutputValue) {
@@ -317,7 +320,9 @@ export async function getConfig({ stage, template, directory }) {
               })
             )
             cloudformationResults.set(`${region}.${stackName}`, result)
-          } catch {}
+          } catch {
+            // eslint-disable-next-line no-empty
+          }
         }
         for (const output of result?.Stacks?.[0]?.Outputs ?? []) {
           if (output.OutputKey === 'SNSAlarmTopic' && output.OutputValue) {
@@ -381,31 +386,32 @@ export default async function getSettings({
     directory: templateDirectory
   })
 
-  /** @type {string[]} */
-  const stages = settings.stages
-  const dynamicStage = !stages.find((x) => x === stage)
-
-  const productionStage = settings.accountPerStage
-    ? settings.awsAccounts[accountId].stage === 'prod'
-    : stage === 'prod'
-  const stageRoot = productionStage
-    ? settings.stackRootDomain
-    : `${stage}${dynamicStage ? '.feature' : ''}.${settings.stackRootDomain}`
-
   return {
     get rootDomain() {
       return settings.rootDomain
     },
     get devRoot() {
-      return `dev.${settings.rootDomain}`
+      return `dev.${settings.stackRootDomain}`
     },
     get wildcardCertName() {
       return `*.feature.${settings.stackRootDomain}`
     },
     get stageOrStackRoot() {
-      return settings.accountPerStage === false
-        ? settings.stackRootDomain
-        : stageRoot
+      const accountStage = settings.accountPerStage
+        ? settings.awsAccounts[accountId]?.stage
+        : stage
+      if (accountStage === 'dev') {
+        return this.devRoot
+      } else if (accountStage === 'prod') {
+        return settings.stackRootDomain
+      } else {
+        if (stage === 'global') {
+          throw new Error(
+            'stageOrStackRoot not available for feature + global stage'
+          )
+        }
+        return `${stage}.feature.${settings.stackRootDomain}`
+      }
     },
     get productionStage() {
       return 'prod'
@@ -416,7 +422,7 @@ export default async function getSettings({
     get productionAccountId() {
       const [productionAccountId] =
         Object.entries(settings.awsAccounts).find(function isProduction([
-          _,
+          ,
           { stage }
         ]) {
           return stage === 'prod'
@@ -432,7 +438,7 @@ export default async function getSettings({
     get backupAccountId() {
       const [backupAccountId] =
         Object.entries(settings.awsAccounts).find(function isbackup([
-          _,
+          ,
           { stage }
         ]) {
           return stage === 'backup'
@@ -498,8 +504,11 @@ async function getParameter(name) {
  * @returns {Promise<string[]>}
  **/
 async function listS3Objects({ s3Client, prefix, bucket }) {
+  /** @type {string[]} */
   const files = []
+  /** @type {string | undefined} */
   let nextToken
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     const result = await s3Client.send(
       new ListObjectsV2Command({
@@ -508,13 +517,17 @@ async function listS3Objects({ s3Client, prefix, bucket }) {
         Prefix: prefix
       })
     )
-    if (result?.Contents?.length > 0) {
-      files.push(...result.Contents)
+    if (result?.Contents?.length) {
+      for (const { Key: key } of result.Contents) {
+        if (key) {
+          files.push(key)
+        }
+      }
     }
     nextToken = result.NextContinuationToken
     if (!nextToken) break
   }
-  return files.map((x) => x.Key)
+  return files
 }
 
 /**

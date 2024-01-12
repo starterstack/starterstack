@@ -70,7 +70,7 @@
     "@aws-sdk/client-cloudformation": "3.478.0",
     "@aws-sdk/client-dynamodb": "3.484.0",
     "@aws-sdk/client-lambda": "3.484.0",
-    "@aws-sdk/client-s3": "3.484.0",
+    "@aws-sdk/client-s3": "3.490.0",
     "@aws-sdk/client-ssm": "3.481.0",
     "@aws-sdk/client-sts": "3.478.0",
     "@aws-sdk/lib-dynamodb": "3.484.0",
