@@ -93,7 +93,7 @@
     "@typescript-eslint/parser": "6.18.1",
     "aws-xray-sdk-core": "3.5.3",
     "commitizen": "4.3.0",
-    "esbuild": "0.19.8",
+    "esbuild": "0.19.11",
     "eslint-plugin": "1.0.1",
     "eslint-plugin-unicorn": "50.0.1",
     "husky": "8.0.3",
