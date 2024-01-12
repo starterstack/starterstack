@@ -10,7 +10,10 @@
       "ignoredResources": ["dynamodb-(pr-)?[^-]*-Dynamodb"]
     },
     "specifyDlqOnSqs": {
-      "ignoredResources": ["(Events|Lambda|Pipes|Scheduler)Dlq-", "EventInvokeConfigOnF"]
+      "ignoredResources": [
+        "(Events|Lambda|Pipes|Scheduler)Dlq-",
+        "EventInvokeConfigOnF"
+      ]
     },
     "encryptedSnsTopics": {
       "ignoredResources": [
@@ -31,7 +34,10 @@
       ]
     },
     "lightBundle": {
-      "ignoredResources": ["dynamodb-(pr-)?[^-]*-migration", "media-(pr-)?[^-]*-s3-trigger"]
+      "ignoredResources": [
+        "dynamodb-(pr-)?[^-]*-migration",
+        "media-(pr-)?[^-]*-s3-trigger"
+      ]
     },
     "asyncSpecifyFailureDestination": {
       "ignoredResources": ["test-(pr-)?[^-]*-capture-token"]

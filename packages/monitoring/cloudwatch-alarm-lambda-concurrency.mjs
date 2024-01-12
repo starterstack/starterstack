@@ -28,7 +28,10 @@ export const lifecycle = async function getRegionLimits({
     const alarmName = {
       'Fn::Sub': `\${Stack} lambda concurrent executions in ${region} > ${threshold} over the last ${EVALUATION_PERIODS} minutes`
     }
-    log('adding cloudwatch alarm for lambda concurrency to resources %O', { unreservedConcurrentExecutions, region })
+    log('adding cloudwatch alarm for lambda concurrency to resources %O', {
+      unreservedConcurrentExecutions,
+      region
+    })
     template.Resources['CloudWatchAlarmLambdaConcurrency'] = {
       Type: 'AWS::CloudWatch::Alarm',
       Condition: 'IsCloudwatchAlertsEnabled',

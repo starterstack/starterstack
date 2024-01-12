@@ -78,9 +78,9 @@ function traceFetch() {
           }
           subsegment.close()
           return res
-        } catch (err) {
-          subsegment.close(err)
-          throw err
+        } catch (error) {
+          subsegment.close(error)
+          throw error
         }
       }
     }

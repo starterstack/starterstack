@@ -134,9 +134,9 @@ export const handler = lambdaHandler(async function notify(
                   text: {
                     type: 'mrkdwn',
                     text: `*${key}:* ${
-                      typeof value !== 'object'
-                        ? value
-                        : JSON.stringify(value, null, 2)
+                      typeof value === 'object'
+                        ? JSON.stringify(value, null, 2)
+                        : value
                     }`
                   }
                 })
@@ -164,7 +164,7 @@ export const handler = lambdaHandler(async function notify(
         throw new Error(`failed to fetch ${response}`)
       }
     }
-  } catch (err) {
-    log.error({ event }, err)
+  } catch (error) {
+    log.error({ event }, error)
   }
 })

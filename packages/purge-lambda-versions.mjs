@@ -27,7 +27,7 @@ export const schema = {
     keep: {
       type: 'number',
       nullable: false
-    },
+    }
   },
   required: ['keep'],
   additionalProperties: false
@@ -36,10 +36,7 @@ export const schema = {
 export const metadataConfig = 'purgeLambdaVersions'
 
 /** @type {import('@starterstack/sam-expand/plugins').Plugin} */
-export const lifecycle = async function purgeLambdaVersion({
-  argv,
-  template
-}) {
+export const lifecycle = async function purgeLambdaVersion({ argv, template }) {
   const regionIndex = argv.indexOf('--region')
 
   if (regionIndex === -1) {
@@ -62,7 +59,13 @@ export const lifecycle = async function purgeLambdaVersion({
 
   for (const [key, value] of Object.entries(template.Resources)) {
     if (value.Type === 'AWS::Serverless::Function') {
-      await purgeLambdaFunctionVersions({ keep: config.keep, cloudformation, lambda, logicalId: key, stackName })
+      await purgeLambdaFunctionVersions({
+        keep: config.keep,
+        cloudformation,
+        lambda,
+        logicalId: key,
+        stackName
+      })
     }
   }
 }
@@ -71,24 +74,39 @@ export const lifecycle = async function purgeLambdaVersion({
  * @param {{ keep: number, cloudformation: CloudFormationClient, lambda: LambdaClient, logicalId: string, stackName: string }} options
  * @returns {Promise<void>}
  **/
-async function purgeLambdaFunctionVersions({ keep, cloudformation, lambda, logicalId, stackName }) {
-  const { StackResourceDetail: { PhysicalResourceId: resourceId = '' } = {} } = await cloudformation.send(
-    new DescribeStackResourceCommand({
-      StackName: stackName,
-      LogicalResourceId: logicalId
-    })
-  )
+async function purgeLambdaFunctionVersions({
+  keep,
+  cloudformation,
+  lambda,
+  logicalId,
+  stackName
+}) {
+  const { StackResourceDetail: { PhysicalResourceId: resourceId = '' } = {} } =
+    await cloudformation.send(
+      new DescribeStackResourceCommand({
+        StackName: stackName,
+        LogicalResourceId: logicalId
+      })
+    )
   if (!resourceId) {
     throw new TypeError(`lambda ${logicalId} not found in ${stackName}`)
   }
 
-  const versions = await listLambdaVersions({ client: lambda, name: resourceId})
-  const aliases = await listLambdaAliases({ client: lambda, name: resourceId})
+  const versions = await listLambdaVersions({
+    client: lambda,
+    name: resourceId
+  })
+  const aliases = await listLambdaAliases({ client: lambda, name: resourceId })
 
   const purge = versions.slice(keep)
 
-  await Promise.all(purge.map(version => !aliases.includes(version) && deleteLambdaFunction({ client: lambda, name: resourceId, version })))
-
+  await Promise.all(
+    purge.map(
+      (version) =>
+        !aliases.includes(version) &&
+        deleteLambdaFunction({ client: lambda, name: resourceId, version })
+    )
+  )
 }
 
 /**
@@ -101,10 +119,13 @@ async function listLambdaVersions({ client, name }) {
   /** @type {number[]} */
   const result = []
   while (true) {
-    const { NextMarker: nextMarker, Versions: versions = [] } = await client.send(new ListVersionsByFunctionCommand({
-      FunctionName: name,
-      ...(lastMarker && { NextMarker: lastMarker }),
-    }))
+    const { NextMarker: nextMarker, Versions: versions = [] } =
+      await client.send(
+        new ListVersionsByFunctionCommand({
+          FunctionName: name,
+          ...(lastMarker && { NextMarker: lastMarker })
+        })
+      )
     if (versions.length > 0) {
       for (const version of versions) {
         if (version.Version && version.Version !== '$LATEST') {
@@ -112,10 +133,10 @@ async function listLambdaVersions({ client, name }) {
         }
       }
     }
-    if (!nextMarker) {
-      break
-    } else {
+    if (nextMarker) {
       lastMarker = nextMarker
+    } else {
+      break
     }
   }
   return result.sort((a, b) => b - a)
@@ -131,10 +152,12 @@ async function listLambdaAliases({ client, name }) {
   /** @type {number[]} */
   const result = []
   while (true) {
-    const { NextMarker: nextMarker, Aliases: aliases = [] } = await client.send(new ListAliasesCommand({
-      FunctionName: name,
-      ...(lastMarker && { NextMarker: lastMarker }),
-    }))
+    const { NextMarker: nextMarker, Aliases: aliases = [] } = await client.send(
+      new ListAliasesCommand({
+        FunctionName: name,
+        ...(lastMarker && { NextMarker: lastMarker })
+      })
+    )
     if (aliases.length > 0) {
       for (const alias of aliases) {
         if (alias.FunctionVersion) {
@@ -142,10 +165,10 @@ async function listLambdaAliases({ client, name }) {
         }
       }
     }
-    if (!nextMarker) {
-      break
-    } else {
+    if (nextMarker) {
       lastMarker = nextMarker
+    } else {
+      break
     }
   }
   return result
@@ -158,7 +181,9 @@ async function listLambdaAliases({ client, name }) {
 
 async function deleteLambdaFunction({ client, name, version }) {
   logInfo('purging lambda %O', { name, version })
-  await client.send(new DeleteFunctionCommand({
-    FunctionName: `${name}:${version}`,
-  }))
+  await client.send(
+    new DeleteFunctionCommand({
+      FunctionName: `${name}:${version}`
+    })
+  )
 }

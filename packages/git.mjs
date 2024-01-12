@@ -5,8 +5,10 @@ import spawn from '@starterstack/sam-expand/spawn'
 /** @type {import('@starterstack/sam-expand/plugins').Lifecycles} */
 export const lifecycles = ['pre:expand']
 
-const stdout = String(await spawn('git', ['rev-parse', 'HEAD'], { shell: true }))
-const shaCommit = stdout.replace(/[\r\n]/g, '').trim()
+const stdout = String(
+  await spawn('git', ['rev-parse', 'HEAD'], { shell: true })
+)
+const shaCommit = stdout.replaceAll(/[\n\r]/g, '').trim()
 
 export default async function settings() {
   return {

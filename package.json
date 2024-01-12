@@ -4,7 +4,11 @@
   "description": "This project was bootstrapped with starterstack, a Serverless monorepo template architecture",
   "scripts": {
     "setup": "node ./scripts/setup.mjs",
-    "patch-files": "bash ./scripts/patch-files.sh"
+    "patch-files": "bash ./scripts/patch-files.sh",
+    "postinstall": "husky install && npm run patch-files",
+    "prepare": "husky install && npm run patch-files",
+    "lint": "eslint --no-error-on-unmatched-pattern",
+    "cz": "cz"
   },
   "repository": {
     "type": "git",
@@ -45,10 +49,20 @@
   ],
   "author": "James Kyburz <james.kyburz@gmail.com>",
   "license": "Apache-2.0",
-  "license": "Apache-2.0",
   "engines": {
     "node": ">= 20 < 21",
     "npm": ">= 10"
+  },
+  "lint-staged": {
+    "*.{ts,js,mjs,mts,cjs,mts}": [
+      "prettier --write"
+    ],
+    "*.{md,yaml,json,yml,md}": "prettier --write"
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
   },
   "private": true,
   "devDependencies": {
@@ -61,9 +75,20 @@
     "@aws-sdk/client-sts": "3.478.0",
     "@aws-sdk/lib-dynamodb": "3.484.0",
     "@aws-sdk/util-dynamodb": "3.484.0",
+    "@commitlint/cli": "18.4.4",
+    "@commitlint/config-conventional": "18.4.4",
+    "@sindresorhus/tsconfig": "5.0.0",
     "@starterstack/sam-expand": "0.0.28",
+    "@typescript-eslint/eslint-plugin": "6.18.1",
+    "@typescript-eslint/parser": "6.18.1",
+    "aws-xray-sdk-core": "3.5.3",
+    "commitizen": "4.3.0",
     "esbuild": "0.19.8",
+    "eslint-plugin": "1.0.1",
+    "eslint-plugin-unicorn": "50.0.1",
+    "husky": "8.0.3",
     "inquirer": "9.2.12",
+    "lint-staged": "15.2.0",
     "prettier": "3.1.0",
     "prettier-config-standard": "7.0.0",
     "sls-mentor": "2.4.1"

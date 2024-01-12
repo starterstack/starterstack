@@ -6,12 +6,12 @@ declare -r me=$(basename "$0")
 
 rm -rf node_modules
 npm install \
-	--no-save \
-	--audit false \
-	--fund false \
-	--loglevel=error \
-	--ignore-scripts \
-	--omit=dev
+  --no-save \
+  --audit false \
+  --fund false \
+  --loglevel=error \
+  --ignore-scripts \
+  --omit=dev
 
 cp -r . ${ARTIFACTS_DIR:?}
 
@@ -154,7 +154,7 @@ node_modules/pdf-lib/src
 .gitignore
 !.include-lambda-blob-files/*
 ${me:?}
-""" > .gitignore
+""" >.gitignore
 git add -f .gitignore
 git commit -m ".gitignore"
 git add .

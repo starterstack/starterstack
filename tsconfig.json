@@ -1,0 +1,13 @@
+{
+  "extends": "@sindresorhus/tsconfig",
+  "compilerOptions": {
+    "allowJs": true,
+    "lib": ["ES2023"],
+    "sourceMap": true,
+    "target": "ES2022",
+    "declarationMap": false,
+    "emitDeclarationOnly": true
+  },
+  "include": ["./**/*"],
+  "exclude": ["node_modules/**/*"]
+}

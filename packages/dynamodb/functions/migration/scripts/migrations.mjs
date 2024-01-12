@@ -38,11 +38,11 @@ while (true) {
     }
 
     break
-  } catch (err) {
-    if (err.code === 'ECONNREFUSED') {
+  } catch (error) {
+    if (error.code === 'ECONNREFUSED') {
       await setTimeout(1000)
     } else {
-      throw err
+      throw error
     }
   }
 }

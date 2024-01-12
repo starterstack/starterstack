@@ -16,7 +16,7 @@ import ora from 'ora'
 const windows = os.platform() === 'win32'
 
 console.log(
-  '\x1B[93mGitHub is the recommended way to deploy, only use this script if you have to\x1B[0m'
+  '\u001B[93mGitHub is the recommended way to deploy, only use this script if you have to\u001B[0m'
 )
 
 try {
@@ -26,15 +26,15 @@ try {
     throw new Error('missing aws')
   }
 } catch {
-  console.error('\x1B[91mmissing aws cli\x1B[0m')
+  console.error('\u001B[91mmissing aws cli\u001B[0m')
   console.log(
-    '\x1B[90msee https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html\x1B[0m'
+    '\u001B[90msee https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html\u001B[0m'
   )
   process.exit(0)
 }
 
 if (!process.env.AWS_ACCESS_KEY_ID) {
-  console.error('\x1B[91mmissing aws credentials\x1B[0m')
+  console.error('\u001B[91mmissing aws credentials\u001B[0m')
   process.exit(1)
 }
 
@@ -51,7 +51,7 @@ const awsAccount = settings.awsAccounts[accountId]
 
 if (!awsAccount) {
   console.error(
-    `\x1B[91maccount ${accountId} not found in ../packages/settings.json\x1B[0m`
+    `\u001B[91maccount ${accountId} not found in ../packages/settings.json\u001B[0m`
   )
   process.exit(0)
 }
@@ -88,10 +88,8 @@ if (removeOrDeploy && removePrompt !== 'permanently delete') {
 
 const remove = removeOrDeploy && removePrompt === 'permanently delete'
 
-if (removePrompt) {
-  if (!remove) {
-    process.exit(0)
-  }
+if (removePrompt && !remove) {
+  process.exit(0)
 }
 
 cursor(false)
@@ -121,7 +119,7 @@ if (
     (deployType) => !output[deployType]
   )
 ) {
-  console.log('\x1B[32meverything up-to-date\x1B[0m')
+  console.log('\u001B[32meverything up-to-date\u001B[0m')
   process.exit(0)
 }
 
@@ -138,12 +136,14 @@ if (remove) {
 }
 
 console.log(
-  `\x1B[90mwill ${remove ? 'remove' : 'deploy'} ${strategy
+  `\u001B[90mwill ${remove ? 'remove' : 'deploy'} ${strategy
     .flatMap((deployType) =>
-      output[`${deployType}-strategy`]?.matrix?.include.map((x) => `${x.stack}(${x.region})`)
+      output[`${deployType}-strategy`]?.matrix?.include.map(
+        (x) => `${x.stack}(${x.region})`
+      )
     )
     .filter(Boolean)
-    .join(', ')} to ${stage}\x1B[0m`
+    .join(', ')} to ${stage}\u001B[0m`
 )
 
 cursor(true)
@@ -169,11 +169,11 @@ for (const type of strategy) {
     const include = [...deployment.matrix.include]
     const parallel = deployment['max-parallel']
     console.log(
-      `\x1B[90m${remove ? 'remove' : 'deploy'} ${type} ${include
+      `\u001B[90m${remove ? 'remove' : 'deploy'} ${type} ${include
         .map((x) => x.stack)
-        .join(', ')}\x1B[0m`
+        .join(', ')}\u001B[0m`
     )
-    while (include.length) {
+    while (include.length > 0) {
       const batch = include.splice(0, parallel)
       const processes = batch.map((service) =>
         createDeployProcess(service, remove)
@@ -183,7 +183,9 @@ for (const type of strategy) {
       )
       await Promise.all(
         processes.flatMap(({ ps, stack, region }) =>
-          ['stdout', 'stderr'].map((stream) => pipe({ ps, stream, stack, region }))
+          ['stdout', 'stderr'].map((stream) =>
+            pipe({ ps, stream, stack, region })
+          )
         )
       )
       for (const [code, signal] of await pendingExitCodes) {
@@ -199,9 +201,9 @@ for (const type of strategy) {
 
 async function pipe({ ps, stream, stack, region }) {
   for await (const chunk of ps[stream]) {
-    for (const line of chunk.toString().split(/[\r\n]/)) {
-      if (line.trim().length) {
-        console.log(`\x1B[0m${stack}(${region}) ${line}`)
+    for (const line of chunk.toString().split(/[\n\r]/)) {
+      if (line.trim().length > 0) {
+        console.log(`\u001B[0m${stack}(${region}) ${line}`)
       }
     }
   }
@@ -223,7 +225,7 @@ async function assertStageDeployed(stage, region) {
       return table.includes(stage)
     })
   ) {
-    console.error(`\x1B[91mno ${stage} environment found\x1B[0m`)
+    console.error(`\u001B[91mno ${stage} environment found\u001B[0m`)
     process.exit(0)
   }
 }
@@ -245,11 +247,11 @@ async function getStage() {
     const { stage } = settings.accountPerStage
       ? { stage: awsAccount.stage }
       : await inquirer.prompt({
-      type: 'list',
-      name: 'stage',
-      choices: settings.stages,
-      message: 'region'
-    })
+          type: 'list',
+          name: 'stage',
+          choices: settings.stages,
+          message: 'region'
+        })
 
     const region = settings.regions[stage]
 
@@ -278,23 +280,19 @@ async function getPullRequestRef() {
       grep $(git rev-parse @{push}) | \
       grep -oE 'pull/[0-9]+' | \
       sed 's|^pull/||g'`)
-    const ref = stdout.replace(/[\n\r]/g, '')
+    const ref = stdout.replaceAll(/[\n\r]/g, '')
     if (ref) {
       return Number(ref)
     }
   } catch {}
-  console.error('\x1B[91mno pull request found\x1B[0m')
+  console.error('\u001B[91mno pull request found\u001B[0m')
   process.exit(0)
 }
 
 function spawn(cmd, args, options) {
   if (windows) {
     args = ['/C', cmd].concat(args).map((arg) => {
-      if (typeof arg === 'string') {
-        return arg.replace(/\^/g, '^^^^')
-      } else {
-        return arg
-      }
+      return typeof arg === 'string' ? arg.replaceAll('^', '^^^^') : arg
     })
     cmd = 'cmd'
   }
@@ -303,9 +301,9 @@ function spawn(cmd, args, options) {
 
 function cursor(show) {
   if (show) {
-    process.stdout.write('\x1B[?25h')
+    process.stdout.write('\u001B[?25h')
   } else {
-    process.stderr.write('\x1B[?25l')
+    process.stderr.write('\u001B[?25l')
   }
 }
 
@@ -327,7 +325,9 @@ function createDeployProcess(service, remove) {
           FORCE_COLOR: '1',
           NODE_OPTIONS: '--unhandled-rejections=strict',
           ...process.env,
-          PATH: `${process.env.PATH}:${path.resolve(path.join(__dirname, '..', 'node_modules', '.bin'))}`,
+          PATH: `${process.env.PATH}:${path.resolve(
+            path.join(__dirname, '..', 'node_modules', '.bin')
+          )}`,
           ...(windows && {
             MSYSTEM: `mingw${os.arch() === 'x64' ? '64' : '32'}`
           })

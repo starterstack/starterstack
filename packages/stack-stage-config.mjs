@@ -100,9 +100,9 @@ export const lifecycle = async function stackStageConfig({
       template.Mappings.AWSAccounts = settings.awsAccounts
     }
     const stageIndex = argv.findIndex((x) => x.startsWith('Stage='))
-    let stage = stageIndex !== -1 ? argv[stageIndex].slice('Stage='.length) : ''
+    let stage = stageIndex === -1 ? '' : argv[stageIndex].slice('Stage='.length)
     const regionIndex = argv.indexOf('--region')
-    let region = regionIndex !== -1 ? argv[regionIndex + 1] : ''
+    let region = regionIndex === -1 ? '' : argv[regionIndex + 1]
 
     if (['build', 'deploy', 'delete', 'validate'].includes(command)) {
       if (process.env.STAGE) {
@@ -136,7 +136,7 @@ export const lifecycle = async function stackStageConfig({
 
       region = regionValue
       if (['build', 'deploy', 'delete', 'validate'].includes(command)) {
-        argv.push(...['--region', region])
+        argv.push('--region', region)
       }
     }
 
@@ -145,30 +145,28 @@ export const lifecycle = async function stackStageConfig({
     }
 
     if (['deploy', 'delete'].includes(command)) {
-      argv.push(...['--stack-name', config.stackName])
+      argv.push('--stack-name', config.stackName)
       if (config.s3DeploymentBucket[region]) {
-        argv.push(...['--s3-bucket', config.s3DeploymentBucket[region]])
         argv.push(
-          ...[
-            '--s3-prefix',
-            command === 'deploy'
-              ? `${config.stackName}/${template.Outputs.DeployedCommit.Value}`
-              : config.stackName
-          ]
+          '--s3-bucket',
+          config.s3DeploymentBucket[region],
+
+          '--s3-prefix',
+          command === 'deploy'
+            ? `${config.stackName}/${template.Outputs.DeployedCommit.Value}`
+            : config.stackName
         )
       }
     }
     if (command === 'deploy') {
       if (config.snsOpsTopic[region]) {
-        argv.push(...['--notification-arns', config.snsOpsTopic[region] ?? ''])
+        argv.push('--notification-arns', config.snsOpsTopic[region] ?? '')
       }
       argv.push(
-        ...[
-          '--tags',
-          `STAGE=${stage}`,
-          `ManagedBy=${settings.stackName}`,
-          `Name=${config.stackName}`
-        ]
+        '--tags',
+        `STAGE=${stage}`,
+        `ManagedBy=${settings.stackName}`,
+        `Name=${config.stackName}`
       )
     }
     if (['build', 'deploy'].includes(command)) {
@@ -198,10 +196,8 @@ export const lifecycle = async function stackStageConfig({
       for (const key of keys) {
         // post deploy delete files for older commits
         // post delete delete all prefix files
-        if (lifecycle === 'post:deploy') {
-          if (key?.startsWith(s3Prefix)) {
-            continue
-          }
+        if (lifecycle === 'post:deploy' && key?.startsWith(s3Prefix)) {
+          continue
         }
         logInfo('delete s3 object %O', { key })
         await s3Client.send(
@@ -490,9 +486,9 @@ async function getParameter(name) {
       })
     )
     return parameter?.Value
-  } catch (err) {
-    if (!(err instanceof ParameterNotFound)) {
-      throw err
+  } catch (error) {
+    if (!(error instanceof ParameterNotFound)) {
+      throw error
     }
   }
 }

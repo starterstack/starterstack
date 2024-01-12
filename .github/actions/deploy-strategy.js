@@ -48,13 +48,13 @@ export default async function deployStrategy({
           'monitoring',
           'stack',
           'region',
-          'dynamodb',
+          'dynamodb'
           // 'cloudfront-us-east-1'
         ],
     stage: remove
-      // ? ['cdn', 'eventbus', 'dynamodb', 'cloudfront-us-east-1']
-      // : ['cdn', 'eventbus'],
-      ? ['eventbus', 'dynamodb']
+      ? // ? ['cdn', 'eventbus', 'dynamodb', 'cloudfront-us-east-1']
+        // : ['cdn', 'eventbus'],
+        ['eventbus', 'dynamodb']
       : ['eventbus'],
     // backend: ['rest', 'websocket', 'graphql', 'ses']
     backend: []

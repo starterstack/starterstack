@@ -14,7 +14,7 @@ const { stdout: origin } = await promisify(exec)('git remote get-url origin')
 const stages = ['dev', 'feature', 'prod', 'log', 'backup']
 
 const [owner, repo] = origin
-  .replace(/[\r\n]/g, '')
+  .replaceAll(/[\n\r]/g, '')
   .match(/github.com.([^.]+).git/)[1]
   .split('/')
 
@@ -33,6 +33,7 @@ const { updateSecretsOnly } = await inquirer.prompt({
 
 if (updateSecretsOnly) {
   await updateGithubSecrets()
+  // eslint-disable-next-line unicorn/no-process-exit
   process.exit(0)
 }
 
@@ -62,14 +63,14 @@ const { rootDomain } = await inquirer.prompt({
   message: 'Route 53 root domain',
   default: defaults.rootDomain,
   name: 'rootDomain',
-  validate: (f) => /^[a-z]+[a-z.]+$/.test(f)
+  validate: (f) => /^[a-z]+[.a-z]+$/.test(f)
 })
 
 const { stackRootDomain } = await inquirer.prompt({
   type: 'input',
   default:
     defaults.stackRootDomain ??
-    `${stackName.toLowerCase().replace(/[^a-z]/g, '')}.${rootDomain}`,
+    `${stackName.toLowerCase().replaceAll(/[^a-z]/g, '')}.${rootDomain}`,
   message: 'Stack root domain',
   name: 'stackRootDomain',
   validate: (f) => !!f
@@ -83,7 +84,7 @@ const priceClassKeys = {
 }
 
 const currentPriceClassValue = Object.entries(priceClassKeys).find(
-  ([_, value]) => value === defaults.priceClassKey
+  ([, value]) => value === defaults.priceClassKey
 )[0]
 
 const { priceClass } = await inquirer.prompt({
@@ -164,7 +165,7 @@ if (!accountPerStage) {
     stages.splice(stages.indexOf(stage, 1))
   }
   console.error(
-    `\x1B[93mSingle account is only recommended for POCs and not for production ready projects\x1B[0m`
+    `\u001B[93mSingle account is only recommended for POCs and not for production ready projects\u001B[0m`
   )
 }
 
@@ -194,7 +195,7 @@ if (accountPerStage) {
 
   for (const stage of stages) {
     const [defaultAccountId, defaultAccountSettings] =
-      Object.entries(awsAccounts).find(([_, value]) => value.stage === stage) ??
+      Object.entries(awsAccounts).find(([, value]) => value.stage === stage) ??
       []
     const { account } = await inquirer.prompt({
       type: 'number',
@@ -334,7 +335,7 @@ const settings =
       stages,
       awsAccounts
     },
-    null,
+    undefined,
     2
   ) + '\n'
 
@@ -346,8 +347,8 @@ const { ok } = await inquirer.prompt({
 })
 
 if (ok) {
-  const readme = (await fs.promises.readFile('README.md', 'utf-8')).split(
-    /[\r\n]/
+  const readme = (await fs.promises.readFile('README.md', 'utf8')).split(
+    /[\n\r]/
   )
   const logIndex = readme.findIndex((x) => x.startsWith('[![log]'))
   if (accountPerStage) {
@@ -380,7 +381,7 @@ locate the git commit removing them and revert it.`)
       for (const workflow of ['log', 'backup']) {
         await fs.promises.unlink(`./.github/workflows/${workflow}.yml`)
       }
-    } catch {}
+    } catch /* eslint-disable no-empty */ {}
   }
   await fs.promises.writeFile('./packages/settings.json', settings)
   for (const file of ['README.md', 'package.json']) {
@@ -405,7 +406,7 @@ locate the git commit removing them and revert it.`)
   python overview.py
   `,
     { shell: '/bin/bash' }
-  ).catch((err) => console.warn(`\x1B[91m${err}\x1B[0m`))
+  ).catch((error) => console.warn(`\u001B[91m${error}\u001B[0m`))
   for (const workflow of await fs.promises.readdir('./.github/workflows')) {
     await replaceOwnerRepository(`.github/workflows/${workflow}`)
   }
@@ -429,23 +430,19 @@ locate the git commit removing them and revert it.`)
 async function replaceOwnerRepository(file) {
   await fs.promises.writeFile(
     file,
-    (await fs.promises.readFile(file, 'utf-8'))
-      .split(/[\r\n]/)
+    (await fs.promises.readFile(file, 'utf8'))
+      .split(/[\n\r]/)
       .map((line) => {
-        if (
-          line.startsWith('This project was bootstrapped with') ||
+        return line.startsWith('This project was bootstrapped with') ||
           line.includes('create repository from starterstack template') ||
           line.includes('install [prerequisites]')
-        ) {
-          return line
-        } else {
-          return line
-            .replace(
-              new RegExp(`${defaults.owner}/${defaults.repo}`, 'g'),
-              `${owner}/${repo}`
-            )
-            .replace(new RegExp(defaults.repo, 'g'), repo)
-        }
+          ? line
+          : line
+              .replaceAll(
+                new RegExp(`${defaults.owner}/${defaults.repo}`, 'g'),
+                `${owner}/${repo}`
+              )
+              .replaceAll(new RegExp(defaults.repo, 'g'), repo)
       })
       .join('\n')
   )
@@ -548,7 +545,7 @@ async function updateGithubSecrets() {
           required_conversation_resolution: false,
           lock_branch: false,
           allow_fork_syncing: false,
-          restrictions: null
+          restrictions: undefined
         })
       ])
     }
@@ -618,13 +615,13 @@ async function updateGithubSecrets() {
     const { updateStage } = currentAccountStage
       ? { updateStage: currentAccountStage }
       : settings.accountPerStage
-      ? await inquirer.prompt({
-          type: 'list',
-          message: 'Update secrets for stage',
-          choices: ['all', ...stages],
-          name: 'updateStage'
-        })
-      : { updateStage: 'dev' }
+        ? await inquirer.prompt({
+            type: 'list',
+            message: 'Update secrets for stage',
+            choices: ['all', ...stages],
+            name: 'updateStage'
+          })
+        : { updateStage: 'dev' }
 
     for (const stage of (updateStage === 'all' ? stages : [updateStage]).map(
       (stage) => stage.toUpperCase()
@@ -636,21 +633,22 @@ async function updateGithubSecrets() {
             'AWS_S3_LOG_BUCKET'
           ]
         : stage === 'BACKUP' && updateStage !== 'all'
-        ? [
-            `AWS_CI_READ_ONLY_ROLE_${stage}`,
-            `AWS_CI_ROLE_${stage}`,
-            'AWS_S3_BACKUP_BUCKET'
-          ]
-        : [
-            `API_JWT_SECRET_${stage}`,
-            `API_MFA_SECRET_${stage}`,
-            `AWS_CI_READ_ONLY_ROLE_${stage}`,
-            `AWS_CI_ROLE_${stage}`
-          ]) {
-        if (stage === 'LOG' || stage === 'BACKUP') {
-          if (name.startsWith('API_')) {
-            continue
-          }
+          ? [
+              `AWS_CI_READ_ONLY_ROLE_${stage}`,
+              `AWS_CI_ROLE_${stage}`,
+              'AWS_S3_BACKUP_BUCKET'
+            ]
+          : [
+              `API_JWT_SECRET_${stage}`,
+              `API_MFA_SECRET_${stage}`,
+              `AWS_CI_READ_ONLY_ROLE_${stage}`,
+              `AWS_CI_ROLE_${stage}`
+            ]) {
+        if (
+          (stage === 'LOG' || stage === 'BACKUP') &&
+          name.startsWith('API_')
+        ) {
+          continue
         }
         const value = await promptSecret({
           name: name.replace(/_(PROD)$/, '_$1UCTION'),
@@ -697,73 +695,80 @@ async function promptSecret({ name, settings }) {
       name === 'AWS_S3_BACKUP_BUCKET'
         ? ['skip', 'prompt', "use cloudformation's value"]
         : name === 'STACK_SSM_SECRETS_JSON'
-        ? ['skip', 'prompt']
-        : ['skip', 'prompt', 'generate random']
+          ? ['skip', 'prompt']
+          : ['skip', 'prompt', 'generate random']
   })
-  if (choice === 'prompt') {
-    if (name === 'STACK_SSM_SECRETS_JSON') {
-      console.log(
-        'in the format %s (as one line), slack, and sentry can be setup later',
-        JSON.stringify({
-          SLACK_OPS_URL: '',
-          SLACK_ALARM_URL: '',
-          SENTRY_DSN: ''
-        })
-      )
-    }
-    const { value } = await inquirer.prompt({
-      type: 'input',
-      message: `${name} [leave empty to skip]`,
-      name: 'value'
-    })
-    return value
-  } else if (choice === 'generate random') {
-    return await randomSecret(64)
-  } else if (choice === "use cloudformation's value") {
-    try {
-      const { stack, region, contains } = name.startsWith('AWS_CI_ROLE_')
-        ? {
-            stack: 'iam',
-            contains: '-CiRole-',
-            region: 'us-east-1'
-          }
-        : name.startsWith('AWS_CI_READ_ONLY_ROLE_')
-        ? {
-            stack: 'iam',
-            contains: '-CiReadOnlyRole-',
-            region: 'us-east-1'
-          }
-        : name === 'AWS_S3_LOG_BUCKET'
-        ? {
-            stack: 'cloudtrail',
-            contains: '-S3cloudtraillogs-',
-            region: 'us-east-1'
-          }
-        : name === 'AWS_S3_BACKUP_BUCKET'
-        ? {
-            stack: 'backup',
-            contains: '-S3backup-',
-            region: defaults.regions.backup
-          }
-        : {}
-
-      if (!stack) {
-        throw new TypeError(`${name} not implemented`)
+  switch (choice) {
+    case 'prompt': {
+      if (name === 'STACK_SSM_SECRETS_JSON') {
+        console.log(
+          'in the format %s (as one line), slack, and sentry can be setup later',
+          JSON.stringify({
+            SLACK_OPS_URL: '',
+            SLACK_ALARM_URL: '',
+            SENTRY_DSN: ''
+          })
+        )
       }
-      const { stdout = '', stderr } = await promisify(exec)(
-        `aws cloudformation \
+      const { value } = await inquirer.prompt({
+        type: 'input',
+        message: `${name} [leave empty to skip]`,
+        name: 'value'
+      })
+      return value
+    }
+    case 'generate random': {
+      return await randomSecret(64)
+    }
+    case "use cloudformation's value": {
+      try {
+        const { stack, region, contains } = name.startsWith('AWS_CI_ROLE_')
+          ? {
+              stack: 'iam',
+              contains: '-CiRole-',
+              region: 'us-east-1'
+            }
+          : name.startsWith('AWS_CI_READ_ONLY_ROLE_')
+            ? {
+                stack: 'iam',
+                contains: '-CiReadOnlyRole-',
+                region: 'us-east-1'
+              }
+            : name === 'AWS_S3_LOG_BUCKET'
+              ? {
+                  stack: 'cloudtrail',
+                  contains: '-S3cloudtraillogs-',
+                  region: 'us-east-1'
+                }
+              : name === 'AWS_S3_BACKUP_BUCKET'
+                ? {
+                    stack: 'backup',
+                    contains: '-S3backup-',
+                    region: defaults.regions.backup
+                  }
+                : {}
+
+        if (!stack) {
+          throw new TypeError(`${name} not implemented`)
+        }
+        const { stdout = '', stderr } = await promisify(exec)(
+          `aws cloudformation \
             describe-stacks \
               --stack-name ${settings.stackName}-${stack} \
               --region ${region} | \
                 jq \
                   -r '.Stacks | .[] | .Outputs | .[] | select( .OutputValue | contains("-${stack}${contains}")) | .OutputValue'
           `,
-        { shell: '/bin/bash' }
-      )
-      if (stderr) throw new Error(stderr)
-      return stdout.trim()
-    } catch (err) {
-      console.warn(`\x1B[91m${err}\x1B[0m`)
+          { shell: '/bin/bash' }
+        )
+        if (stderr) throw new Error(stderr)
+        return stdout.trim()
+      } catch (error) {
+        console.warn(`\u001B[91m${error}\u001B[0m`)
+      }
+
+      break
     }
+    // No default
   }
 }

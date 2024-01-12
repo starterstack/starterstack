@@ -55,13 +55,13 @@ export default function createBatchWriter({
             abortSignal
           }
         )
-        if (Object.keys(unprocessedItems).length) {
+        if (Object.keys(unprocessedItems).length > 0) {
           throw new Error(`unprocessed ${JSON.stringify(unprocessedItems)}`)
         }
         onProgress(count)
-      } catch (err) {
-        log?.error({ batch }, err)
-        throw err
+      } catch (error) {
+        log?.error({ batch }, error)
+        throw error
       }
     }
     if (flush && count > 0) {

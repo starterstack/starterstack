@@ -36,86 +36,85 @@ function createDocumentClient() {
         const input = args.input
         const addCid =
           !input.ExpressionAttributeNames?.['#cid'] &&
-          typeof input.ExpressionAttributeValues?.[':cid'] === 'undefined'
-        if (context.commandName === 'UpdateItemCommand') {
-          input.ExpressionAttributeNames = input.ExpressionAttributeNames || {}
-          input.ExpressionAttributeValues =
-            input.ExpressionAttributeValues || {}
+          input.ExpressionAttributeValues?.[':cid'] === undefined
+        switch (context.commandName) {
+          case 'UpdateItemCommand': {
+            input.ExpressionAttributeNames =
+              input.ExpressionAttributeNames || {}
+            input.ExpressionAttributeValues =
+              input.ExpressionAttributeValues || {}
 
-          if (userId) {
-            if (input.UpdateExpression.match(/set /i)) {
-              if (addCid) {
-                input.UpdateExpression = input.UpdateExpression.replace(
-                  /set /i,
-                  'set #modifiedBy = :modifiedBy, #modifiedAt = :modifiedAt, #cid = :cid, '
-                )
+            if (userId) {
+              if (/set /i.test(input.UpdateExpression)) {
+                input.UpdateExpression = addCid
+                  ? input.UpdateExpression.replace(
+                      /set /i,
+                      'set #modifiedBy = :modifiedBy, #modifiedAt = :modifiedAt, #cid = :cid, '
+                    )
+                  : input.UpdateExpression.replace(
+                      /set /i,
+                      'set #modifiedBy = :modifiedBy, #modifiedAt = :modifiedAt, '
+                    )
               } else {
-                input.UpdateExpression = input.UpdateExpression.replace(
-                  /set /i,
-                  'set #modifiedBy = :modifiedBy, #modifiedAt = :modifiedAt, '
-                )
+                input.UpdateExpression += addCid
+                  ? ' set #modifiedBy = :modifiedBy, #modifiedAt = :modifiedAt, #cid = :cid'
+                  : ' set #modifiedBy = :modifiedBy, #modifiedAt = :modifiedAt'
               }
+              input.ExpressionAttributeValues[':modifiedBy'] = userId
+              input.ExpressionAttributeNames['#modifiedBy'] = 'modifiedBy'
             } else {
-              if (addCid) {
-                input.UpdateExpression +=
-                  ' set #modifiedBy = :modifiedBy, #modifiedAt = :modifiedAt, #cid = :cid'
+              if (/set /i.test(input.UpdateExpression)) {
+                input.UpdateExpression = addCid
+                  ? input.UpdateExpression.replace(
+                      /set /i,
+                      'set #modifiedAt = :modifiedAt, #cid = :cid, '
+                    )
+                  : input.UpdateExpression.replace(
+                      /set /i,
+                      'set #modifiedAt = :modifiedAt, '
+                    )
               } else {
-                input.UpdateExpression +=
-                  ' set #modifiedBy = :modifiedBy, #modifiedAt = :modifiedAt'
+                input.UpdateExpression += addCid
+                  ? ' set #modifiedAt = :modifiedAt, #cid = :cid'
+                  : ' set #modifiedAt = :modifiedAt'
               }
             }
-            input.ExpressionAttributeValues[':modifiedBy'] = userId
-            input.ExpressionAttributeNames['#modifiedBy'] = 'modifiedBy'
-          } else {
-            if (input.UpdateExpression.match(/set /i)) {
-              if (addCid) {
-                input.UpdateExpression = input.UpdateExpression.replace(
-                  /set /i,
-                  'set #modifiedAt = :modifiedAt, #cid = :cid, '
-                )
-              } else {
-                input.UpdateExpression = input.UpdateExpression.replace(
-                  /set /i,
-                  'set #modifiedAt = :modifiedAt, '
-                )
-              }
-            } else {
-              if (addCid) {
-                input.UpdateExpression +=
-                  ' set #modifiedAt = :modifiedAt, #cid = :cid'
-              } else {
-                input.UpdateExpression += ' set #modifiedAt = :modifiedAt'
-              }
+            input.ExpressionAttributeValues[':modifiedAt'] = Date.now()
+            input.ExpressionAttributeNames['#modifiedAt'] = 'modifiedAt'
+            if (addCid) {
+              input.ExpressionAttributeValues[':cid'] = correlationIds
+              input.ExpressionAttributeNames['#cid'] = 'correlationIds'
             }
+
+            break
           }
-          input.ExpressionAttributeValues[':modifiedAt'] = Date.now()
-          input.ExpressionAttributeNames['#modifiedAt'] = 'modifiedAt'
-          if (addCid) {
-            input.ExpressionAttributeValues[':cid'] = correlationIds
-            input.ExpressionAttributeNames['#cid'] = 'correlationIds'
+          case 'PutItemCommand': {
+            if (userId) input.Item.createdBy = userId
+            input.Item.createdAt = Date.now()
+            if (input.Item.correlationIds === undefined) {
+              input.Item.correlationIds = correlationIds
+            }
+
+            break
           }
-        } else if (context.commandName === 'PutItemCommand') {
-          if (userId) input.Item.createdBy = userId
-          input.Item.createdAt = Date.now()
-          if (typeof input.Item.correlationIds === 'undefined') {
-            input.Item.correlationIds = correlationIds
-          }
-        } else if (context.commandName === 'BatchWriteItemCommand') {
-          for (const table of Object.keys(input.RequestItems)) {
-            for (const item of input.RequestItems[table]) {
-              if (item.PutRequest) {
-                if (userId) {
-                  item.PutRequest.Item.createdBy = userId
-                }
-                item.PutRequest.Item.createdAt = Date.now()
-                if (
-                  typeof item.PutRequest.Item.correlationIds === 'undefined'
-                ) {
-                  item.PutRequest.Item.correlationIds = correlationIds
+          case 'BatchWriteItemCommand': {
+            for (const table of Object.keys(input.RequestItems)) {
+              for (const item of input.RequestItems[table]) {
+                if (item.PutRequest) {
+                  if (userId) {
+                    item.PutRequest.Item.createdBy = userId
+                  }
+                  item.PutRequest.Item.createdAt = Date.now()
+                  if (item.PutRequest.Item.correlationIds === undefined) {
+                    item.PutRequest.Item.correlationIds = correlationIds
+                  }
                 }
               }
             }
+
+            break
           }
+          // No default
         }
       }
       return next(args)

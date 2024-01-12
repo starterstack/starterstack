@@ -55,16 +55,14 @@ export default {
   async get({ name, names, abortSignal }) {
     /** @type {string[]} */
     const parameterNames = names ?? (name ? [name] : [])
-    if (!parameterNames.length) {
+    if (parameterNames.length === 0) {
       throw new Error('no name or names given')
     }
     const parameters = await Promise.all(
       parameterNames.map(async function fetchParameter(name) {
         const cached = cache[name]
-        if (cached) {
-          if (cached.ttl - Date.now() > 0) {
-            return cached.value
-          }
+        if (cached && cached.ttl - Date.now() > 0) {
+          return cached.value
         }
         const value = await ssm.send(
           new GetParameterCommand({
@@ -90,11 +88,7 @@ export default {
       sum,
       { Parameter: { Name: name, Value: value, Version: version } = {} }
     ) {
-      if (
-        name &&
-        typeof value !== 'undefined' &&
-        typeof version !== 'undefined'
-      ) {
+      if (name && value !== undefined && version !== undefined) {
         sum[name] = {
           value,
           version

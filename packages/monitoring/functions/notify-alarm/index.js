@@ -28,8 +28,8 @@ export const handler = lambdaHandler(async function notify(
     const accountId = topicArn.split(':')[4]
 
     await notifySlack({ slackUrl, abortSignal, message, subject, accountId })
-  } catch (err) {
-    log.error({ event }, err)
+  } catch (error) {
+    log.error({ event }, error)
   }
 })
 
@@ -146,9 +146,9 @@ function createBudgetAdjustment({ message, subject }) {
             text: {
               type: 'mrkdwn',
               text: `*${key}:* ${
-                typeof value !== 'object'
-                  ? value
-                  : JSON.stringify(value, null, 2)
+                typeof value === 'object'
+                  ? JSON.stringify(value, null, 2)
+                  : value
               }`
             }
           })

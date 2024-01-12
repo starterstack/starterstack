@@ -20,7 +20,7 @@ if (isMain) {
 /**
  * @param {{ root: string, context?: string, packagesRoot: string, ignoreRoot?: string }} options
  * returns {string}
-**/
+ **/
 
 export default async function calculateHash({
   root,
@@ -60,7 +60,7 @@ export default async function calculateHash({
 
   const hashes = await Promise.all(
     files.map(async (file) => {
-      const content = await fs.readFile(file, 'utf-8')
+      const content = await fs.readFile(file, 'utf8')
       return crypto
         .createHash('sha512')
         .update(content + globalFileHash + fileDependenciesHash)
@@ -80,7 +80,7 @@ export default async function calculateHash({
  * @param {string} root
  * @param {string[]} ignoredFiles
  * @returns {Promise<string[]>}
-**/
+ **/
 
 async function getFiles(root, ignoredFiles) {
   const files = []
@@ -108,7 +108,7 @@ async function getFiles(root, ignoredFiles) {
 /**
  * @param {{ files: string[], packagesRoot: string }} options
  * @returns {Promise<string>}
-**/
+ **/
 
 async function getFileDependenciesHash({ files, packagesRoot }) {
   const fileDependencies = [
@@ -119,7 +119,7 @@ async function getFileDependenciesHash({ files, packagesRoot }) {
             .filter((x) => path.basename(x) === 'package.json')
             .map(async function getRelativeDependencies(file) {
               const { dependencies = {} } = JSON.parse(
-                await fs.readFile(file, 'utf-8')
+                await fs.readFile(file, 'utf8')
               )
               return Object.values(dependencies)
                 .filter((x) => x.startsWith('file:'))
@@ -135,7 +135,7 @@ async function getFileDependenciesHash({ files, packagesRoot }) {
     )
   ].sort()
 
-  return fileDependencies.length
+  return fileDependencies.length > 0
     ? (
         await Promise.all(
           fileDependencies.map((root) =>
@@ -149,21 +149,21 @@ async function getFileDependenciesHash({ files, packagesRoot }) {
 /**
  * @param {string} packagesRoot
  * @returns {Promise<string>}
-**/
+ **/
 
 async function getGlobalFileHash(packagesRoot) {
   const files = [
     'stack-stage-config.mjs',
-     'git.mjs',
-     'hash.mjs',
-     'esbuild-config.yaml',
-     'npm-copy.sh',
-     'settings.json',
+    'git.mjs',
+    'hash.mjs',
+    'esbuild-config.yaml',
+    'npm-copy.sh',
+    'settings.json'
   ]
 
   const hashes = await Promise.all(
     files.sort().map(async (file) => {
-      const content = await fs.readFile(path.join(packagesRoot, file), 'utf-8')
+      const content = await fs.readFile(path.join(packagesRoot, file), 'utf8')
       return crypto.createHash('sha512').update(content).digest('hex')
     })
   )

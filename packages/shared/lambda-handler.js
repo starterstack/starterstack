@@ -45,17 +45,17 @@ const CORRELATION_PREFIX = 'x-correlation-'
  * }): Promise<any>} Handler
  */
 
-class Prefix {
-  static debugLogEnabled = `${CORRELATION_PREFIX}debug-log-enabled`
-  static correlationPrefix = CORRELATION_PREFIX
-  static awsRequestId = `${CORRELATION_PREFIX}id`
-  static apiRequestId = `${CORRELATION_PREFIX}api-id`
-  static xrayTraceId = `${CORRELATION_PREFIX}trace-id`
-  static userId = `${CORRELATION_PREFIX}user-id`
-  static lambda = `${CORRELATION_PREFIX}lambda`
-  static callChain = `${CORRELATION_PREFIX}call-chain-length`
-  static gitCommit = `${CORRELATION_PREFIX}git-commit`
-  static logStream = `${CORRELATION_PREFIX}log-stream`
+const Prefix = {
+  debugLogEnabled: `${CORRELATION_PREFIX}debug-log-enabled`,
+  correlationPrefix: CORRELATION_PREFIX,
+  awsRequestId: `${CORRELATION_PREFIX}id`,
+  apiRequestId: `${CORRELATION_PREFIX}api-id`,
+  xrayTraceId: `${CORRELATION_PREFIX}trace-id`,
+  userId: `${CORRELATION_PREFIX}user-id`,
+  lambda: `${CORRELATION_PREFIX}lambda`,
+  callChain: `${CORRELATION_PREFIX}call-chain-length`,
+  gitCommit: `${CORRELATION_PREFIX}git-commit`,
+  logStream: `${CORRELATION_PREFIX}log-stream`
 }
 
 export const prefix = Prefix
@@ -81,7 +81,7 @@ export default function wrapHandler(handler) {
     // @ts-ignore yes there is a timeout property...
     const abortSignal = AbortSignal.timeout(
       process.env.IS_OFFLINE && context.getRemainingTimeInMillis() === 0
-        ? 900000 // local + no timeout, abort in 15 minutes
+        ? 900_000 // local + no timeout, abort in 15 minutes
         : Math.floor(
             event?.context?.getRemainingTimeInMillis
               ? Math.min(
@@ -385,7 +385,7 @@ function createLogger(correlationIds) {
       }
 
       if (offline) {
-        const colorPrefix = `\x1B[${
+        const colorPrefix = `\u001B[${
           {
             50: 91,
             30: 94,
@@ -394,7 +394,7 @@ function createLogger(correlationIds) {
           }[level]
         }m`
 
-        const colorSuffix = '\x1B[0m'
+        const colorSuffix = '\u001B[0m'
 
         console[logLevelLabel](
           `${new Date(
