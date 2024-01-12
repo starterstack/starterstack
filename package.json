@@ -62,6 +62,10 @@
       "npm run lint --fix",
       "prettier --write"
     ],
+    ".github/actions/*.js": "bash ./scripts/build-actions.sh",
+    "scripts/directory-hash.mjs": "bash ./scripts/build-actions.sh",
+    "packages/settings.json": "bash ./scripts/build-actions.sh",
+    "packages/shared/*.js": "bash ./scripts/tsc-shared.sh",
     "*.{md,yaml,json,yml,md}": "prettier --write"
   },
   "config": {
