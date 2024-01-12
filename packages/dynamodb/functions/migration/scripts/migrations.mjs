@@ -17,6 +17,7 @@ const lambda = createLambdaClient({
   }
 })
 
+// eslint-disable-next-line no-constant-condition
 while (true) {
   try {
     const {
@@ -31,10 +32,10 @@ while (true) {
         Qualifier: '$LATEST'
       })
     )
-    const response = JSON.parse(new TextDecoder('utf-8').decode(payload))
+    const response = JSON.parse(new TextDecoder('utf8').decode(payload))
 
     if (functionError || statusCode !== 200) {
-      console.error(JSON.stringify({ statusCode, response }, null, 2))
+      console.error(JSON.stringify({ statusCode, response }, undefined, 2))
     }
 
     break

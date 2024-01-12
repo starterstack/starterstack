@@ -53,8 +53,13 @@
     "node": ">= 20 < 21",
     "npm": ">= 10"
   },
+  "eslintIgnore": [
+    "!.github",
+    ".github/actions/dist"
+  ],
   "lint-staged": {
     "*.{ts,js,mjs,mts,cjs,mts}": [
+      "npm run lint --fix",
       "prettier --write"
     ],
     "*.{md,yaml,json,yml,md}": "prettier --write"
@@ -79,6 +84,7 @@
     "@commitlint/config-conventional": "18.4.4",
     "@sindresorhus/tsconfig": "5.0.0",
     "@starterstack/sam-expand": "0.0.28",
+    "@types/aws-lambda": "8.10.131",
     "@typescript-eslint/eslint-plugin": "6.18.1",
     "@typescript-eslint/parser": "6.18.1",
     "aws-xray-sdk-core": "3.5.3",

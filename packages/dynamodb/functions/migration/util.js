@@ -1,4 +1,3 @@
-/* global Blob, FormData, fetch */
 import process from 'node:process'
 import { readFile } from 'node:fs/promises'
 import crypto from 'node:crypto'
@@ -61,7 +60,7 @@ export async function uploadFile({
 
   const {
     value: { url, fields }
-  } = JSON.parse(new TextDecoder('utf-8').decode(response))
+  } = JSON.parse(new TextDecoder('utf8').decode(response))
 
   const form = new FormData()
   for (const { name, value } of fields) {

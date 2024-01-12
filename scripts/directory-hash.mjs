@@ -14,7 +14,7 @@ const isMain = import.meta.url === `file://${process.argv[1]}`
 
 if (isMain) {
   const [root, context = '', packagesRoot] = process.argv.slice(2)
-  calculateHash({ root, context, packagesRoot }).then(console.log)
+  console.log(await calculateHash({ root, context, packagesRoot }))
 }
 
 /**
@@ -111,39 +111,31 @@ async function getFiles(root, ignoredFiles) {
  **/
 
 async function getFileDependenciesHash({ files, packagesRoot }) {
-  const fileDependencies = [
-    ...new Set(
-      (
-        await Promise.all(
-          files
-            .filter((x) => path.basename(x) === 'package.json')
-            .map(async function getRelativeDependencies(file) {
-              const { dependencies = {} } = JSON.parse(
-                await fs.readFile(file, 'utf8')
-              )
-              return Object.values(dependencies)
-                .filter((x) => x.startsWith('file:'))
-                .map((x) => {
-                  return new URL(x, pathToFileURL(path.dirname(file) + '/'))
-                    .pathname
-                })
-            })
+  const allDependencies = await Promise.all(
+    files
+      .filter((x) => path.basename(x) === 'package.json')
+      .map(async function getRelativeDependencies(file) {
+        const { dependencies = {} } = JSON.parse(
+          await fs.readFile(file, 'utf8')
         )
-      )
-        .flat()
-        .filter(Boolean)
-    )
+        return Object.values(dependencies)
+          .filter((x) => x.startsWith('file:'))
+          .map((x) => {
+            return new URL(x, pathToFileURL(path.dirname(file) + '/')).pathname
+          })
+      })
+  )
+  const fileDependencies = [
+    ...new Set(allDependencies.flat().filter(Boolean))
   ].sort()
 
-  return fileDependencies.length > 0
-    ? (
-        await Promise.all(
-          fileDependencies.map((root) =>
-            calculateHash({ root, packagesRoot, ignoreRoot: root })
-          )
-        )
-      ).join('')
-    : ''
+  const fileDependencyHashes = await Promise.all(
+    fileDependencies.map((root) =>
+      calculateHash({ root, packagesRoot, ignoreRoot: root })
+    )
+  )
+
+  return fileDependencies.length > 0 ? fileDependencyHashes.join('') : ''
 }
 
 /**

@@ -332,20 +332,6 @@ function createLogger(correlationIds) {
     return function log(messageOrData, message) {
       const now = Date.now()
 
-      /** @type {function(any): Boolean} */
-      const isError = (err) =>
-        !!(err?.stack && err?.message && err?.constructor?.name)
-
-      /** @type {function(any): {type: string, msg: string, stack: string | undefined, extensions: any | undefined}} */
-      const serializeError = (err) => {
-        return {
-          type: err.constructor.name,
-          msg: err.message,
-          stack: err.stack,
-          extensions: err.extensions
-        }
-      }
-
       /** @type {any} */
       const data =
         typeof messageOrData === 'object' && !isError(messageOrData)
@@ -401,7 +387,7 @@ function createLogger(correlationIds) {
             now
           ).toISOString()}\t${colorPrefix}${logLevelLabel.toLocaleUpperCase()}${colorSuffix}\t${JSON.stringify(
             logMessage,
-            null,
+            undefined,
             2
           )}`
         )
@@ -418,5 +404,26 @@ function createLogger(correlationIds) {
     error: format('error'),
     warn: format('warn'),
     debug: format('debug')
+  }
+}
+
+/**
+ * @param {any} err
+ * @returns Boolean
+ **/
+function isError(err) {
+  return !!(err?.stack && err?.message && err?.constructor?.name)
+}
+
+/**
+ * @param {any} err
+ * @returns {{type: string, msg: string, stack: string | undefined, extensions: any | undefined}} options
+ **/
+function serializeError(err) {
+  return {
+    type: err.constructor.name,
+    msg: err.message,
+    stack: err.stack,
+    extensions: err.extensions
   }
 }

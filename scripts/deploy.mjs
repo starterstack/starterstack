@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import process from 'node:process'
 import { promisify } from 'node:util'
 import inquirer from 'inquirer'
@@ -221,7 +223,7 @@ async function assertStageDeployed(stage, region) {
   )
 
   if (
-    !tableNames.find(function findPullRequestStackTable(table) {
+    !tableNames.some(function findPullRequestStackTable(table) {
       return table.includes(stage)
     })
   ) {
@@ -284,16 +286,22 @@ async function getPullRequestRef() {
     if (ref) {
       return Number(ref)
     }
-  } catch {}
+  } catch {
+    // eslint-disable-next-line no-empty
+  }
   console.error('\u001B[91mno pull request found\u001B[0m')
   process.exit(0)
 }
 
 function spawn(cmd, args, options) {
   if (windows) {
-    args = ['/C', cmd].concat(args).map((arg) => {
-      return typeof arg === 'string' ? arg.replaceAll('^', '^^^^') : arg
-    })
+    args = [
+      '/C',
+      cmd,
+      ...args.map((arg) => {
+        return typeof arg === 'string' ? arg.replaceAll('^', '^^^^') : arg
+      })
+    ]
     cmd = 'cmd'
   }
   return nativeSpawn(cmd, args, options)

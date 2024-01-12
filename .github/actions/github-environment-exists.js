@@ -7,7 +7,7 @@ export default async function ({ github, context, environment }) {
         owner,
         repo
       })
-    return !!environments.find((x) => x.name === environment)
+    return environments.some((x) => x.name === environment)
   } catch (error) {
     if (error.status !== 404) throw error
   }

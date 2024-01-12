@@ -69,7 +69,6 @@ export default {
             Name: name,
             WithDecryption: true
           }),
-          // @ts-ignore
           { abortSignal }
         )
 

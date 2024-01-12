@@ -26,7 +26,11 @@ export const handler = lambdaHandler(async function notify(
         if (trimmed && trimmed !== 'null') {
           if (trimmed.startsWith('{"')) {
             try {
-              sum[key.trim()] = JSON.stringify(JSON.parse(trimmed), null, 2)
+              sum[key.trim()] = JSON.stringify(
+                JSON.parse(trimmed),
+                undefined,
+                2
+              )
             } catch {
               sum[key.trim()] = trimmed
             }
@@ -135,7 +139,7 @@ export const handler = lambdaHandler(async function notify(
                     type: 'mrkdwn',
                     text: `*${key}:* ${
                       typeof value === 'object'
-                        ? JSON.stringify(value, null, 2)
+                        ? JSON.stringify(value, undefined, 2)
                         : value
                     }`
                   }

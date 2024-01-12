@@ -12,6 +12,7 @@ export default async function ({ github, context, environment }) {
     if (error.status !== 404) throw error
   }
 
+  //eslint-disable-next-line no-constant-condition
   while (true) {
     const { data: deployments } = await github.rest.repos.listDeployments({
       owner,

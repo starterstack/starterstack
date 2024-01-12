@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import process from 'node:process'
 import inquirer from 'inquirer'
 import fs from 'node:fs'
@@ -33,7 +35,6 @@ const { updateSecretsOnly } = await inquirer.prompt({
 
 if (updateSecretsOnly) {
   await updateGithubSecrets()
-  // eslint-disable-next-line unicorn/no-process-exit
   process.exit(0)
 }
 
@@ -347,9 +348,8 @@ const { ok } = await inquirer.prompt({
 })
 
 if (ok) {
-  const readme = (await fs.promises.readFile('README.md', 'utf8')).split(
-    /[\n\r]/
-  )
+  const readmeData = await fs.promises.readFile('README.md', 'utf8')
+  const readme = readmeData.split(/[\n\r]/)
   const logIndex = readme.findIndex((x) => x.startsWith('[![log]'))
   if (accountPerStage) {
     if (logIndex === -1) {
@@ -428,9 +428,10 @@ locate the git commit removing them and revert it.`)
 }
 
 async function replaceOwnerRepository(file) {
+  const data = await fs.promises.readFile(file, 'utf8')
   await fs.promises.writeFile(
     file,
-    (await fs.promises.readFile(file, 'utf8'))
+    data
       .split(/[\n\r]/)
       .map((line) => {
         return line.startsWith('This project was bootstrapped with') ||
@@ -614,7 +615,8 @@ async function updateGithubSecrets() {
 
     const { updateStage } = currentAccountStage
       ? { updateStage: currentAccountStage }
-      : settings.accountPerStage
+      : // eslint-disable-next-line unicorn/no-nested-ternary
+        settings.accountPerStage
         ? await inquirer.prompt({
             type: 'list',
             message: 'Update secrets for stage',
@@ -632,7 +634,8 @@ async function updateGithubSecrets() {
             `AWS_CI_ROLE_${stage}`,
             'AWS_S3_LOG_BUCKET'
           ]
-        : stage === 'BACKUP' && updateStage !== 'all'
+        : // eslint-disable-next-line unicorn/no-nested-ternary
+          stage === 'BACKUP' && updateStage !== 'all'
           ? [
               `AWS_CI_READ_ONLY_ROLE_${stage}`,
               `AWS_CI_ROLE_${stage}`,
@@ -694,7 +697,8 @@ async function promptSecret({ name, settings }) {
       name === 'AWS_S3_LOG_BUCKET' ||
       name === 'AWS_S3_BACKUP_BUCKET'
         ? ['skip', 'prompt', "use cloudformation's value"]
-        : name === 'STACK_SSM_SECRETS_JSON'
+        : // eslint-disable-next-line unicorn/no-nested-ternary
+          name === 'STACK_SSM_SECRETS_JSON'
           ? ['skip', 'prompt']
           : ['skip', 'prompt', 'generate random']
   })
@@ -734,7 +738,8 @@ async function promptSecret({ name, settings }) {
                 contains: '-CiReadOnlyRole-',
                 region: 'us-east-1'
               }
-            : name === 'AWS_S3_LOG_BUCKET'
+            : // eslint-disable-next-line unicorn/no-nested-ternary
+              name === 'AWS_S3_LOG_BUCKET'
               ? {
                   stack: 'cloudtrail',
                   contains: '-S3cloudtraillogs-',

@@ -118,6 +118,7 @@ async function listLambdaVersions({ client, name }) {
   let lastMarker
   /** @type {number[]} */
   const result = []
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     const { NextMarker: nextMarker, Versions: versions = [] } =
       await client.send(
@@ -151,6 +152,7 @@ async function listLambdaAliases({ client, name }) {
   let lastMarker
   /** @type {number[]} */
   const result = []
+  // eslint-disable-next-line no-constant-condition
   while (true) {
     const { NextMarker: nextMarker, Aliases: aliases = [] } = await client.send(
       new ListAliasesCommand({

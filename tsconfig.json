@@ -1,5 +1,4 @@
 {
-  "extends": "@sindresorhus/tsconfig",
   "compilerOptions": {
     "allowJs": true,
     "lib": ["ES2023"],
@@ -8,6 +7,6 @@
     "declarationMap": false,
     "emitDeclarationOnly": true
   },
-  "include": ["./**/*"],
+  "include": [".github/actions/*.js", "./**/*"],
   "exclude": ["node_modules/**/*"]
 }

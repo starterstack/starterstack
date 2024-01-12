@@ -147,7 +147,7 @@ function createBudgetAdjustment({ message, subject }) {
               type: 'mrkdwn',
               text: `*${key}:* ${
                 typeof value === 'object'
-                  ? JSON.stringify(value, null, 2)
+                  ? JSON.stringify(value, undefined, 2)
                   : value
               }`
             }

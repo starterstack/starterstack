@@ -8,12 +8,16 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 export default async function runMigrations({ log, abortSignal }) {
   const migrations = []
 
-  for (const directory of (await readdir(__dirname)).filter(
-    (x) => Number(x) >= 0
-  )) {
+  const directories = await readdir(__dirname)
+
+  for (const directory of directories.filter((x) => Number(x) >= 0)) {
+    const files = await readdir(path.join(__dirname, directory))
+    if (files.length !== 1) {
+      throw new Error(`${directory} has multiple files, only 1 is supported`)
+    }
     migrations.push({
       number: Number(directory),
-      file: (await readdir(path.join(__dirname, directory)))[0]
+      file: files.at(0)
     })
   }
 

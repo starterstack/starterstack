@@ -10,6 +10,7 @@ const stdout = String(
 )
 const shaCommit = stdout.replaceAll(/[\n\r]/g, '').trim()
 
+// eslint-disable-next-line @typescript-eslint/require-await
 export default async function settings() {
   return {
     get commit() {
@@ -19,6 +20,7 @@ export default async function settings() {
 }
 
 /** @type {import('@starterstack/sam-expand/plugins').Plugin} */
+// eslint-disable-next-line @typescript-eslint/require-await
 export const lifecycle = async function runScriptHook({
   command,
   template,

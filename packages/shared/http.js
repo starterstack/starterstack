@@ -34,7 +34,7 @@ function traceFetch() {
         const subsegment = parent.notTraced
           ? parent.addNewSubsegmentWithoutSampling(hostname)
           : parent.addNewSubsegment(hostname)
-        const root = parent.segment ? parent.segment : parent
+        const root = parent.segment || parent
         subsegment.namespace = 'remote'
 
         if (!options) {

@@ -62,7 +62,9 @@ export default async function deployStrategy({
 
   const deployed = await listDeployed(awsRegions)
 
-  strategy.remaining = (await fs.readdir('packages')).filter(
+  const packages = await fs.readdir('packages')
+
+  strategy.remaining = packages.filter(
     (file) =>
       !file.includes('.') &&
       !strategy.order.includes(file) &&
@@ -71,10 +73,10 @@ export default async function deployStrategy({
   )
 
   const calculateChanges = await Promise.all([
-    Promise.all(strategy.order.flatMap(calculateStackChanges)),
-    Promise.all(strategy.stage.flatMap(calculateStackChanges)),
-    Promise.all(strategy.backend.flatMap(calculateStackChanges)),
-    Promise.all(strategy.remaining.flatMap(calculateStackChanges))
+    Promise.all(strategy.order.flatMap((x) => calculateStackChanges(x))),
+    Promise.all(strategy.stage.flatMap((x) => calculateStackChanges(x))),
+    Promise.all(strategy.backend.flatMap((x) => calculateStackChanges(x))),
+    Promise.all(strategy.remaining.flatMap((x) => calculateStackChanges(x)))
   ])
 
   async function calculateStackChanges(name) {
@@ -86,21 +88,20 @@ export default async function deployStrategy({
     }
 
     try {
-      if (!(await fs.lstat(path.join('packages', name))).isDirectory()) {
+      const fileOrDirectory = await fs.lstat(path.join('packages', name))
+      if (!fileOrDirectory.isDirectory()) {
         return
       }
-    } catch (e) {
-      console.error(e)
+    } catch (error) {
+      console.error(error)
       return
     }
     const stackConfigPath = path.join('packages', name, 'template.yaml')
     const packageLockPath = path.join('packages', name, 'package-lock.json')
     const stackDirectory = path.dirname(stackConfigPath)
-    if (!(await fs.stat(stackConfigPath).catch((_) => false))) return
+    if (!(await fs.stat(stackConfigPath).catch(() => false))) return
 
-    const hasPackageLock = !!(await fs
-      .stat(packageLockPath)
-      .catch((_) => false))
+    const hasPackageLock = !!(await fs.stat(packageLockPath).catch(() => false))
 
     if (hasPackageLock && !npmCacheHit) {
       await execCommand(
@@ -129,41 +130,41 @@ export default async function deployStrategy({
           continue
         }
 
-        if (deployedSha) {
-          if (!remove) {
-            try {
-              // these diffs will exit 1 only if there are changes, hense the catch
-              await Promise.all([
-                execCommand(
-                  `git diff ${deployedSha} -s --exit-code -- . ':!src/local-http-mock/*'`,
-                  stackDirectory
-                ),
-                execCommand(
-                  `git diff ${deployedSha} -s --exit-code -- ./packages/*.*`
-                ),
-                execCommand(
-                  `git diff ${deployedSha} -s --exit-code -- ./packages/shared ':!packages/shared/test' ':!packages/shared/package.json'`
-                )
-              ])
-              return
-            } catch {}
-            const deployedHash = deployed[stackRegion]?.get(
-              `${stackName}DeployedHash`
-            )
+        if (deployedSha && !remove) {
+          try {
+            // these diffs will exit 1 only if there are changes, hense the catch
+            await Promise.all([
+              execCommand(
+                `git diff ${deployedSha} -s --exit-code -- . ':!src/local-http-mock/*'`,
+                stackDirectory
+              ),
+              execCommand(
+                `git diff ${deployedSha} -s --exit-code -- ./packages/*.*`
+              ),
+              execCommand(
+                `git diff ${deployedSha} -s --exit-code -- ./packages/shared ':!packages/shared/test' ':!packages/shared/package.json'`
+              )
+            ])
+            return
+          } catch {
+            // eslint-disable-next-line no-empty
+          }
+          const deployedHash = deployed[stackRegion]?.get(
+            `${stackName}DeployedHash`
+          )
 
-            const localHash = await calculateStackHash({
-              root: stackDirectory,
-              packagesRoot: path.join(process.cwd(), 'packages')
-            })
+          const localHash = await calculateStackHash({
+            root: stackDirectory,
+            packagesRoot: path.join(process.cwd(), 'packages')
+          })
 
-            if (deployedHash && deployedHash === localHash) {
-              continue
-            }
+          if (deployedHash && deployedHash === localHash) {
+            continue
           }
         }
-      } catch (e) {
+      } catch (error) {
         if (github) {
-          console.error(e)
+          console.error(error)
         }
         if (remove) {
           continue
@@ -231,7 +232,7 @@ export default async function deployStrategy({
       strategyResult[type].matrix.include.reverse()
     } else {
       if (
-        strategyResult[type].matrix.include.find((x) => x.stack === 'dynamodb')
+        strategyResult[type].matrix.include.some((x) => x.stack === 'dynamodb')
       ) {
         core.setOutput('db-changed', true)
       }
@@ -259,12 +260,12 @@ async function execCommand(command, stackDirectory) {
       PATH: `${process.env.PATH}:../../node_modules/.bin`
     }
   })
-  return stdout.replace(/[\r\n]/g, '').trim()
+  return stdout.replaceAll(/[\n\r]/g, '').trim()
 }
 
 async function listDeployed(regions) {
   const deployed = {}
-  await Promise.all(regions.map(listForRegion))
+  await Promise.all(regions.map((region) => listForRegion(region)))
   return deployed
 
   async function listForRegion(region) {
@@ -272,6 +273,7 @@ async function listDeployed(regions) {
     deployed[region] = map
     const cloudformation = new CloudFormationClient({ region })
     let nextToken
+    // eslint-disable-next-line no-constant-condition
     while (true) {
       const result = await cloudformation.send(
         new ListExportsCommand({
