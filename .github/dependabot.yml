@@ -1,0 +1,79 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: '/'
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    ignore:
+      - dependency-name: '@aws-sdk/*'
+      - dependency-name: 'aws-xray-sdk-core'
+      - dependency-name: '@types/*'
+  - package-ecosystem: npm
+    directory: '/'
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    ignore:
+      - dependency-name: '@aws-sdk/*'
+      - dependency-name: 'aws-xray-sdk-core'
+      - dependency-name: '@types/*'
+  - package-ecosystem: npm
+    directory: '.github/actions'
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    ignore:
+      - dependency-name: '@aws-sdk/*'
+      - dependency-name: 'aws-xray-sdk-core'
+      - dependency-name: '@types/*'
+  - package-ecosystem: npm
+    directory: 'packages/dynamodb/.aws-sam/build/MigrationFunction'
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    ignore:
+      - dependency-name: '@aws-sdk/*'
+      - dependency-name: 'aws-xray-sdk-core'
+      - dependency-name: '@types/*'
+  - package-ecosystem: npm
+    directory: 'packages/dynamodb/functions/migration'
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    ignore:
+      - dependency-name: '@aws-sdk/*'
+      - dependency-name: 'aws-xray-sdk-core'
+      - dependency-name: '@types/*'
+  - package-ecosystem: npm
+    directory: 'packages/monitoring/functions/notify-alarm'
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    ignore:
+      - dependency-name: '@aws-sdk/*'
+      - dependency-name: 'aws-xray-sdk-core'
+      - dependency-name: '@types/*'
+  - package-ecosystem: npm
+    directory: 'packages/monitoring/functions/stack-change'
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    ignore:
+      - dependency-name: '@aws-sdk/*'
+      - dependency-name: 'aws-xray-sdk-core'
+      - dependency-name: '@types/*'
