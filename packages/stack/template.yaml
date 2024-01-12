@@ -1,0 +1,250 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform:
+  - AWS::LanguageExtensions
+  - AWS::Serverless-2016-10-31
+
+Description: Stack
+
+Parameters:
+  Stack:
+    Type: String
+  Root:
+    Type: String
+  DevRoot:
+    Type: String
+  AccountPerStage:
+    Type: String
+  WildcardCertName:
+    Type: String
+  StageOrStackRoot:
+    Type: String
+
+Metadata:
+  expand:
+    plugins:
+      - '../git.mjs'
+      - '../hash.mjs'
+      - '../stack-stage-config.mjs'
+      - '@starterstack/sam-expand/plugins/parameter-overrides'
+    config:
+      stackStageConfig:
+        region: us-east-1
+        stage: global
+        suffixStage: false
+        addMappings: true
+      parameterOverrides:
+        - name: Root
+          file:
+            location: ../settings.json
+            exportName: rootDomain
+        - name: AccountPerStage
+          file:
+            location: ../settings.json
+            exportName: accountPerStage
+        - name: DevRoot
+          file:
+            location: ../stack-stage-config.mjs
+            exportName: devRoot
+        - name: WildcardCertName
+          file:
+            location: ../stack-stage-config.mjs
+            exportName: wildcardCertName
+        - name: StageOrStackRoot
+          file:
+            location: ../stack-stage-config.mjs
+            exportName: stageOrStackRoot
+
+Conditions:
+  CreateWildcardCert: !Or
+    - !Equals
+      - !Ref AccountPerStage
+      - 'false'
+    - !Equals
+      - !FindInMap
+        - AWSAccounts
+        - !Ref 'AWS::AccountId'
+        - stage
+      - feature
+  CreateRootCert: !Or
+    - !Equals
+      - !Ref AccountPerStage
+      - 'false'
+    - !Not
+      - !Condition CreateWildcardCert
+  CreateDevCert: !Equals
+    - !Ref AccountPerStage
+    - 'false'
+
+Resources:
+  Zone:
+    Type: AWS::Route53::HostedZone
+    Properties:
+      Name: !Ref Root
+      HostedZoneConfig:
+        Comment: !Sub 'Created by Serverless Framework by ${AWS::StackName}'
+      HostedZoneTags:
+        - Key: 'Name'
+          Value: !Ref Root
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+
+  CaaRootCert:
+    Condition: CreateRootCert
+    Type: AWS::Route53::RecordSetGroup
+    Properties:
+      HostedZoneId: !GetAtt Zone.Id
+      RecordSets:
+        - Name: !Ref StageOrStackRoot
+          Type: CAA
+          ResourceRecords:
+            - '0 issue "amazon.com;"'
+            - '0 issue "amazontrust.com;"'
+            - '0 issue "awstrust.com;"'
+            - '0 issue "amazonaws.com;"'
+            - '0 issuewild "amazon.com;"'
+            - '0 issuewild "amazontrust.com;"'
+            - '0 issuewild "awstrust.com;"'
+            - '0 issuewild "amazonaws.com;"'
+          TTL: 3600
+
+  CaaDevCert:
+    Condition: CreateDevCert
+    Type: AWS::Route53::RecordSetGroup
+    Properties:
+      HostedZoneId: !GetAtt Zone.Id
+      RecordSets:
+        - Name: !Ref DevRoot
+          Type: CAA
+          ResourceRecords:
+            - '0 issue "amazon.com;"'
+            - '0 issue "amazontrust.com;"'
+            - '0 issue "awstrust.com;"'
+            - '0 issue "amazonaws.com;"'
+            - '0 issuewild "amazon.com;"'
+            - '0 issuewild "amazontrust.com;"'
+            - '0 issuewild "awstrust.com;"'
+            - '0 issuewild "amazonaws.com;"'
+          TTL: 3600
+
+  CaaWildcardCert:
+    Condition: CreateWildcardCert
+    Type: AWS::Route53::RecordSetGroup
+    Properties:
+      HostedZoneId: !GetAtt Zone.Id
+      RecordSets:
+        - Name: !Ref WildcardCertName
+          Type: CAA
+          ResourceRecords:
+            - '0 issue "amazon.com;"'
+            - '0 issue "amazontrust.com;"'
+            - '0 issue "awstrust.com;"'
+            - '0 issue "amazonaws.com;"'
+            - '0 issuewild "amazon.com;"'
+            - '0 issuewild "amazontrust.com;"'
+            - '0 issuewild "awstrust.com;"'
+            - '0 issuewild "amazonaws.com;"'
+          TTL: 3600
+
+  WildcardCert:
+    Condition: CreateWildcardCert
+    DependsOn: CaaWildcardCert
+    Type: AWS::CertificateManager::Certificate
+    Properties:
+      DomainName: !Ref WildcardCertName
+      DomainValidationOptions:
+        - DomainName: !Ref WildcardCertName
+          HostedZoneId: !GetAtt Zone.Id
+      ValidationMethod: DNS
+      Tags:
+        - Key: 'Name'
+          Value: !Sub wildcard ${Root}
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+
+  DevCert:
+    DependsOn: CaaDevCert
+    Type: AWS::CertificateManager::Certificate
+    Condition: CreateDevCert
+    Properties:
+      DomainName: !Ref DevRoot
+      DomainValidationOptions:
+        - DomainName: !Ref DevRoot
+          HostedZoneId: !GetAtt Zone.Id
+      ValidationMethod: DNS
+      Tags:
+        - Key: 'Name'
+          Value: !Ref DevRoot
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+
+  RootCert:
+    DependsOn: CaaRootCert
+    Type: AWS::CertificateManager::Certificate
+    Condition: CreateRootCert
+    Properties:
+      DomainName: !Ref StageOrStackRoot
+      DomainValidationOptions:
+        - DomainName: !Ref StageOrStackRoot
+          HostedZoneId: !GetAtt Zone.Id
+      ValidationMethod: DNS
+      Tags:
+        - Key: 'Name'
+          Value: !Ref StageOrStackRoot
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+
+  ApiGatewayCloudwatchRole:
+    Type: 'AWS::IAM::Role'
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service:
+                - apigateway.amazonaws.com
+            Action: 'sts:AssumeRole'
+      Path: /
+      ManagedPolicyArns:
+        - >-
+          arn:aws:iam::aws:policy/service-role/AmazonAPIGatewayPushToCloudWatchLogs
+      Tags:
+        - Key: 'Name'
+          Value: !Sub ${Stack} api gateway cloudwatch role for rest and websockets
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+
+Outputs:
+  ZoneId:
+    Description: route 53 zone id
+    Value: !GetAtt Zone.Id
+    Export:
+      Name: !Sub '${AWS::StackName}ZoneId'
+  NameServers:
+    Description: route 53 name servers
+    Value: !Join [',', !GetAtt Zone.NameServers]
+    Export:
+      Name: !Sub '${AWS::StackName}NameServers'
+  RootCert:
+    Condition: CreateRootCert
+    Description: root certificate
+    Value: !Ref RootCert
+    Export:
+      Name: !Sub '${AWS::StackName}RootCert'
+  DevCert:
+    Condition: CreateDevCert
+    Description: dev certificate
+    Value: !Ref DevCert
+    Export:
+      Name: !Sub '${AWS::StackName}DevCert'
+  WildcardCert:
+    Condition: CreateWildcardCert
+    Description: wildcard certificate
+    Value: !Ref WildcardCert
+    Export:
+      Name: !Sub '${AWS::StackName}WildcardCert'
+  ApiGatewayCloudwatchRole:
+    Description: api gateway cloudwatch role for rest and http api
+    Value: !GetAtt ApiGatewayCloudwatchRole.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}ApiGatewayCloudwatchRole'
