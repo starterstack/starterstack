@@ -48,7 +48,7 @@ for pid in $(jobs -p); do
   fi
 done
 
-cp .github/actions/settings.json .github/actions/dist
+ln -s ../../../packages/settings.json .github/actions/dist/settings.json
 
 if ! git diff -s --exit-code ./.github/actions/dist; then
   log_error "please add .github/actions/dist as changes detected"
