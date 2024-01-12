@@ -29,6 +29,7 @@ function template({ directory, ecosystem }) {
 async function* walk(directory) {
   const files = await readdir(directory)
   for (const file of files) {
+    if (file === '.aws-sam') continue
     if (file === 'node_modules') continue
     if (file === 'bundle') continue
     if (file === '.home') continue
