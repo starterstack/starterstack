@@ -1,15 +1,55 @@
 {
   "name": "starterstack",
-  "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "version": "0.0.0",
+  "description": "This project was bootstrapped with starterstack, a Serverless monorepo template architecture",
   "scripts": {
     "setup": "node ./scripts/setup.mjs",
     "patch-files": "bash ./scripts/patch-files.sh"
   },
-  "keywords": [],
-  "author": "",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/starterstack/starterstack.git"
+  },
+  "bugs": {
+    "url": "https://github.com/starterstack/starterstack/issues"
+  },
+  "keywords": [
+    "serverless",
+    "sam",
+    "serverless-application-model",
+    "aws",
+    "lambda",
+    "aws-lambda",
+    "aws-lambda-node",
+    "aws-lambda-python",
+    "aws-lambda-ruby",
+    "cloudformation",
+    "dynamodb",
+    "api",
+    "graphql",
+    "reference-architecture",
+    "serverless-template",
+    "eventbridge",
+    "eventbridge-archive",
+    "sqs",
+    "sns",
+    "ses",
+    "s3",
+    "serverless-rest",
+    "serverless-graphql",
+    "cloudfront",
+    "cloudfront-functions",
+    "aws-apigateway",
+    "serverless-framework",
+    "custom-cloudformation"
+  ],
+  "author": "James Kyburz <james.kyburz@gmail.com>",
   "license": "Apache-2.0",
+  "license": "Apache-2.0",
+  "engines": {
+    "node": ">= 20 < 21",
+    "npm": ">= 10"
+  },
   "private": true,
   "devDependencies": {
     "@actions/github": "6.0.0",
