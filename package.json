@@ -8,6 +8,7 @@
     "postinstall": "husky install && npm run patch-files",
     "prepare": "husky install && npm run patch-files",
     "lint": "eslint --no-error-on-unmatched-pattern",
+    "docs": "bash ./scripts/docs.sh",
     "cz": "cz"
   },
   "repository": {
@@ -66,6 +67,9 @@
     "scripts/directory-hash.mjs": "bash ./scripts/build-actions.sh",
     "packages/settings.json": "bash ./scripts/build-actions.sh",
     "packages/shared/*.js": "bash ./scripts/tsc-shared.sh",
+    "*.py": "bash ./scripts/lint-python.sh",
+    "*.rb": "bash ./scripts/lint-ruby.sh",
+    "*.{sh,.bashrc}": "bash ./scripts/lint-sh.sh",
     "*.{md,yaml,json,yml,md}": "prettier --write"
   },
   "config": {
