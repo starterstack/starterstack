@@ -387,6 +387,15 @@ export default async function getSettings({
   })
 
   return {
+    get stackName() {
+      return config.stackName
+    },
+    get region() {
+      return region
+    },
+    get stage() {
+      return config.stage
+    },
     get rootDomain() {
       return settings.rootDomain
     },

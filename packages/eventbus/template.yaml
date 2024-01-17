@@ -29,6 +29,8 @@ Metadata:
       - '../hash.mjs'
       - '../stack-stage-config.mjs'
       - '@starterstack/sam-expand/plugins/parameter-overrides'
+      - '@starterstack/sam-expand/plugins/run-script-hooks'
+
     config:
       stackStageConfig:
         suffixStage: true
@@ -62,6 +64,20 @@ Metadata:
           file:
             location: ../stack-stage-config.mjs
             exportName: backupStage
+      script:
+        hooks:
+          post:deploy:
+            - command: ../tag-eventbus-rules.sh
+              args:
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: stackName
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: region
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: stage
 
 Conditions:
   IsBackupAccount: !Equals

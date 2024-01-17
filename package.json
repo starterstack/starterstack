@@ -60,7 +60,7 @@
   ],
   "lint-staged": {
     "*.{ts,js,mjs,mts,cjs,mts}": [
-      "npm run lint --fix",
+      "npm run lint -- --fix",
       "prettier --write"
     ],
     ".github/actions/*.js": "bash ./scripts/build-actions.sh",
