@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.2](https://github.com/starterstack/starterstack/compare/v0.0.1...v0.0.2) (2024-01-17)
+
+
+### Bug Fixes
+
+* build with makefiles ([11106b4](https://github.com/starterstack/starterstack/commit/11106b4784d4da7567e6e8d1412a575ca24dd6a8))
+
 ## 0.0.1 (2024-01-12)
 
 
