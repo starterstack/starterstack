@@ -33,7 +33,6 @@ Metadata:
       - '../stack-stage-config.mjs'
       - './cloudwatch-alarm-lambda-concurrency.mjs'
       - '@starterstack/sam-expand/plugins/parameter-overrides'
-      - '@starterstack/sam-expand/plugins/esbuild-node'
       - '../purge-lambda-versions.mjs'
     config:
       stackStageConfig:
@@ -41,8 +40,6 @@ Metadata:
         suffixStage: false
         stage: global
         addMappings: true
-      esbuild:
-        config: ../esbuild-config.yaml
       parameterOverrides:
         - name: LogRetentionInDays
           file:
@@ -214,6 +211,8 @@ Resources:
               Effect: Allow
       LoggingConfig:
         LogGroup: !Ref CloudWatchLogGroup
+    Metadata:
+      BuildMethod: makefile
 
   NotifyAlarmFunction:
     Type: AWS::Serverless::Function
@@ -257,6 +256,8 @@ Resources:
               Effect: Allow
       LoggingConfig:
         LogGroup: !Ref CloudWatchLogGroup
+    Metadata:
+      BuildMethod: makefile
 
 Outputs:
   SNSAlarmTopic:
