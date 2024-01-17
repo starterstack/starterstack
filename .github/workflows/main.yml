@@ -76,61 +76,6 @@ jobs:
     secrets:
       aws-ci-role: ${{ secrets[format('AWS_CI_ROLE_{0}', needs.env.outputs.account)] }}
 
-  migration:
-    needs:
-      [
-        env,
-        deploy-ordered,
-        deploy-parallel-stage,
-        deploy-parallel-backend,
-        deploy-parallel-remaining
-      ]
-    if: ${{ always() && !failure() && !cancelled() && needs.env.outputs.db-changed == 'true' }}
-    uses: 'starterstack/starterstack/.github/workflows/run-migration.yml@main'
-    with:
-      stage: ${{ needs.env.outputs.stage }}
-      stack-name: ${{ needs.env.outputs.stack-name }}
-      aws-region: ${{ needs.env.outputs.aws-region }}
-    secrets:
-      aws-ci-role: ${{ secrets[format('AWS_CI_ROLE_{0}', needs.env.outputs.account)] }}
-
-  sanity-tests:
-    needs:
-      [
-        env,
-        deploy-ordered,
-        deploy-parallel-stage,
-        deploy-parallel-backend,
-        deploy-parallel-remaining,
-        migration
-      ]
-    if: ${{ always() && !failure() && !cancelled() && needs.env.outputs.account != 'log' && needs.env.outputs.account != 'backup' }}
-    uses: 'starterstack/starterstack/.github/workflows/run-sanity-tests.yml@main'
-    with:
-      stage: ${{ needs.env.outputs.stage }}
-      stack-name: ${{ needs.env.outputs.stack-name }}
-      aws-region: ${{ needs.env.outputs.aws-region }}
-    secrets:
-      aws-ci-role: ${{ secrets[format('AWS_CI_ROLE_{0}', needs.env.outputs.account)] }}
-
-  sls-mentor:
-    needs:
-      [
-        env,
-        deploy-ordered,
-        deploy-parallel-stage,
-        deploy-parallel-backend,
-        deploy-parallel-remaining,
-        migration,
-        sanity-tests
-      ]
-    if: ${{ always() && !failure() && !cancelled() }}
-    uses: 'starterstack/starterstack/.github/workflows/sls-mentor.yml@main'
-    with:
-      aws-regions: ${{ needs.env.outputs.aws-regions }}
-    secrets:
-      aws-ci-role: ${{ secrets[format('AWS_CI_READ_ONLY_ROLE_{0}', needs.env.outputs.account)] }}
-
   deploy-environment:
     environment:
       name: ${{ github.event.pull_request.head.ref || needs.env.outputs.stage }}
@@ -141,10 +86,7 @@ jobs:
         deploy-ordered,
         deploy-parallel-stage,
         deploy-parallel-backend,
-        deploy-parallel-remaining,
-        migration,
-        sanity-tests,
-        sls-mentor
+        deploy-parallel-remaining
       ]
     if: ${{ always() && !failure() && !cancelled() && needs.env.outputs.account != 'log' && needs.env.outputs.account != 'backup' }}
     timeout-minutes: 10
@@ -182,6 +124,58 @@ jobs:
               label: 'environment deployed'
             })
 
+  migration:
+    needs:
+      [
+        env,
+        deploy-ordered,
+        deploy-parallel-stage,
+        deploy-parallel-backend,
+        deploy-parallel-remaining
+      ]
+    if: ${{ always() && !failure() && !cancelled() && needs.env.outputs.db-changed == 'true' }}
+    uses: 'starterstack/starterstack/.github/workflows/run-migration.yml@main'
+    with:
+      stage: ${{ needs.env.outputs.stage }}
+      stack-name: ${{ needs.env.outputs.stack-name }}
+      aws-region: ${{ needs.env.outputs.aws-region }}
+    secrets:
+      aws-ci-role: ${{ secrets[format('AWS_CI_ROLE_{0}', needs.env.outputs.account)] }}
+
+  sanity-tests:
+    needs:
+      [
+        env,
+        deploy-ordered,
+        deploy-parallel-stage,
+        deploy-parallel-backend,
+        deploy-parallel-remaining
+      ]
+    if: ${{ always() && !failure() && !cancelled() && needs.env.outputs.account != 'log' && needs.env.outputs.account != 'backup' }}
+    uses: 'starterstack/starterstack/.github/workflows/run-sanity-tests.yml@main'
+    with:
+      stage: ${{ needs.env.outputs.stage }}
+      stack-name: ${{ needs.env.outputs.stack-name }}
+      aws-region: ${{ needs.env.outputs.aws-region }}
+    secrets:
+      aws-ci-role: ${{ secrets[format('AWS_CI_ROLE_{0}', needs.env.outputs.account)] }}
+
+  sls-mentor:
+    needs:
+      [
+        env,
+        deploy-ordered,
+        deploy-parallel-stage,
+        deploy-parallel-backend,
+        deploy-parallel-remaining
+      ]
+    if: ${{ always() && !failure() && !cancelled() }}
+    uses: 'starterstack/starterstack/.github/workflows/sls-mentor.yml@main'
+    with:
+      aws-regions: ${{ needs.env.outputs.aws-regions }}
+    secrets:
+      aws-ci-role: ${{ secrets[format('AWS_CI_READ_ONLY_ROLE_{0}', needs.env.outputs.account)] }}
+
   report-success:
     needs:
       [
@@ -190,7 +184,10 @@ jobs:
         deploy-parallel-stage,
         deploy-parallel-backend,
         deploy-parallel-remaining,
-        deploy-environment
+        deploy-environment,
+        migration,
+        sanity-tests,
+        sls-mentor
       ]
     if: ${{ always() && !failure() && !cancelled() }}
     uses: 'starterstack/starterstack/.github/workflows/slack.yml@main'
@@ -209,7 +206,10 @@ jobs:
         deploy-parallel-stage,
         deploy-parallel-backend,
         deploy-parallel-remaining,
-        deploy-environment
+        deploy-environment,
+        migration,
+        sanity-tests,
+        sls-mentor
       ]
     if: ${{ always() && failure() && !cancelled() }}
     uses: 'starterstack/starterstack/.github/workflows/slack.yml@main'
