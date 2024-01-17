@@ -24,7 +24,7 @@
     },
     "noMonoPackage": {
       "ignoredResources": [
-        "-pr-[d]+",
+        "-pr-[\\d]+",
         "graphql-(pr-)?[^-]*-http-(post|get)",
         "-(pr-)?[^-]*-sentry",
         "cdn-(pr-)?[^-]*-(http|webSocket)(Anonymous)?Auth",
