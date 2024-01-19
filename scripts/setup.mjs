@@ -478,11 +478,6 @@ async function updateGithubSecrets() {
         color: '469435'
       },
       {
-        name: 'release please',
-        description: 'release-please pull request',
-        color: 'cfd3d7'
-      },
-      {
         name: 'environment deployed',
         description: 'topic branch environment deployed',
         color: 'faeddf'
