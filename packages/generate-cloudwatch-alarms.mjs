@@ -60,12 +60,33 @@ export const lifecycle = async function generateCloudwatchAlarms({
     const resources = template.Resources
 
     for (const [logicalId, resource] of Object.entries(resources)) {
+      if (
+        ![
+          'AWS::Lambda::Function',
+          'AWS::Serverless::Function',
+          'AWS::Lambda::EventSourceMapping',
+          'AWS::Lambda::EventInvokeConfig',
+          'AWS::SQS::Queue',
+          'AWS::Scheduler::ScheduleGroup',
+          'AWS::Events::Rule',
+          'AWS::SNS::Subscription',
+          'AWS::ApiGateway::Method',
+          'AWS::ApiGatewayV2::Route',
+          'AWS::DynamoDB::GlobalTable',
+          'AWS::WAFv2::WebACL',
+          'AWS::S3::Bucket',
+          'AWS::Pipes::Pipe',
+          'AWS::CertificateManager::Certificate',
+          'AWS::KinesisFirehose::DeliveryStream'
+        ].includes(resource.Type)
+      ) {
+        continue
+      }
       const condition = createCondition({ resource, template })
       switch (resource.Type) {
         case 'AWS::Lambda::Function': {
           generateLambdaThrottleAlarm({
             logicalId,
-            resource,
             resources,
             snsAlarmTopic,
             condition,
@@ -73,12 +94,43 @@ export const lifecycle = async function generateCloudwatchAlarms({
           })
           generateLambdaErrorRateAlarm({
             logicalId,
-            resource,
             resources,
             snsAlarmTopic,
             condition,
             region
           })
+
+          break
+        }
+        case 'AWS::Serverless::Function': {
+          generateLambdaThrottleAlarm({
+            logicalId,
+            resources,
+            snsAlarmTopic,
+            condition,
+            region
+          })
+          generateLambdaErrorRateAlarm({
+            logicalId,
+            resources,
+            snsAlarmTopic,
+            condition,
+            region
+          })
+
+          if (
+            resource.Properties?.EventInvokeConfig &&
+            resource?.Properties?.EventInvokeConfig?.DestinationConfig
+              ?.OnFailure?.Target
+          ) {
+            generateLambdaIteratorAgeAlarm({
+              logicalId,
+              resources,
+              snsAlarmTopic,
+              condition,
+              region
+            })
+          }
 
           break
         }
@@ -88,7 +140,6 @@ export const lifecycle = async function generateCloudwatchAlarms({
           if (lambdaLogicalId) {
             generateLambdaIteratorAgeAlarm({
               logicalId: lambdaLogicalId,
-              resource: resources[lambdaLogicalId],
               resources,
               snsAlarmTopic,
               condition,
@@ -104,7 +155,6 @@ export const lifecycle = async function generateCloudwatchAlarms({
             if (lambdaLogicalId) {
               generateLambdaDestinationDeliveryFailureAlarm({
                 logicalId: lambdaLogicalId,
-                resource: resources[lambdaLogicalId],
                 resources,
                 snsAlarmTopic,
                 condition,
@@ -646,7 +696,6 @@ function generateSchedulerThrottledAlarm({
 
 function generateLambdaThrottleAlarm({
   logicalId,
-  resource,
   resources,
   snsAlarmTopic,
   condition,
@@ -654,8 +703,11 @@ function generateLambdaThrottleAlarm({
 }) {
   const threshold = 0
   const evaluationPeriods = 1
-  const functionName = resource.Properties.FunctionName
-  const alarmName = `${stackName} lambda ${functionName} in ${region} throttle count > ${threshold} over the last ${evaluationPeriods} mins`
+
+  const functionName = { Ref: logicalId }
+  const alarmName = {
+    'Fn::Sub': `${stackName} lambda \${${logicalId}} in ${region} throttle count > ${threshold} over the last ${evaluationPeriods} mins`
+  }
   resources[`${logicalId}LambdaThrottleCountAlarm`] = {
     Type: 'AWS::CloudWatch::Alarm',
     Condition: condition,
@@ -677,7 +729,6 @@ function generateLambdaThrottleAlarm({
 
 function generateLambdaDestinationDeliveryFailureAlarm({
   logicalId,
-  resource,
   resources,
   snsAlarmTopic,
   condition,
@@ -685,8 +736,10 @@ function generateLambdaDestinationDeliveryFailureAlarm({
 }) {
   const threshold = 0
   const evaluationPeriods = 1
-  const functionName = resource.Properties.FunctionName
-  const alarmName = `${stackName} lambda ${functionName} in ${region} destination delivery failure count > ${threshold} over the last ${evaluationPeriods} mins`
+  const functionName = { Ref: logicalId }
+  const alarmName = {
+    'Fn::Sub': `${stackName} lambda \${${logicalId}} in ${region} destination delivery failure count > ${threshold} over the last ${evaluationPeriods} mins`
+  }
   resources[`${logicalId}LambdaDestinationDeliveryFailureAlarm`] = {
     Type: 'AWS::CloudWatch::Alarm',
     Condition: condition,
@@ -708,7 +761,6 @@ function generateLambdaDestinationDeliveryFailureAlarm({
 
 function generateLambdaIteratorAgeAlarm({
   logicalId,
-  resource,
   resources,
   snsAlarmTopic,
   condition,
@@ -716,8 +768,10 @@ function generateLambdaIteratorAgeAlarm({
 }) {
   const threshold = 60_000
   const evaluationPeriods = 5
-  const functionName = resource.Properties.FunctionName
-  const alarmName = `${stackName} lambda ${functionName} in ${region} iterator age > ${threshold}ms over the last ${evaluationPeriods} mins`
+  const functionName = { Ref: logicalId }
+  const alarmName = {
+    'Fn::Sub': `${stackName} lambda \${${logicalId}} in ${region} iterator age > ${threshold}ms over the last ${evaluationPeriods} mins`
+  }
   resources[`${logicalId}LambdaIteratorAgeAlarm`] = {
     Type: 'AWS::CloudWatch::Alarm',
     Condition: condition,
@@ -783,7 +837,6 @@ function generateSqsAgeAlarm({
 
 function generateLambdaErrorRateAlarm({
   logicalId,
-  resource,
   resources,
   snsAlarmTopic,
   condition,
@@ -791,8 +844,10 @@ function generateLambdaErrorRateAlarm({
 }) {
   const threshold = 0.1
   const evaluationPeriods = 5
-  const functionName = resource.Properties.FunctionName
-  const alarmName = `${stackName} lambda ${functionName} in ${region} error rate > ${threshold * 100}% over the last ${evaluationPeriods} mins`
+  const functionName = { Ref: logicalId }
+  const alarmName = {
+    'Fn::Sub': `${stackName} lambda \${${logicalId}} in ${region} error rate > ${threshold * 100}% over the last ${evaluationPeriods} mins`
+  }
   resources[`${logicalId}LambdaErrorRateAlarm`] = {
     Type: 'AWS::CloudWatch::Alarm',
     Condition: condition,
