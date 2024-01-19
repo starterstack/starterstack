@@ -6,7 +6,7 @@
     "@aws-sdk/client-s3": "3.490.0",
     "@aws-sdk/client-ssm": "3.490.0",
     "@aws-sdk/client-sts": "3.490.0",
-    "@starterstack/sam-expand": "0.0.29",
+    "@starterstack/sam-expand": "0.0.30",
     "esbuild": "0.19.11",
     "libsodium-wrappers": "0.7.13"
   },
