@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.4](https://github.com/starterstack/starterstack/compare/v0.0.3...v0.0.4) (2024-01-19)
+
+
+### Bug Fixes
+
+* **release-please:** new inputs ([1f817d8](https://github.com/starterstack/starterstack/commit/1f817d84daa3ef6edf52fe1b44a9f628ea08981c))
+* **release-please:** remove label imput ([cadc8d3](https://github.com/starterstack/starterstack/commit/cadc8d392f02b3cfea0af0009dd85c7062115d4c))
+
 ## [0.0.3](https://github.com/starterstack/starterstack/compare/v0.0.2...v0.0.3) (2024-01-19)
 
 
