@@ -259,88 +259,59 @@ export async function getConfig({ stage, template, directory }) {
       : [config.region ?? stackRegion ?? accountRegion]
 
   /** @type {Record<string, string>} */
-  const s3DeploymentBucket = {}
+  const s3DeploymentBuckets = {}
 
   /** @type {Record<string, string>} */
-  const snsOpsTopic = {}
+  const snsOpsTopics = {}
 
   /** @type {Record<string, string>} */
-  const snsAlarmTopic = {}
+  const snsAlarmTopics = {}
 
   await Promise.all(
     stackRegions.map(async function getDeploymentBucket(region) {
-      const stackName = `${settings.stackName}-deployment`
-      let result = cloudformationResults.get(`${region}.${stackName}`)
-      if (!result) {
-        let client = cloudFormationClients.get(region)
-        if (!client) {
-          client = new CloudFormationClient({ region })
-          cloudFormationClients.set(region, client)
-        }
-        try {
-          result = await client.send(
-            new DescribeStacksCommand({
-              StackName: stackName
-            })
-          )
-          cloudformationResults.set(`${region}.${stackName}`, result)
-        } catch {
-          // eslint-disable-next-line no-empty
-        }
+      const deploymentStack = `${settings.stackName}-deployment`
+      const s3DeploymentBucket = await getCloudFormationOutput({
+        region,
+        stackName: deploymentStack,
+        outputKey: 'S3DeploymentBucket'
+      })
+      if (s3DeploymentBucket) {
+        s3DeploymentBuckets[region] = s3DeploymentBucket
       }
-      for (const output of result?.Stacks?.[0]?.Outputs ?? []) {
-        if (output.OutputKey === 'S3DeploymentBucket' && output.OutputValue) {
-          s3DeploymentBucket[region] = output.OutputValue
-        } else if (output.OutputKey === 'SNSOpsTopic' && output.OutputValue) {
-          snsOpsTopic[region] = output.OutputValue
+      const snsOpsTopic = await getCloudFormationOutput({
+        region,
+        stackName: deploymentStack,
+        outputKey: 'SNSOpsTopic'
+      })
+      if (snsOpsTopic) {
+        snsOpsTopics[region] = snsOpsTopic
+      }
+      if (
+        !['deployment', 'monitoring'].includes(
+          path.basename(directory ?? process.cwd())
+        )
+      ) {
+        const monitoringStack = `${settings.stackName}-monitoring`
+        const snsAlarmTopic = await getCloudFormationOutput({
+          region,
+          stackName: monitoringStack,
+          outputKey: 'SNSAlarmTopic'
+        })
+        if (snsAlarmTopic) {
+          snsAlarmTopics[region] = snsAlarmTopic
         }
       }
     })
   )
-
-  if (
-    !['deployment', 'monitoring'].includes(
-      path.basename(directory ?? process.cwd())
-    )
-  ) {
-    await Promise.all(
-      stackRegions.map(async function getDeploymentBucket(region) {
-        const stackName = `${settings.stackName}-monitoring`
-        let result = cloudformationResults.get(`${region}.${stackName}`)
-        if (!result) {
-          let client = cloudFormationClients.get(region)
-          if (!client) {
-            client = new CloudFormationClient({ region })
-            cloudFormationClients.set(region, client)
-          }
-          try {
-            result = await client.send(
-              new DescribeStacksCommand({
-                StackName: stackName
-              })
-            )
-            cloudformationResults.set(`${region}.${stackName}`, result)
-          } catch {
-            // eslint-disable-next-line no-empty
-          }
-        }
-        for (const output of result?.Stacks?.[0]?.Outputs ?? []) {
-          if (output.OutputKey === 'SNSAlarmTopic' && output.OutputValue) {
-            snsAlarmTopic[region] = output.OutputValue
-          }
-        }
-      })
-    )
-  }
 
   return {
     stackName: cloudformationStackName,
     stage: stackStage,
     regions: stackRegions,
     stackRegion,
-    s3DeploymentBucket,
-    snsOpsTopic,
-    snsAlarmTopic,
+    s3DeploymentBucket: s3DeploymentBuckets,
+    snsOpsTopic: snsOpsTopics,
+    snsAlarmTopic: snsAlarmTopics,
     addMappings: config.addMappings
   }
 }
@@ -483,6 +454,41 @@ export default async function getSettings({
     },
     get stackRegion() {
       return config.stackRegion
+    }
+  }
+}
+
+/**
+ * @param {{
+ * region: string
+ * stackName: string
+ * outputKey: string
+ * }} options
+ * @returns {Promise<string | undefined>}
+ **/
+
+async function getCloudFormationOutput({ region, stackName, outputKey }) {
+  let result = cloudformationResults.get(`${region}.${stackName}`)
+  if (!result) {
+    let client = cloudFormationClients.get(region)
+    if (!client) {
+      client = new CloudFormationClient({ region })
+      cloudFormationClients.set(region, client)
+    }
+    try {
+      result = await client.send(
+        new DescribeStacksCommand({
+          StackName: stackName
+        })
+      )
+      cloudformationResults.set(`${region}.${stackName}`, result)
+    } catch {
+      // eslint-disable-next-line no-empty
+    }
+  }
+  for (const output of result?.Stacks?.[0]?.Outputs ?? []) {
+    if (output.OutputKey === outputKey) {
+      return output.OutputValue
     }
   }
 }
