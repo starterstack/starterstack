@@ -27,6 +27,9 @@ Parameters:
     Type: String
   StackRegion:
     Type: String
+  SNSAlarmTopic:
+    Type: String
+
 Metadata:
   expand:
     plugins:
@@ -34,10 +37,13 @@ Metadata:
       - '../hash.mjs'
       - '../stack-stage-config.mjs'
       - '@starterstack/sam-expand/plugins/parameter-overrides'
+      - '@starterstack/sam-expand/plugins/run-script-hooks'
       - '../purge-lambda-versions.mjs'
+      - '../generate-cloudwatch-alarms.mjs'
     config:
       stackStageConfig:
         suffixStage: true
+        addMappings: true
       parameterOverrides:
         - name: StackRegion
           file:
@@ -51,8 +57,28 @@ Metadata:
           file:
             location: ../git.mjs
             exportName: commit
+        - name: SNSAlarmTopic
+          file:
+            location: ../stack-stage-config.mjs
+            exportName: snsAlarmTopic
       purgeLambdaVersions:
         keep: 3
+      script:
+        hooks:
+          post:deploy:
+            - command: ../tag-cloudwatch-alarms.sh
+              args:
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: stackName
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: region
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: stage
+      alarms:
+        snsTopicRef: SNSAlarmTopic
 
 Resources:
   CloudWatchLogGroup:

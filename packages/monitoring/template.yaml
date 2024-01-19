@@ -25,6 +25,7 @@ Parameters:
     Type: String
   GITCommit:
     Type: String
+
 Metadata:
   expand:
     plugins:
@@ -33,7 +34,9 @@ Metadata:
       - '../stack-stage-config.mjs'
       - './cloudwatch-alarm-lambda-concurrency.mjs'
       - '@starterstack/sam-expand/plugins/parameter-overrides'
+      - '@starterstack/sam-expand/plugins/run-script-hooks'
       - '../purge-lambda-versions.mjs'
+      - '../generate-cloudwatch-alarms.mjs'
     config:
       stackStageConfig:
         regions: account
@@ -55,6 +58,22 @@ Metadata:
             exportName: commit
       purgeLambdaVersions:
         keep: 3
+      script:
+        hooks:
+          post:deploy:
+            - command: ../tag-cloudwatch-alarms.sh
+              args:
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: stackName
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: region
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: stage
+      alarms:
+        snsTopicRef: SNSAlarmTopic
 
 Conditions:
   IsCloudwatchAlertsEnabled: !Equals
