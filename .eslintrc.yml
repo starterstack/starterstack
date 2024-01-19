@@ -5,7 +5,7 @@ extends:
   - plugin:@typescript-eslint/recommended-type-checked
   - plugin:unicorn/recommended
 parserOptions:
-  project: ./tsconfig.json
+  project: ./tsconfig.eslint.json
   parser: '@typescript-eslint/parser'
 plugins:
   - '@typescript-eslint'

@@ -769,7 +769,7 @@ async function promptSecret({ name, settings }) {
         if (stderr) throw new Error(stderr)
         return stdout.trim()
       } catch (error) {
-        console.warn(`\u001B[91m${error}\u001B[0m`)
+        console.warn(`\u001B[91m${error.toString()}\u001B[0m`)
       }
 
       break
