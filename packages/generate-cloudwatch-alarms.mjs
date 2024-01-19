@@ -1795,7 +1795,10 @@ function createCondition({ resource, template }) {
       ]
     }
   }
-  if (resource.Condition) {
+  if (
+    resource.Condition &&
+    resource.Condition !== 'IsCloudwatchAlertsEnabled'
+  ) {
     const conditionAndKey = `${resource.Condition}AndIsCloudwatchAlertsEnabled`
     if (!template.Conditions[conditionAndKey]) {
       template.Conditions[conditionAndKey] = {
