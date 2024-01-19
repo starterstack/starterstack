@@ -149,6 +149,7 @@ async function getGlobalFileHash(packagesRoot) {
     'git.mjs',
     'hash.mjs',
     'npm-copy.sh',
+    'generate-cloudwatch-alarms.mjs',
     'settings.json'
   ]
 
