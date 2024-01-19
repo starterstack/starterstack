@@ -1,5 +1,16 @@
 # Changelog
 
+## [0.0.3](https://github.com/starterstack/starterstack/compare/v0.0.2...v0.0.3) (2024-01-19)
+
+
+### Bug Fixes
+
+* add cloudwatch alarms ([#19](https://github.com/starterstack/starterstack/issues/19)) ([4dd05ff](https://github.com/starterstack/starterstack/commit/4dd05ff7a85de506e85085b2dd1c309cac69cd9b))
+* **directory-hash:** include alarm plugin ([b499d79](https://github.com/starterstack/starterstack/commit/b499d79ea65a6f24a3aa10a95a51f476484d6d3a))
+* **generate cloudwatch alarms:** double condition ([6cbd41a](https://github.com/starterstack/starterstack/commit/6cbd41aacd8c068e1c973021578865c83f28c2e5))
+* **generate cloudwatch alarms:** lambda alarm references ([3b6c89e](https://github.com/starterstack/starterstack/commit/3b6c89e5d3190820f90fccf27202efaa6d22c6a9))
+* tag event bus rules ([9414057](https://github.com/starterstack/starterstack/commit/9414057595b59c350eca09399d0251dd99bac732))
+
 ## [0.0.2](https://github.com/starterstack/starterstack/compare/v0.0.1...v0.0.2) (2024-01-17)
 
 
