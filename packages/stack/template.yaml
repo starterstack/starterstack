@@ -18,6 +18,8 @@ Parameters:
     Type: String
   StageOrStackRoot:
     Type: String
+  SNSAlarmTopic:
+    Type: String
 
 Metadata:
   expand:
@@ -26,6 +28,8 @@ Metadata:
       - '../hash.mjs'
       - '../stack-stage-config.mjs'
       - '@starterstack/sam-expand/plugins/parameter-overrides'
+      - '@starterstack/sam-expand/plugins/run-script-hooks'
+      - '../generate-cloudwatch-alarms.mjs'
     config:
       stackStageConfig:
         region: us-east-1
@@ -53,6 +57,26 @@ Metadata:
           file:
             location: ../stack-stage-config.mjs
             exportName: stageOrStackRoot
+        - name: SNSAlarmTopic
+          file:
+            location: ../stack-stage-config.mjs
+            exportName: snsAlarmTopic
+      script:
+        hooks:
+          post:deploy:
+            - command: ../tag-cloudwatch-alarms.sh
+              args:
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: stackName
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: region
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: stage
+      alarms:
+        snsTopicRef: SNSAlarmTopic
 
 Conditions:
   CreateWildcardCert: !Or

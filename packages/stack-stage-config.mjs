@@ -225,9 +225,10 @@ export async function getConfig({ stage, template, directory }) {
     const { Account: account } = await sts.send(
       new GetCallerIdentityCommand({})
     )
-    accountId = account
 
-    if (!accountId) {
+    if (account) {
+      accountId = account
+    } else {
       throw new TypeError('missing aws credentials')
     }
   }
