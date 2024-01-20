@@ -9,7 +9,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 /** @type {import('@starterstack/sam-expand/plugins').Lifecycles} */
 export const lifecycles = ['pre:expand']
 
-/** @type {import('@starterstack/sam-expand/plugins').PluginSchema<{ region?: string, 'suffixStage': boolean, stage?: string, regions?: string }>} */
+/** @type {import('@starterstack/sam-expand/plugins').PluginSchema<{ snsTopicRef: string } >} */
 export const schema = {
   type: 'object',
   properties: {
