@@ -91,7 +91,7 @@
     "@commitlint/cli": "18.4.4",
     "@commitlint/config-conventional": "18.4.4",
     "@sindresorhus/tsconfig": "5.0.0",
-    "@starterstack/sam-expand": "0.0.28",
+    "@starterstack/sam-expand": "0.0.31",
     "@types/aws-lambda": "8.10.131",
     "@typescript-eslint/eslint-plugin": "6.19.0",
     "@typescript-eslint/parser": "6.19.0",
