@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.0.5](https://github.com/starterstack/starterstack/compare/v0.0.4...v0.0.5) (2024-01-24)
+
+
+### Bug Fixes
+
+* **get-node-version:** handle v prefix ([45d81bd](https://github.com/starterstack/starterstack/commit/45d81bd6c8a638f08679d9581f0eb37be29fa48f))
+* release-please config ([c792a8e](https://github.com/starterstack/starterstack/commit/c792a8e4f60b41626dc390c6847f987c0c27efef))
+* release-please config (draft) ([33933c0](https://github.com/starterstack/starterstack/commit/33933c06ec086a79c045ddb138a26581947549c0))
+
 ## [0.0.4](https://github.com/starterstack/starterstack/compare/v0.0.3...v0.0.4) (2024-01-19)
 
 
