@@ -9,7 +9,12 @@ import { fileURLToPath } from 'node:url'
 import process from 'node:process'
 import * as parse from '@starterstack/sam-expand/parse'
 import logInfo from '@starterstack/sam-expand/log'
-import { STSClient, GetCallerIdentityCommand } from '@aws-sdk/client-sts'
+import {
+  STSClient,
+  GetCallerIdentityCommand,
+  STSServiceException
+} from '@aws-sdk/client-sts'
+
 import {
   CloudFormationClient,
   DescribeStacksCommand
@@ -221,15 +226,37 @@ export async function getConfig({ stage, template, directory }) {
     ? `${settings.stackName}-${name}-${stackStage}`
     : `${settings.stackName}-${name}`
 
-  if (!accountId) {
-    const { Account: account } = await sts.send(
-      new GetCallerIdentityCommand({})
-    )
+  if (!process.env.CI && process.env.IS_OFFLINE === 'true') {
+    useLocalOfflineConfig()
+  } else {
+    try {
+      if (!accountId) {
+        const { Account: account } = await sts.send(
+          new GetCallerIdentityCommand({})
+        )
 
-    if (account) {
-      accountId = account
-    } else {
-      throw new TypeError('missing aws credentials')
+        if (account) {
+          accountId = account
+        } else {
+          throw new TypeError('missing aws credentials')
+        }
+      }
+    } catch (error) {
+      if (!process.env.CI && !(error instanceof STSServiceException)) {
+        const { offline } = await inquirer.prompt({
+          type: 'confirm',
+          message: 'No credentials found, run locally with no credentials',
+          default: true,
+          name: 'offline'
+        })
+        if (offline) {
+          useLocalOfflineConfig()
+        } else {
+          throw error
+        }
+      } else {
+        throw error
+      }
     }
   }
 
@@ -358,6 +385,14 @@ export default async function getSettings({
     directory: templateDirectory
   })
 
+  const getCDNOutput = (outputKey) => {
+    return getCloudFormationOutput({
+      region: config.stackRegion,
+      stackName: `${settings.stackName}-cdn-${stage}`,
+      outputKey
+    })
+  }
+
   return {
     get stackName() {
       return config.stackName
@@ -455,6 +490,28 @@ export default async function getSettings({
     },
     get stackRegion() {
       return config.stackRegion
+    },
+    get apiGatewayCloudwatchRole() {
+      return getCloudFormationOutput({
+        region: 'us-east-1',
+        stackName: 'stack',
+        outputKey: 'ApiGatewayCloudwatchRole'
+      })
+    },
+    get s3Media() {
+      return getCDNOutput('S3Media')
+    },
+    get s3ProtectedMedia() {
+      return getCDNOutput('S3ProtectedMedia')
+    },
+    get s3Static() {
+      return getCDNOutput('S3Static')
+    },
+    get s3CloudFrontLogs() {
+      return getCDNOutput('S3CloudFrontLogs')
+    },
+    get s3ProtectedMediaLogs() {
+      return getCDNOutput('S3ProtectedMediaLogs')
     }
   }
 }
@@ -469,6 +526,9 @@ export default async function getSettings({
  **/
 
 async function getCloudFormationOutput({ region, stackName, outputKey }) {
+  if (process.env.IS_OFFLINE === 'true') {
+    return outputKey
+  }
   let result = cloudformationResults.get(`${region}.${stackName}`)
   if (!result) {
     let client = cloudFormationClients.get(region)
@@ -500,6 +560,9 @@ async function getCloudFormationOutput({ region, stackName, outputKey }) {
  **/
 
 async function getParameter(name) {
+  if (process.env.IS_OFFLINE === 'true') {
+    return name
+  }
   try {
     const { Parameter: parameter } = await ssm.send(
       new GetParameterCommand({
@@ -563,4 +626,19 @@ function addParameter({ argv, name, value }) {
   } else {
     argv.splice(parameterIndex, 1, `${name}=${value}`)
   }
+}
+
+function useLocalOfflineConfig() {
+  accountId = '1'.repeat(12)
+  process.env.IS_OFFLINE = 'true'
+  const devAccountId = settings.accountPerStage
+    ? Object.entries(settings.awsAccounts).find(
+        ([, v]) => v.stage === 'dev'
+      )?.[0]
+    : Object.keys(settings.awsAccounts).at(0)
+
+  if (!devAccountId) {
+    throw new Error('could not find account with stage "dev" to copy')
+  }
+  settings.awsAccounts[accountId] = settings.awsAccounts[devAccountId]
 }
