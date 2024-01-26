@@ -226,7 +226,10 @@ export async function getConfig({ stage, template, directory }) {
     ? `${settings.stackName}-${name}-${stackStage}`
     : `${settings.stackName}-${name}`
 
-  if (!process.env.CI && process.env.IS_OFFLINE === 'true') {
+  if (
+    (!process.env.CI && process.env.IS_OFFLINE === 'true') ||
+    stage === 'local'
+  ) {
     useLocalOfflineConfig()
   } else {
     try {
@@ -417,7 +420,7 @@ export default async function getSettings({
         ? settings.awsAccounts[accountId]?.stage
         : stage
       if (accountStage === 'dev') {
-        return this.devRoot
+        return `dev.${settings.stackRootDomain}`
       } else if (accountStage === 'prod') {
         return settings.stackRootDomain
       } else {
@@ -427,6 +430,23 @@ export default async function getSettings({
           )
         }
         return `${stage}.feature.${settings.stackRootDomain}`
+      }
+    },
+    get stageRootUrl() {
+      const accountStage = settings.accountPerStage
+        ? settings.awsAccounts[accountId]?.stage
+        : stage
+      if (accountStage === 'dev') {
+        return `https://dev.${settings.stackRootDomain}`
+      } else if (accountStage === 'prod') {
+        return `https://${settings.stackRootDomain}`
+      } else {
+        if (stage === 'global') {
+          throw new Error(
+            'stageRootUrl not available for feature + global stage'
+          )
+        }
+        return `https://${stage}.feature.${settings.stackRootDomain}`
       }
     },
     get productionStage() {
