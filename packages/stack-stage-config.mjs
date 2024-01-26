@@ -364,6 +364,18 @@ async function getStackStageConfig({ template, directory }) {
   return template.Metadata.expand.config.stackStageConfig
 }
 
+/**
+ * @param {string} outputKey
+ * @returns {Promise<string | undefined>}
+ **/
+async function getStackOutput(outputKey) {
+  return await getCloudFormationOutput({
+    region: 'us-east-1',
+    stackName: settings.stackName,
+    outputKey
+  })
+}
+
 /** @type {import('@starterstack/sam-expand/resolve').FileResolver} */
 export default async function getSettings({
   template,
@@ -447,6 +459,24 @@ export default async function getSettings({
           )
         }
         return `https://${stage}.feature.${settings.stackRootDomain}`
+      }
+    },
+    get acmCertificateArn() {
+      const accountStage = settings.accountPerStage
+        ? settings.awsAccounts[accountId]?.stage
+        : stage
+
+      if (accountStage === 'dev') {
+        return getStackOutput('DevCert')
+      } else if (accountStage === 'prod') {
+        return getStackOutput('RootCert')
+      } else {
+        if (stage === 'global') {
+          throw new Error(
+            'acmCertificateArn not available for feature + global stage'
+          )
+        }
+        return getStackOutput('WildcardCert')
       }
     },
     get productionStage() {
