@@ -49,6 +49,14 @@ Metadata:
                 - file:
                     location: ../stack-stage-config.mjs
                     exportName: stage
+
+          post:delete:
+            - command: ./scripts/delete-dangling-acm-certificates.mjs
+              args:
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: zoneId
+
       alarms:
         snsTopicRef: SNSAlarmTopic
 
@@ -211,7 +219,7 @@ Outputs:
     Export:
       Name: !Sub '${AWS::StackName}CloudFrontWafLogGroup'
 
-  CloudFrontWafAcl:
+  CloudFrontWafACL:
     Condition: IsWafEnabled
     Description: CloudFront waf acl
     Value: !GetAtt CloudFrontWafAcl.Arn

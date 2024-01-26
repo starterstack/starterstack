@@ -400,6 +400,10 @@ export default async function getSettings({
     directory: templateDirectory
   })
 
+  /**
+   * @param {string} outputKey
+   * @returns {Promise<string | undefined>}
+   */
   const getCDNOutput = (outputKey) => {
     return getCloudFormationOutput({
       region: config.stackRegion,
@@ -562,6 +566,16 @@ export default async function getSettings({
     },
     get s3ProtectedMediaLogs() {
       return getCDNOutput('S3ProtectedMediaLogs')
+    },
+    get cloudFrontWafACL() {
+      return getCloudFormationOutput({
+        region: config.stackRegion,
+        stackName: `${settings.stackName}-cloudfront-us-east-1-${stage}`,
+        outputKey: 'CloudFrontWafACL'
+      })
+    },
+    get zoneId() {
+      return getStackOutput('ZoneId')
     }
   }
 }
