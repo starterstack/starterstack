@@ -3,6 +3,7 @@
 import { fileURLToPath } from 'node:url'
 import path from 'node:path'
 import { readFile } from 'node:fs/promises'
+import sanitizeValue from './sanitize-argv.mjs'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
@@ -44,12 +45,15 @@ export const lifecycle = async function generateCloudwatchAlarms({
       x.startsWith('Stage=')
     )
     const stage =
-      stageIndex === -1 ? '' : argv[stageIndex].slice('Stage='.length)
+      stageIndex === -1
+        ? ''
+        : sanitizeValue(argv[stageIndex].slice('Stage='.length))
     if (!stage) {
       throw new TypeError('missing stage')
     }
     const regionIndex = argv.indexOf('--region')
-    const region = regionIndex === -1 ? '' : argv[regionIndex + 1]
+    const region =
+      regionIndex === -1 ? '' : sanitizeValue(argv[regionIndex + 1])
     if (!region) {
       throw new TypeError('missing region')
     }

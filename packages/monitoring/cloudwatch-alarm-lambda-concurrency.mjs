@@ -17,7 +17,7 @@ export const lifecycle = async function getRegionLimits({
   log
 }) {
   if (command === 'build' && argv.includes('--region')) {
-    const region = argv[argv.indexOf('--region') + 1]
+    const region = argv[argv.indexOf('--region') + 1].replaceAll(/["']/g, '')
     const snsAlarmTopic = { Ref: 'SNSAlarmTopic' }
     const unreservedConcurrentExecutions =
       await getUnreservedConcurrentExecutions(region)

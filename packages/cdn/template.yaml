@@ -96,11 +96,8 @@ Metadata:
           overrides:
             - name: CloudFrontRequestCode
               exportName: requestCode
-              inlineRef: true
-
             - name: CloudFrontResponseCode
               exportName: responseCode
-              inlineRef: true
 
         - location: ../git.mjs
           overrides:
@@ -353,7 +350,7 @@ Resources:
               Bool:
                 'aws:SecureTransport': true
               StringEquals:
-                'AWS:SourceArn': !Sub 'arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${Cloudfront}'
+                'AWS:SourceArn': !Sub 'arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${CloudFront}'
             Principal:
               Service: 'cloudfront.amazonaws.com'
 
@@ -709,48 +706,40 @@ Resources:
             - !Ref CloudFrontWafACL
             - Ref: AWS::NoValue
         Origins:
-          - Id: s3StaticOrigin
+          - Id: S3StaticOrigin
             DomainName: !GetAtt S3Static.RegionalDomainName
             OriginAccessControlId: !GetAtt CloudFrontOriginAccessControl.Id
             S3OriginConfig: {}
             OriginShield:
               Enabled: true
               OriginShieldRegion: !Ref StackRegion
-          - Id: apigwRestOrigin
-            DomainName: !Join
-              - ''
-              - - !Ref APIGWRest
-                - !Sub '.execute-api.${AWS::Region}.amazonaws.com'
+          - Id: ApiGatewayRestOrigin
+            DomainName: !Sub '${ApiGatewayRest}.execute-api.${AWS::Region}.amazonaws.com'
             CustomOriginConfig:
               OriginProtocolPolicy: match-viewer
             OriginShield:
               Enabled: true
               OriginShieldRegion: !Ref StackRegion
-          - Id: s3ProtectedMediaOrigin
+          - Id: S3ProtectedMediaOrigin
             DomainName: !GetAtt S3ProtectedMedia.RegionalDomainName
             OriginAccessControlId: !GetAtt CloudFrontOriginAccessControl.Id
             S3OriginConfig: {}
             OriginShield:
               Enabled: true
               OriginShieldRegion: !Ref StackRegion
-          - Id: s3MediaOrigin
+          - Id: S3MediaOrigin
             DomainName: !GetAtt S3Media.RegionalDomainName
             OriginAccessControlId: !GetAtt CloudFrontOriginAccessControl.Id
             S3OriginConfig: {}
             OriginShield:
               Enabled: true
               OriginShieldRegion: !Ref StackRegion
-          - Id: apigwHttpOrigin
+          - Id: ApiGatewayWebSocketOrigin
             DomainName:
-              !Select [1, !Split ['//', !GetAtt apigwHttp.ApiEndpoint]]
-            CustomOriginConfig:
-              OriginProtocolPolicy: match-viewer
-            OriginShield:
-              Enabled: true
-              OriginShieldRegion: !Ref StackRegion
-          - Id: apigwWebSocketOrigin
-            DomainName:
-              !Select [1, !Split ['//', !GetAtt apigwWebSocket.ApiEndpoint]]
+              !Select [
+                1,
+                !Split ['//', !GetAtt ApiGatewayWebSocket.ApiEndpoint]
+              ]
             CustomOriginConfig:
               OriginProtocolPolicy: match-viewer
         DefaultCacheBehavior:
@@ -758,76 +747,76 @@ Resources:
           CachedMethods: ['GET', 'HEAD']
           CachePolicyId: !Ref StaticCachePolicy
           OriginRequestPolicyId: !Ref BasicOriginRequestPolicy
-          TargetOriginId: apigwRestOrigin
+          TargetOriginId: ApiGatewayRestOrigin
           ViewerProtocolPolicy: redirect-to-https
           ResponseHeadersPolicyId: !Ref CloudFrontResponseHeaderPolicy
           SmoothStreaming: false
           Compress: true
           FunctionAssociations:
             - EventType: viewer-response
-              FunctionARN: !GetAtt cloudfrontViewerResponse.FunctionARN
+              FunctionARN: !GetAtt CloudFrontViewerResponse.FunctionARN
             - EventType: viewer-request
-              FunctionARN: !GetAtt cloudfrontViewerRequest.FunctionARN
+              FunctionARN: !GetAtt CloudFrontViewerRequest.FunctionARN
         CacheBehaviors:
           - AllowedMethods: ['GET', 'HEAD']
             CachedMethods: ['GET', 'HEAD']
             CachePolicyId: !Ref StaticCachePolicy
             OriginRequestPolicyId: !Ref BasicOriginRequestPolicy
-            TargetOriginId: s3ProtectedMediaOrigin
+            TargetOriginId: S3ProtectedMediaOrigin
             ViewerProtocolPolicy: redirect-to-https
             ResponseHeadersPolicyId: !Ref CloudFrontResponseHeaderPolicy
             SmoothStreaming: false
             Compress: true
             FunctionAssociations:
               - EventType: viewer-response
-                FunctionARN: !GetAtt cloudfrontViewerResponse.FunctionARN
+                FunctionARN: !GetAtt CloudFrontViewerResponse.FunctionARN
               - EventType: viewer-request
-                FunctionARN: !GetAtt cloudfrontViewerRequest.FunctionARN
+                FunctionARN: !GetAtt CloudFrontViewerRequest.FunctionARN
             PathPattern: '/media/~/*'
           - AllowedMethods: ['GET', 'HEAD']
             CachedMethods: ['GET', 'HEAD']
             CachePolicyId: !Ref StaticCachePolicy
             OriginRequestPolicyId: !Ref BasicOriginRequestPolicy
-            TargetOriginId: s3MediaOrigin
+            TargetOriginId: S3MediaOrigin
             ViewerProtocolPolicy: redirect-to-https
             ResponseHeadersPolicyId: !Ref CloudFrontResponseHeaderPolicy
             SmoothStreaming: false
             Compress: true
             FunctionAssociations:
               - EventType: viewer-response
-                FunctionARN: !GetAtt cloudfrontViewerResponse.FunctionARN
+                FunctionARN: !GetAtt CloudFrontViewerResponse.FunctionARN
               - EventType: viewer-request
-                FunctionARN: !GetAtt cloudfrontViewerRequest.FunctionARN
+                FunctionARN: !GetAtt CloudFrontViewerRequest.FunctionARN
             PathPattern: '/media/*'
           - AllowedMethods: ['GET', 'HEAD']
             CachePolicyId: '4135ea2d-6df8-44a3-9df3-4b5a84be39ad' # disabled
             OriginRequestPolicyId: !Ref WebsocketOriginRequestPolicy
-            TargetOriginId: apigwWebSocketOrigin
+            TargetOriginId: ApiGatewayWebSocketOrigin
             ViewerProtocolPolicy: https-only
             ResponseHeadersPolicyId: !Ref CloudFrontResponseHeaderPolicy
             SmoothStreaming: false
             Compress: true
             FunctionAssociations:
               - EventType: viewer-response
-                FunctionARN: !GetAtt cloudfrontViewerResponse.FunctionARN
+                FunctionARN: !GetAtt CloudFrontViewerResponse.FunctionARN
               - EventType: viewer-request
-                FunctionARN: !GetAtt cloudfrontViewerRequest.FunctionARN
+                FunctionARN: !GetAtt CloudFrontViewerRequest.FunctionARN
             PathPattern: '/api/ws*'
           - AllowedMethods:
               ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS']
             CachedMethods: ['GET', 'HEAD']
             CachePolicyId: !Ref QueryCachePolicy
             OriginRequestPolicyId: !Ref BasicOriginRequestPolicy
-            TargetOriginId: apigwRestOrigin
+            TargetOriginId: ApiGatewayRestOrigin
             ViewerProtocolPolicy: redirect-to-https
             ResponseHeadersPolicyId: !Ref CloudFrontResponseHeaderPolicy
             SmoothStreaming: false
             Compress: true
             FunctionAssociations:
               - EventType: viewer-response
-                FunctionARN: !GetAtt cloudfrontViewerResponse.FunctionARN
+                FunctionARN: !GetAtt CloudFrontViewerResponse.FunctionARN
               - EventType: viewer-request
-                FunctionARN: !GetAtt cloudfrontViewerRequest.FunctionARN
+                FunctionARN: !GetAtt CloudFrontViewerRequest.FunctionARN
             PathPattern: '/api/*'
           - AllowedMethods: ['GET', 'HEAD']
             CachedMethods: ['GET', 'HEAD']
@@ -840,9 +829,9 @@ Resources:
             Compress: true
             FunctionAssociations:
               - EventType: viewer-response
-                FunctionARN: !GetAtt cloudfrontViewerResponse.FunctionARN
+                FunctionARN: !GetAtt CloudFrontViewerResponse.FunctionARN
               - EventType: viewer-request
-                FunctionARN: !GetAtt cloudfrontViewerRequest.FunctionARN
+                FunctionARN: !GetAtt CloudFrontViewerRequest.FunctionARN
             PathPattern: '/*.*'
         ViewerCertificate:
           AcmCertificateArn: !Ref AcmCertificateArn
@@ -866,7 +855,7 @@ Resources:
         SigningBehavior: 'always'
         SigningProtocol: 'sigv4'
 
-  CloudFrontRequest:
+  CloudFrontViewerRequest:
     Type: AWS::CloudFront::Function
     Properties:
       Name: !Sub '${AWS::StackName}-viewer-request'
@@ -876,7 +865,7 @@ Resources:
         Comment: !Sub 'Created by Serverless Framework by ${AWS::StackName}'
         Runtime: cloudfront-js-2.0
 
-  CloudFrontResponse:
+  CloudFrontViewerResponse:
     Type: AWS::CloudFront::Function
     Properties:
       Name: !Sub '${AWS::StackName}-viewer-response'
@@ -895,12 +884,12 @@ Resources:
           Type: A
           AliasTarget:
             HostedZoneId: Z2FDTNDATAQYW2 # CloudFront alias
-            DNSName: !GetAtt Cloudfront.DomainName
+            DNSName: !GetAtt CloudFront.DomainName
         - Name: !Sub '${StageRoot}.'
           Type: AAAA
           AliasTarget:
             HostedZoneId: Z2FDTNDATAQYW2 # CloudFront alias
-            DNSName: !GetAtt Cloudfront.DomainName
+            DNSName: !GetAtt CloudFront.DomainName
 
   ApiGatewayRest:
     Type: AWS::ApiGateway::RestApi
@@ -926,7 +915,7 @@ Resources:
     Type: AWS::ApiGateway::Method
     Properties:
       RestApiId: !Ref ApiGatewayRest
-      ResourceId: !GetAtt ApigwRest.RootResourceId
+      ResourceId: !GetAtt ApiGatewayRest.RootResourceId
       HttpMethod: HEAD
       AuthorizationType: AWS_IAM
       Integration:
@@ -957,7 +946,7 @@ Resources:
       StageName: !Ref Stage
       AccessLogSetting:
         DestinationArn: !GetAtt ApiGatewayRestLogGroup.Arn
-        Format: !Ref RestApiLogFormat
+        Format: !Ref ApiGatewayRestLogFormat
       TracingEnabled: true
       MethodSettings:
         - MetricsEnabled: true
@@ -1006,7 +995,7 @@ Resources:
         ThrottlingBurstLimit: 500
         ThrottlingRateLimit: 1000
       Tags:
-        Name: !Sub '${AWS::StackName} websocket ${opt:stage} stage'
+        Name: !Sub '${AWS::StackName} websocket ${Stage} stage'
         ManagedBy: !Ref Stack
 
   StaticCachePolicy:

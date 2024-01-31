@@ -3,6 +3,7 @@
 // @ts-check
 
 import logInfo from '@starterstack/sam-expand/log'
+import sanitizeValue from './sanitize-argv.mjs'
 import {
   CloudFormationClient,
   DescribeStackResourceCommand
@@ -49,8 +50,8 @@ export const lifecycle = async function purgeLambdaVersion({ argv, template }) {
     throw new TypeError('missing stack name')
   }
 
-  const region = argv[regionIndex + 1]
-  const stackName = argv[stackNameIndex + 1]
+  const region = sanitizeValue(argv[regionIndex + 1])
+  const stackName = sanitizeValue(argv[stackNameIndex + 1])
 
   const cloudformation = new CloudFormationClient({ region })
   const lambda = new LambdaClient({ region })

@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url'
 import process from 'node:process'
 import * as parse from '@starterstack/sam-expand/parse'
 import logInfo from '@starterstack/sam-expand/log'
+import sanitizeValue from './sanitize-argv.mjs'
 import {
   STSClient,
   GetCallerIdentityCommand,
@@ -106,9 +107,12 @@ export const lifecycle = async function stackStageConfig({
       template.Mappings.AWSAccounts = settings.awsAccounts
     }
     const stageIndex = argv.findIndex((x) => x.startsWith('Stage='))
-    let stage = stageIndex === -1 ? '' : argv[stageIndex].slice('Stage='.length)
+    let stage =
+      stageIndex === -1
+        ? ''
+        : sanitizeValue(argv[stageIndex].slice('Stage='.length))
     const regionIndex = argv.indexOf('--region')
-    let region = regionIndex === -1 ? '' : argv[regionIndex + 1]
+    let region = regionIndex === -1 ? '' : sanitizeValue(argv[regionIndex + 1])
 
     if (['build', 'deploy', 'delete', 'validate'].includes(command)) {
       if (!stage && process.env.STAGE) {
@@ -142,7 +146,7 @@ export const lifecycle = async function stackStageConfig({
 
       region = regionValue
       if (['build', 'deploy', 'delete', 'validate'].includes(command)) {
-        argv.push('--region', region)
+        argv.push('--region', `'${region}'`)
       }
     }
 
@@ -151,28 +155,30 @@ export const lifecycle = async function stackStageConfig({
     }
 
     if (['deploy', 'delete'].includes(command)) {
-      argv.push('--stack-name', config.stackName)
+      argv.push('--stack-name', `'${config.stackName}`)
       if (config.s3DeploymentBucket[region]) {
         argv.push(
           '--s3-bucket',
-          config.s3DeploymentBucket[region],
-
+          `'${config.s3DeploymentBucket[region]}`,
           '--s3-prefix',
           command === 'deploy'
-            ? `${config.stackName}/${template.Outputs.DeployedCommit.Value}`
-            : config.stackName
+            ? `'${config.stackName}/${template.Outputs.DeployedCommit.Value}'`
+            : `'${config.stackName}`
         )
       }
     }
     if (command === 'deploy') {
       if (config.snsOpsTopic[region]) {
-        argv.push('--notification-arns', config.snsOpsTopic[region] ?? '')
+        argv.push(
+          '--notification-arns',
+          `'${config.snsOpsTopic[region] ?? ''}'`
+        )
       }
       argv.push(
         '--tags',
-        `STAGE=${stage}`,
-        `ManagedBy=${settings.stackName}`,
-        `Name=${config.stackName}`
+        `STAGE='${stage}'`,
+        `ManagedBy='${settings.stackName}'`,
+        `Name='${config.stackName}'`
       )
     }
     if (['build', 'deploy'].includes(command)) {
@@ -182,9 +188,9 @@ export const lifecycle = async function stackStageConfig({
     log('applied stack stage config %O', { config, argv })
   } else {
     if (argv.includes('--s3-bucket') && argv.includes('--s3-prefix')) {
-      const region = argv[argv.indexOf('--region') + 1]
-      const s3Bucket = argv[argv.indexOf('--s3-bucket') + 1]
-      const s3Prefix = argv[argv.indexOf('--s3-prefix') + 1]
+      const region = sanitizeValue(argv[argv.indexOf('--region') + 1])
+      const s3Bucket = sanitizeValue(argv[argv.indexOf('--s3-bucket') + 1])
+      const s3Prefix = sanitizeValue(argv[argv.indexOf('--s3-prefix') + 1])
 
       let s3Client = s3Clients.get(region)
 
@@ -383,8 +389,12 @@ export default async function getSettings({
   argv,
   region: defaultRegion
 }) {
-  const region = argv[argv.indexOf('--region') + 1] ?? defaultRegion
-  const stage = argv[argv.findIndex((x) => x.startsWith('Stage='))]
+  const region = sanitizeValue(
+    argv[argv.indexOf('--region') + 1] ?? defaultRegion
+  )
+  const stage = sanitizeValue(
+    argv[argv.findIndex((x) => x.startsWith('Stage='))]
+  )
 
   if (!region) {
     throw new TypeError('missing region')
@@ -696,9 +706,9 @@ function addParameter({ argv, name, value }) {
 
   if (parameterIndex === -1) {
     const parameterOverridesIndex = argv.indexOf('--parameter-overrides')
-    argv.splice(parameterOverridesIndex + 1, 0, `${name}=${value}`)
+    argv.splice(parameterOverridesIndex + 1, 0, `${name}='${value}'`)
   } else {
-    argv.splice(parameterIndex, 1, `${name}=${value}`)
+    argv.splice(parameterIndex, 1, `${name}='${value}'`)
   }
 }
 
