@@ -44,18 +44,16 @@ Metadata:
         stage: global
         addMappings: true
       parameterOverrides:
-        - name: LogRetentionInDays
-          file:
-            location: ../stack-stage-config.mjs
-            exportName: logRetentionInDays
-        - name: SNSOpsTopic
-          file:
-            location: ../stack-stage-config.mjs
-            exportName: snsOpsTopic
-        - name: GITCommit
-          file:
-            location: ../git.mjs
-            exportName: commit
+        - location: ../stack-stage-config.mjs
+          overrides:
+            - name: LogRetentionInDays
+              exportName: logRetentionInDays
+            - name: SNSOpsTopic
+              exportName: snsOpsTopic
+        - location: ../git.mjs
+          overrides:
+            - name: GITCommit
+              exportName: commit
       purgeLambdaVersions:
         keep: 3
       script:

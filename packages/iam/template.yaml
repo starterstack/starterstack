@@ -21,14 +21,12 @@ Metadata:
       - '../stack-stage-config.mjs'
     config:
       parameterOverrides:
-        - name: GitHubRepoOwner
-          file:
-            location: ../settings.json
-            exportName: owner
-        - name: GitHubRepo
-          file:
-            location: ../settings.json
-            exportName: repo
+        - location: ../settings.json
+          overrides:
+            - name: GitHubRepoOwner
+              exportName: owner
+            - name: GitHubRepo
+              exportName: repo
       stackStageConfig:
         region: us-east-1
         suffixStage: false

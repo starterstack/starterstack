@@ -45,22 +45,18 @@ Metadata:
         suffixStage: true
         addMappings: true
       parameterOverrides:
-        - name: StackRegion
-          file:
-            location: ../stack-stage-config.mjs
-            exportName: stackRegion
-        - name: LogRetentionInDays
-          file:
-            location: ../stack-stage-config.mjs
-            exportName: logRetentionInDays
-        - name: GITCommit
-          file:
-            location: ../git.mjs
-            exportName: commit
-        - name: SNSAlarmTopic
-          file:
-            location: ../stack-stage-config.mjs
-            exportName: snsAlarmTopic
+        - location: ../stack-stage-config.mjs
+          overrides:
+            - name: StackRegion
+              exportName: stackRegion
+            - name: LogRetentionInDays
+              exportName: logRetentionInDays
+            - name: SNSAlarmTopic
+              exportName: snsAlarmTopic
+        - location: ../git.mjs
+          overrides:
+            - name: GITCommit
+              exportName: commit
       purgeLambdaVersions:
         keep: 3
       script:

@@ -27,14 +27,12 @@ Metadata:
         suffixStage: true
         addMappings: true
       parameterOverrides:
-        - name: SNSAlarmTopic
-          file:
-            location: ../stack-stage-config.mjs
-            exportName: snsAlarmTopic
-        - name: LogRetentionInDays
-          file:
-            location: ../stack-stage-config.mjs
-            exportName: logRetentionInDays
+        - location: ../stack-stage-config.mjs
+          overrides:
+            - name: SNSAlarmTopic
+              exportName: snsAlarmTopic
+            - name: LogRetentionInDays
+              exportName: logRetentionInDays
       script:
         hooks:
           post:deploy:

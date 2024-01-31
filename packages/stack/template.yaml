@@ -37,30 +37,22 @@ Metadata:
         suffixStage: false
         addMappings: true
       parameterOverrides:
-        - name: Root
-          file:
-            location: ../settings.json
-            exportName: rootDomain
-        - name: AccountPerStage
-          file:
-            location: ../settings.json
-            exportName: accountPerStage
-        - name: DevRoot
-          file:
-            location: ../stack-stage-config.mjs
-            exportName: devRoot
-        - name: WildcardCertName
-          file:
-            location: ../stack-stage-config.mjs
-            exportName: wildcardCertName
-        - name: StageOrStackRoot
-          file:
-            location: ../stack-stage-config.mjs
-            exportName: stageOrStackRoot
-        - name: SNSAlarmTopic
-          file:
-            location: ../stack-stage-config.mjs
-            exportName: snsAlarmTopic
+        - location: ../settings.json
+          overrides:
+            - name: Root
+              exportName: rootDomain
+            - name: AccountPerStage
+              exportName: accountPerStage
+        - location: ../stack-stage-config.mjs
+          overrides:
+            - name: DevRoot
+              exportName: devRoot
+            - name: WildcardCertName
+              exportName: wildcardCertName
+            - name: StageOrStackRoot
+              exportName: stageOrStackRoot
+            - name: SNSAlarmTopic
+              exportName: snsAlarmTopic
       script:
         hooks:
           post:deploy:

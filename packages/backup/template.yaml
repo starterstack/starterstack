@@ -26,18 +26,14 @@ Metadata:
         suffixStage: false
         stage: global
       parameterOverrides:
-        - name: ProductionStage
-          file:
-            location: ../stack-stage-config.mjs
-            exportName: productionStage
-        - name: ProductionAccountId
-          file:
-            location: ../stack-stage-config.mjs
-            exportName: productionAccountId
-        - name: ProductionRegion
-          file:
-            location: ../stack-stage-config.mjs
-            exportName: productionRegion
+        - location: ../stack-stage-config.mjs
+          overrides:
+            - name: ProductionStage
+              exportName: productionStage
+            - name: ProductionAccountId
+              exportName: productionAccountId
+            - name: ProductionRegion
+              exportName: productionRegion
 
 Conditions:
   IsBackupAccount: !Equals

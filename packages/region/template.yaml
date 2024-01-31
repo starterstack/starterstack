@@ -27,18 +27,14 @@ Metadata:
         suffixStage: false
         stage: global
       parameterOverrides:
-        - name: AccountRegion
-          file:
-            location: ../stack-stage-config.mjs
-            exportName: accountRegion
-        - name: AccountPerStage
-          file:
-            location: ../stack-stage-config.mjs
-            exportName: accountPerStage
-        - name: LogRetentionInDays
-          file:
-            location: ../stack-stage-config.mjs
-            exportName: logRetentionInDays
+        - location: ../stack-stage-config.mjs
+          overrides:
+            - name: AccountRegion
+              exportName: accountRegion
+            - name: AccountPerStage
+              exportName: accountPerStage
+            - name: LogRetentionInDays
+              exportName: logRetentionInDays
 
 Conditions:
   IsStackRegion: !Or

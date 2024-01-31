@@ -28,20 +28,17 @@ Metadata:
         stage: global
         addMappings: true
       parameterOverrides:
-        - name: AccountPerStage
-          file:
-            location: ../settings.json
-            exportName: accountPerStage
-        - name: AccountIds
-          file:
-            location: ../stack-stage-config.mjs
-            exportName: accountIds
-        - name: S3LogBucket
-          file:
-            location: ../stack-stage-config.mjs
-            exportName: ssmS3LogBucket
-            defaultValue: cloudTrailS3Logs-missing-in-ssm
-
+        - location: ../settings.json
+          overrides:
+            - name: AccountPerStage
+              exportName: accountPerStage
+        - location: ../stack-stage-config.mjs
+          overrides:
+            - name: AccountIds
+              exportName: accountIds
+            - name: S3LogBucket
+              exportName: ssmS3LogBucket
+              defaultValue: cloudTrailS3Logs-missing-in-ssm
 Conditions:
   ShouldCreateBucket: !Or
     - !Equals

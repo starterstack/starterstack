@@ -30,8 +30,8 @@ Metadata:
     plugins:
       - '../git.mjs'
       - '../hash.mjs'
-      - '../stack-stage-config.mjs'
       - '@starterstack/sam-expand/plugins/parameter-overrides'
+      - '../stack-stage-config.mjs'
       - '@starterstack/sam-expand/plugins/run-script-hooks'
       - '../generate-cloudwatch-alarms.mjs'
 
@@ -40,38 +40,26 @@ Metadata:
         suffixStage: true
         addMappings: true
       parameterOverrides:
-        - name: AccountPerStage
-          file:
-            location: ../settings.json
-            exportName: accountPerStage
-        - name: ProductionAccountId
-          file:
-            location: ../stack-stage-config.mjs
-            exportName: productionAccountId
-        - name: ProductionStage
-          file:
-            location: ../stack-stage-config.mjs
-            exportName: productionStage
-        - name: ProductionRegion
-          file:
-            location: ../stack-stage-config.mjs
-            exportName: productionRegion
-        - name: BackupAccountId
-          file:
-            location: ../stack-stage-config.mjs
-            exportName: backupAccountId
-        - name: BackupRegion
-          file:
-            location: ../stack-stage-config.mjs
-            exportName: backupRegion
-        - name: BackupStage
-          file:
-            location: ../stack-stage-config.mjs
-            exportName: backupStage
-        - name: SNSAlarmTopic
-          file:
-            location: ../stack-stage-config.mjs
-            exportName: snsAlarmTopic
+        - location: ../settings.json
+          overrides:
+            - name: AccountPerStage
+              exportName: accountPerStage
+        - location: ../stack-stage-config.mjs
+          overrides:
+            - name: ProductionAccountId
+              exportName: productionAccountId
+            - name: ProductionStage
+              exportName: productionStage
+            - name: ProductionRegion
+              exportName: productionRegion
+            - name: BackupAccountId
+              exportName: backupAccountId
+            - name: BackupRegion
+              exportName: backupRegion
+            - name: BackupStage
+              exportName: backupStage
+            - name: SNSAlarmTopic
+              exportName: snsAlarmTopic
       script:
         hooks:
           post:deploy:

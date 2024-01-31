@@ -20,10 +20,10 @@ Metadata:
         suffixStage: false
         stage: global
       parameterOverrides:
-        - name: SNSAlarmTopic
-          file:
-            location: ../stack-stage-config.mjs
-            exportName: snsAlarmTopic
+        - location: ../stack-stage-config.mjs
+          overrides:
+            - name: SNSAlarmTopic
+              exportName: snsAlarmTopic
 
 Resources:
   Budget:
