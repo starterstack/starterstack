@@ -3,7 +3,7 @@
   "stackDisplayName": "Starterstack-Sam",
   "rootDomain": "dotnetmentor.se",
   "stackRootDomain": "starterstack-sam.dotnetmentor.se",
-  "priceClassKey": "usAndEurope",
+  "priceClass": "PriceClass_100",
   "captureUserLanguageAndDevice": false,
   "owner": "starterstack",
   "repo": "starterstack",
@@ -18,15 +18,6 @@
   },
   "stages": ["dev", "feature", "prod", "log", "backup"],
   "awsAccounts": {
-    "002389126878": {
-      "stage": "feature",
-      "wafEnabled": false,
-      "isLogAccount": false,
-      "isBackupAccount": false,
-      "dynamodbPointInTimeDailyS3ExportsEnabled": false,
-      "cloudwatchAlertsEnabled": false,
-      "cloudfrontServerTiming": 40
-    },
     "067783603926": {
       "stage": "dev",
       "wafEnabled": false,
@@ -35,6 +26,15 @@
       "dynamodbPointInTimeDailyS3ExportsEnabled": false,
       "cloudwatchAlertsEnabled": false,
       "cloudfrontServerTiming": 100
+    },
+    "002389126878": {
+      "stage": "feature",
+      "wafEnabled": false,
+      "isLogAccount": false,
+      "isBackupAccount": false,
+      "dynamodbPointInTimeDailyS3ExportsEnabled": false,
+      "cloudwatchAlertsEnabled": false,
+      "cloudfrontServerTiming": 40
     },
     "324835590264": {
       "stage": "prod",

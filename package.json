@@ -80,6 +80,7 @@
   "private": true,
   "devDependencies": {
     "@actions/github": "6.0.0",
+    "@aws-sdk/client-acm": "3.499.0",
     "@aws-sdk/client-cloudformation": "3.490.0",
     "@aws-sdk/client-dynamodb": "3.490.0",
     "@aws-sdk/client-lambda": "3.490.0",
