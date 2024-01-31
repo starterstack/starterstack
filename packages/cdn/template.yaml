@@ -27,7 +27,7 @@ Parameters:
     Type: String
   PriceClass:
     Type: String
-  CaptureUserLanguageAndDevice:
+  CaptureUserLanguageAndDeviceValue:
     Type: String
   CloudFrontWafACL:
     Type: String
@@ -67,29 +67,29 @@ Metadata:
       parameterOverrides:
         - location: ../stack-stage-config.mjs
           overrides:
-          - name: StackRegion
-            exportName: stackRegion
-          - name: StageRoot
-            exportName: stageOrStackRoot
-          - name: StageRootUrl
-            exportName: stageRootUrl
-          - name: AcmCertificateArn
-            exportName: acmCertificateArn
-          - name: CloudFrontWafACL
-            exportName: cloudFrontWafACL
-          - name: LogRetentionInDays
-            exportName: logRetentionInDays
-          - name: ZoneId
-            exportName: zoneId
-          - name: SNSAlarmTopic
-            exportName: snsAlarmTopic
-          - name: ApiGatewayRestLogFormat
-            exportName: apiGatewayRestLogFormat
+            - name: StackRegion
+              exportName: stackRegion
+            - name: StageRoot
+              exportName: stageOrStackRoot
+            - name: StageRootUrl
+              exportName: stageRootUrl
+            - name: AcmCertificateArn
+              exportName: acmCertificateArn
+            - name: CloudFrontWafACL
+              exportName: cloudFrontWafACL
+            - name: LogRetentionInDays
+              exportName: logRetentionInDays
+            - name: ZoneId
+              exportName: zoneId
+            - name: SNSAlarmTopic
+              exportName: snsAlarmTopic
+            - name: ApiGatewayRestLogFormat
+              exportName: apiGatewayRestLogFormat
         - location: ../settings.json
           overrides:
             - name: PriceClass
               exportName: priceClass
-            - name: CaptureUserLanguageAndDevice
+            - name: CaptureUserLanguageAndDeviceValue
               exportName: captureUserLanguageAndDevice
 
         - location: ./cloudfront-functions.mjs
@@ -177,6 +177,9 @@ Conditions:
       - AWSAccounts
       - !Ref 'AWS::AccountId'
       - wafEnabled
+    - true
+  CaptureUserLanguageAndDevice: !Equals
+    - !Ref CaptureUserLanguageAndDeviceValue
     - true
 
 Resources:
@@ -415,7 +418,6 @@ Resources:
           Value: !Sub ${AWS::StackName}-media
         - Key: 'ManagedBy'
           Value: !Ref Stack
-
 
   S3MediaPolicy:
     Type: AWS::S3::BucketPolicy
@@ -739,7 +741,8 @@ Resources:
               Enabled: true
               OriginShieldRegion: !Ref StackRegion
           - Id: apigwHttpOrigin
-            DomainName: !Select [1, !Split ['//', !GetAtt apigwHttp.ApiEndpoint]]
+            DomainName:
+              !Select [1, !Split ['//', !GetAtt apigwHttp.ApiEndpoint]]
             CustomOriginConfig:
               OriginProtocolPolicy: match-viewer
             OriginShield:
@@ -1120,6 +1123,76 @@ Resources:
                 - CloudFront-Is-Mobile-Viewer
                 - CloudFront-Is-Desktop-Viewer
                 - x-url
+Outputs:
+  DistributionId:
+    Description: CloudFront distribution id
+    Value: !Ref CloudFront
+    Export:
+      Name: !Sub '${AWS::StackName}DistributionId'
+  S3CloudFrontLogsBucket:
+    Description: S3 Bucket for cloudfront logs
+    Value: !Ref S3CloudFrontLogs
+    Export:
+      Name: !Sub '${AWS::StackName}S3CloudFrontLogsBucket'
+  S3StaticBucket:
+    Description: S3 Bucket for static content
+    Value: !Ref S3Static
+    Export:
+      Name: !Sub '${AWS::StackName}S3StaticBucket'
+  S3MediaBucket:
+    Description: S3 Bucket for media content
+    Value: !Ref S3Media
+    Export:
+      Name: !Sub '${AWS::StackName}S3MediaBucket'
+  S3ProtectedMediaBucket:
+    Description: S3 Bucket for protected media content
+    Value: !Ref S3ProtectedMedia
+    Export:
+      Name: !Sub '${AWS::StackName}S3ProtectedMediaBucket'
+  S3ProtectedMediaLogsBucket:
+    Description: S3 Bucket for protected media content access logs
+    Value: !Ref S3ProtectedMediaLogs
+    Export:
+      Name: !Sub '${AWS::StackName}S3ProtectedMediaLogsBucket'
+  ApiGatewayRest:
+    Description: Api Gateway rest api
+    Value: !Ref ApiGatewayRest
+    Export:
+      Name: !Sub '${AWS::StackName}ApigwRest'
 
-
-Outputs: {}
+  ApiGatewayRestResourceId:
+    Description: Api gateway rest api root resource id
+    Value: !GetAtt ApiGatewayRest.RootResourceId
+    Export:
+      Name: !Sub '${AWS::StackName}ApigwRestRootResourceId'
+  #apigwRestApiAuthorizer:
+  #  Description: api gateway restapi authorizer
+  #  Value: !Ref apigwRestApiAuthorizer
+  #  Export:
+  #    Name: !Sub '${AWS::StackName}ApigwRestApiAuthorizer'
+  #apigwRestApiAnonymousAuthorizer:
+  #  Description: api gateway restapi authorizer allowing anonymous access
+  #  Value: !Ref apigwRestApiAnonymousAuthorizer
+  #  Export:
+  #    Name: !Sub '${AWS::StackName}ApigwRestApiAnonymousAuthorizer'
+  #apigwRestApiWafLogGroup:
+  #  Condition: IsWafEnabled
+  #  Description: Api gateway waf log group
+  #  Value: !Ref apigwRestApiWafLogGroup
+  #  Export:
+  #    Name: !Sub '${AWS::StackName}ApigwRestApiWafLogGroup'
+  #apigwWebSocket:
+  #  Description: api gateway websocket
+  #  Value: !Ref apigwWebSocket
+  #  Export:
+  #    Name: !Sub '${AWS::StackName}ApigwWebSocket'
+  #webSocketAuthLambdaFunction:
+  #  Description: lambda websocket authorizer
+  #  Value: !GetAtt WebSocketAuthLambdaFunction.Arn
+  #  Export:
+  #    Name: !Sub '${AWS::StackName}WebSocketAuthLambdaFunction'
+  #webSocketAnonymousAuthLambdaFunction:
+  #  Description: lambda websocket authorizer allowing anonymous access
+  #  Value: !GetAtt WebSocketAnonymousAuthLambdaFunction.Arn
+  #  Export:
+  #    Name: !Sub '${AWS::StackName}WebSocketAnonymousAuthLambdaFunction'
