@@ -1,0 +1,90 @@
+Type: AWS::S3::Bucket
+Properties:
+  PublicAccessBlockConfiguration:
+    BlockPublicAcls: true
+    BlockPublicPolicy: true
+    IgnorePublicAcls: true
+    RestrictPublicBuckets: true
+  LifecycleConfiguration:
+    Rules:
+      - Id: TransitionToIntelligentTiering
+        Status: Enabled
+        Prefix: media
+        Transitions:
+          - StorageClass: INTELLIGENT_TIERING
+            TransitionInDays: 0
+      - Id: ExpireTemp
+        Status: Enabled
+        ExpirationInDays: 1
+        Prefix: temp
+      - Id: ExpirePdf
+        Status: Enabled
+        ExpirationInDays: 1
+        Prefix: pdf
+      - Id: ExpireDynamoDBBackups
+        Status: Enabled
+        ExpirationInDays: 31
+        Prefix: AWSDynamoDB
+      - Id: NonCurrentRetentionMedia
+        Status: Enabled
+        Prefix: media
+        NoncurrentVersionExpiration:
+          NewerNoncurrentVersions: 3
+          NoncurrentDays: 7
+      - Id: NonCurrentRetentionTemp
+        Status: Enabled
+        Prefix: temp
+        NoncurrentVersionExpiration:
+          NoncurrentDays: 1
+      - Id: NonCurrentRetentionPdf
+        Status: Enabled
+        Prefix: pdf
+        NoncurrentVersionExpiration:
+          NoncurrentDays: 1
+      - Id: NonCurrentRetentionBulk
+        Status: Enabled
+        Prefix: bulk-invite
+        NoncurrentVersionExpiration:
+          NoncurrentDays: 1
+      - Id: NonCurrentRetentionDBBackups
+        Status: Enabled
+        Prefix: AWSDynamoDB
+        NoncurrentVersionExpiration:
+          NoncurrentDays: 1
+      - Id: AbortIncompleteMultipartUpload
+        Status: Enabled
+        AbortIncompleteMultipartUpload:
+          DaysAfterInitiation: 1
+        Prefix: temp
+      - Id: DeleteNonCurrent
+        ExpiredObjectDeleteMarker: true
+        Status: Enabled
+  AccelerateConfiguration:
+    AccelerationStatus: Enabled
+  CorsConfiguration:
+    CorsRules:
+      - AllowedMethods:
+          - POST
+        AllowedOrigins:
+          - '${file(../settings.js):stageRootUrl}'
+        MaxAge: 600
+  BucketEncryption:
+    ServerSideEncryptionConfiguration:
+      - BucketKeyEnabled: true
+        ServerSideEncryptionByDefault:
+          SSEAlgorithm: 'AES256'
+  VersioningConfiguration:
+    Status: Enabled
+  NotificationConfiguration:
+    EventBridgeConfiguration:
+      EventBridgeEnabled: true
+  MetricsConfigurations:
+    - Id: !Sub ${AWS::StackName}-protected-media-temp-filter
+      Prefix: temp
+  LoggingConfiguration:
+    DestinationBucketName: !Ref s3ProtectedMediaLogs
+  Tags:
+    - Key: 'Name'
+      Value: !Sub ${AWS::StackName}-protected-media
+    - Key: 'ManagedBy'
+      Value: '${file(../settings.js):stackName}'

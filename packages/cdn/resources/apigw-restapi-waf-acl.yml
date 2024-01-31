@@ -1,0 +1,87 @@
+Type: AWS::WAFv2::WebACL
+Condition: isWafEnabled
+Properties:
+  DefaultAction:
+    Allow: {}
+  Scope: REGIONAL
+  VisibilityConfig:
+    SampledRequestsEnabled: true
+    CloudWatchMetricsEnabled: true
+    MetricName: !Sub '${AWS::StackName}-waf-acl-rest-api'
+  Rules:
+    - Name: RateLimit
+      Priority: 0
+      Action:
+        Block:
+          CustomResponse:
+            ResponseCode: 429
+      VisibilityConfig:
+        SampledRequestsEnabled: true
+        CloudWatchMetricsEnabled: true
+        MetricName: !Sub '${AWS::StackName}-waf-acl-rest-api-rate-limit'
+      Statement:
+        RateBasedStatement:
+          AggregateKeyType: IP
+          Limit: 1000
+    - Name: AWS-AWSManagedRulesCommonRuleSet
+      Priority: 1
+      OverrideAction:
+        None: {}
+      VisibilityConfig:
+        SampledRequestsEnabled: true
+        CloudWatchMetricsEnabled: true
+        MetricName: !Sub '${AWS::StackName}-waf-acl-rest-api-common'
+      Statement:
+        ManagedRuleGroupStatement:
+          VendorName: AWS
+          Name: AWSManagedRulesCommonRuleSet
+          ExcludedRules:
+            - Name: 'SizeRestrictions_BODY'
+    - Name: block-too-large-body-requests
+      Priority: 2
+      Statement:
+        AndStatement:
+          Statements:
+            - LabelMatchStatement:
+                Scope: LABEL
+                Key: awswaf:managed:aws:core-rule-set:SizeRestrictions_Body
+            - NotStatement:
+                Statement:
+                  ByteMatchStatement:
+                    SearchString: '/${opt:stage}/api-rest/sentry-tunnel'
+                    FieldToMatch:
+                      UriPath: {}
+                    TextTransformations:
+                      - Priority: 0
+                        Type: NONE
+                    PositionalConstraint: STARTS_WITH
+      Action:
+        Block: {}
+      VisibilityConfig:
+        SampledRequestsEnabled: true
+        CloudWatchMetricsEnabled: true
+        MetricName: !Sub '${AWS::StackName}-block-too-large-body-requests'
+    - Name: AWS-ManagedRulesKnownBadInputsRuleSet
+      Priority: 3
+      OverrideAction:
+        None: {}
+      VisibilityConfig:
+        SampledRequestsEnabled: true
+        CloudWatchMetricsEnabled: true
+        MetricName: !Sub '${AWS::StackName}-waf-acl-rest-api-bad-inputs'
+      Statement:
+        ManagedRuleGroupStatement:
+          VendorName: AWS
+          Name: AWSManagedRulesKnownBadInputsRuleSet
+    - Name: AWS-ManagedRulesAmazonIpReputationList
+      Priority: 4
+      OverrideAction:
+        None: {}
+      VisibilityConfig:
+        SampledRequestsEnabled: true
+        CloudWatchMetricsEnabled: true
+        MetricName: !Sub '${AWS::StackName}-waf-acl-rest-api-ip-reputation'
+      Statement:
+        ManagedRuleGroupStatement:
+          VendorName: AWS
+          Name: AWSManagedRulesAmazonIpReputationList

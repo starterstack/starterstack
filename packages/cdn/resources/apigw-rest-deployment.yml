@@ -1,0 +1,4 @@
+Type: AWS::ApiGateway::Deployment
+DependsOn: apigwRestMethod
+Properties:
+  RestApiId: !Ref apigwRest

@@ -1,0 +1,8 @@
+Type: AWS::CloudFront::Function
+Properties:
+  Name: !Sub '${AWS::StackName}-viewer-request'
+  AutoPublish: true
+  FunctionCode: ${file(./resources/cloudfront-functions.js):request}
+  FunctionConfig:
+    Comment: !Sub 'Created by Serverless Framework by ${AWS::StackName}'
+    Runtime: cloudfront-js-1.0

@@ -111,7 +111,7 @@ export const lifecycle = async function stackStageConfig({
     let region = regionIndex === -1 ? '' : argv[regionIndex + 1]
 
     if (['build', 'deploy', 'delete', 'validate'].includes(command)) {
-      if (process.env.STAGE) {
+      if (!stage && process.env.STAGE) {
         stage = process.env.STAGE
       }
       if (!process.env.CI && !stage) {
@@ -576,6 +576,16 @@ export default async function getSettings({
     },
     get zoneId() {
       return getStackOutput('ZoneId')
+    },
+    get apiGatewayRestLogFormat() {
+      const awsAccountSettings = settings.awsAccounts[accountId]
+      const wafEnabled = awsAccountSettings?.wafEnabled
+
+      return `{"requestTime":"$context.requestTime","requestId":"$context.requestId","httpMethod":"$context.httpMethod","path":"$context.path","resourcePath":"$context.resourcePath","status":$context.status,"responseLatency":"$context.responseLatency","xrayTraceId":"$context.xrayTraceId","integrationRequestId":"$context.integration.requestId","functionResponseStatus":"$context.integration.status","integrationLatency":"$context.integration.latency","integrationServiceStatus":"$context.integration.integrationStatus","authorizeResultStatus":"$context.authorize.status","authorizerLatency":"$context.authorizer.latency","authorizerRequestId":"$context.authorizer.requestId","ip":"$context.identity.sourceIp","userAgent":"$context.identity.userAgent","user":"$context.authorizer.id"${
+        wafEnabled
+          ? ',"wafError":"$context.waf.error","wafLatency":"$context.waf.latency","wafStatus":"$context.waf.status","wafResponse":"$context.wafResponseCode"'
+          : ''
+      }}`
     }
   }
 }

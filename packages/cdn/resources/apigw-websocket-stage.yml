@@ -1,0 +1,15 @@
+Type: AWS::ApiGatewayV2::Stage
+Properties:
+  ApiId:
+    Ref: apigwWebSocket
+  StageName: ${opt:stage}
+  AutoDeploy: true
+  DefaultRouteSettings:
+    DetailedMetricsEnabled: true
+    DataTraceEnabled: false
+    LoggingLevel: 'ERROR'
+    ThrottlingBurstLimit: 500
+    ThrottlingRateLimit: 1000
+  Tags:
+    Name: !Sub '${AWS::StackName} websocket ${opt:stage} stage'
+    ManagedBy: '${file(../settings.js):stackName}'

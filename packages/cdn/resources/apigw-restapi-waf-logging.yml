@@ -1,0 +1,14 @@
+Type: AWS::WAFv2::LoggingConfiguration
+Condition: isWafEnabled
+Properties:
+  LogDestinationConfigs:
+    - !Select [0, !Split [':*', !GetAtt apigwRestApiWafLogGroup.Arn]]
+  LoggingFilter:
+    DefaultBehavior: DROP
+    Filters:
+      - Behavior: KEEP
+        Conditions:
+          - ActionCondition:
+              Action: BLOCK
+        Requirement: MEETS_ANY
+  ResourceArn: !GetAtt apigwRestApiWafAcl.Arn

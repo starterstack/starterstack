@@ -1,0 +1,19 @@
+Type: AWS::S3::BucketPolicy
+Properties:
+  Bucket: !Ref s3CloudFrontLogs
+  PolicyDocument:
+    Version: '2012-10-17'
+    Id: PolicyForCloudFrontLogs
+    Statement:
+      - Effect: Deny
+        Action: 's3:*'
+        Resource:
+          - !GetAtt s3CloudFrontLogs.Arn
+          - !Join
+            - ''
+            - - !GetAtt s3CloudFrontLogs.Arn
+              - '/*'
+        Principal: '*'
+        Condition:
+          Bool:
+            'aws:SecureTransport': false

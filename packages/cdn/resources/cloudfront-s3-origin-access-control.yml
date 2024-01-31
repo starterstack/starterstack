@@ -1,0 +1,8 @@
+Type: AWS::CloudFront::OriginAccessControl
+Properties:
+  OriginAccessControlConfig:
+    Name: !Sub '${AWS::StackName} S3 Origin Access Control'
+    Description: !Sub 'S3 OAC Created by Serverless Framework by ${AWS::StackName}'
+    OriginAccessControlOriginType: 's3'
+    SigningBehavior: 'always'
+    SigningProtocol: 'sigv4'

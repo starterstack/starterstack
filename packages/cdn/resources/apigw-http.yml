@@ -1,0 +1,8 @@
+Type: AWS::ApiGatewayV2::Api
+Properties:
+  Name: !Sub '${AWS::StackName}-http'
+  Description: !Sub 'Created by Serverless Framework by ${AWS::StackName}'
+  ProtocolType: HTTP
+  Tags:
+    Name: !Sub '${AWS::StackName} http api'
+    ManagedBy: '${file(../settings.js):stackName}'

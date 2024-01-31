@@ -1,0 +1,24 @@
+Type: AWS::CloudFront::CachePolicy
+Properties:
+  CachePolicyConfig:
+    Comment: !Sub 'Created by Serverless Framework by ${AWS::StackName}'
+    DefaultTTL: 0
+    Name: !Sub '${AWS::StackName}Query'
+    MinTTL: 0
+    MaxTTL: 31536000
+    ParametersInCacheKeyAndForwardedToOrigin:
+      CookiesConfig:
+        CookieBehavior: 'whitelist'
+        Cookies:
+          - token
+      QueryStringsConfig:
+        QueryStringBehavior: whitelist
+        QueryStrings:
+          - token
+      EnableAcceptEncodingBrotli: true
+      EnableAcceptEncodingGzip: true
+      HeadersConfig:
+        HeaderBehavior: 'whitelist'
+        Headers:
+          - range
+          - x-api

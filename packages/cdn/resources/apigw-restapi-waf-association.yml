@@ -1,0 +1,11 @@
+Type: AWS::WAFv2::WebACLAssociation
+Condition: isWafEnabled
+DependsOn: apigwRestStage
+Properties:
+  ResourceArn: !Join
+    - ''
+    - - !Sub 'arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/'
+      - !Ref apigwRest
+      - '/stages/'
+      - ${file(../settings.js):stage}
+  WebACLArn: !GetAtt apigwRestApiWafAcl.Arn

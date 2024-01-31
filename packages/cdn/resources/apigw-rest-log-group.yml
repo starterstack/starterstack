@@ -1,0 +1,9 @@
+Type: AWS::Logs::LogGroup
+Properties:
+  LogGroupName: !Sub '/aws/apigateway/rest-api/${AWS::StackName}'
+  RetentionInDays: ${file(../settings.js):defaultLogRetentionInDays}
+  Tags:
+    - Key: 'Name'
+      Value: !Sub '${AWS::StackName} rest api log group'
+    - Key: 'ManagedBy'
+      Value: '${file(../settings.js):stackName}'

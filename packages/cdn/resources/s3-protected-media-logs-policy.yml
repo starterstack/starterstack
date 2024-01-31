@@ -1,0 +1,36 @@
+Type: AWS::S3::BucketPolicy
+Properties:
+  Bucket: !Ref s3ProtectedMediaLogs
+  PolicyDocument:
+    Version: '2012-10-17'
+    Id: PolicyForAccessLoggingForProtectedMedia
+    Statement:
+      - Effect: Deny
+        Action: 's3:*'
+        Resource:
+          - !GetAtt s3ProtectedMediaLogs.Arn
+          - !Join
+            - ''
+            - - !GetAtt s3ProtectedMediaLogs.Arn
+              - '/*'
+        Principal: '*'
+        Condition:
+          Bool:
+            'aws:SecureTransport': false
+      - Effect: Allow
+        Action:
+          - 's3:PutObject'
+          - 's3:PutObjectACL'
+        Resource: !Join
+          - ''
+          - - !GetAtt s3ProtectedMediaLogs.Arn
+            - '/*'
+        Condition:
+          Bool:
+            'aws:SecureTransport': true
+          ArnLike:
+            'aws:SourceArn': !GetAtt s3ProtectedMedia.Arn
+          StringEquals:
+            'aws:SourceAccount': !Sub '${AWS::AccountId}'
+        Principal:
+          Service: 'logging.s3.amazonaws.com'

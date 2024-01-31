@@ -1,0 +1,22 @@
+Type: AWS::S3::Bucket
+Properties:
+  PublicAccessBlockConfiguration:
+    BlockPublicAcls: true
+    BlockPublicPolicy: true
+    IgnorePublicAcls: true
+    RestrictPublicBuckets: true
+  LifecycleConfiguration:
+    Rules:
+      - Id: ExpireLogs
+        Status: Enabled
+        ExpirationInDays: 7
+  BucketEncryption:
+    ServerSideEncryptionConfiguration:
+      - BucketKeyEnabled: true
+        ServerSideEncryptionByDefault:
+          SSEAlgorithm: 'AES256'
+  Tags:
+    - Key: 'Name'
+      Value: !Sub ${AWS::StackName}-protected-media-logs
+    - Key: 'ManagedBy'
+      Value: '${file(../settings.js):stackName}'

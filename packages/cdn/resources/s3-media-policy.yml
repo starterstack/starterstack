@@ -1,0 +1,37 @@
+Type: AWS::S3::BucketPolicy
+Properties:
+  Bucket: !Ref s3Media
+  PolicyDocument:
+    Version: '2012-10-17'
+    Id: PolicyForCloudFrontPrivateContent
+    Statement:
+      - Effect: Deny
+        Action: 's3:*'
+        Resource:
+          - !GetAtt s3Media.Arn
+          - !Join
+            - ''
+            - - !GetAtt s3Media.Arn
+              - '/*'
+        Principal: '*'
+        Condition:
+          Bool:
+            'aws:SecureTransport': false
+      - Effect: Allow
+        Action:
+          - 's3:GetObject'
+        Resource: !Join
+          - ''
+          - - !GetAtt s3Media.Arn
+            - '/*'
+        Condition:
+          Bool:
+            'aws:SecureTransport': true
+          StringEquals:
+            'AWS:SourceArn':
+              - !Join
+                - ''
+                - - !Sub 'arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/'
+                  - !Ref cloudfront
+        Principal:
+          Service: 'cloudfront.amazonaws.com'

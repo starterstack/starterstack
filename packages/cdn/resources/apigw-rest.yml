@@ -1,0 +1,18 @@
+Type: AWS::ApiGateway::RestApi
+Properties:
+  Name: !Sub '${AWS::StackName}-rest-api'
+  Description: !Sub 'Created by Serverless Framework by ${AWS::StackName}'
+  BinaryMediaTypes:
+    - 'application/octet-stream'
+    - 'audio/*'
+    - 'video/*'
+    - 'application/pdf'
+    - 'font/*'
+  EndpointConfiguration:
+    Types:
+      - REGIONAL
+  Tags:
+    - Key: 'Name'
+      Value: !Sub '${AWS::StackName}-rest-api'
+    - Key: 'ManagedBy'
+      Value: '${file(../settings.js):stackName}'

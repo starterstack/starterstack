@@ -1,0 +1,31 @@
+Type: AWS::S3::Bucket
+Properties:
+  PublicAccessBlockConfiguration:
+    BlockPublicAcls: true
+    BlockPublicPolicy: true
+    IgnorePublicAcls: true
+    RestrictPublicBuckets: true
+  LifecycleConfiguration:
+    Rules:
+      - Id: TransitionToIntelligentTiering
+        Status: Enabled
+        Transitions:
+          - StorageClass: INTELLIGENT_TIERING
+            TransitionInDays: 0
+      - Id: NonCurrentRetention
+        Status: Enabled
+        NoncurrentVersionExpiration:
+          NewerNoncurrentVersions: 3
+          NoncurrentDays: 7
+      - Id: DeleteNonCurrent
+        ExpiredObjectDeleteMarker: true
+        Status: Enabled
+  AccelerateConfiguration:
+    AccelerationStatus: Enabled
+  VersioningConfiguration:
+    Status: Enabled
+  Tags:
+    - Key: 'Name'
+      Value: !Sub ${AWS::StackName}-static
+    - Key: 'ManagedBy'
+      Value: '${file(../settings.js):stackName}'

@@ -1,0 +1,161 @@
+Type: AWS::CloudFront::Distribution
+Properties:
+  DistributionConfig:
+    Enabled: true
+    IPV6Enabled: true
+    HttpVersion: http2and3
+    Aliases:
+      - ${file(../settings.js):stageRoot}
+    Comment: !Sub 'Created by Serverless Framework by ${AWS::StackName}'
+    PriceClass: ${file(../settings.js):cloudFrontPriceClass}
+    WebACLId:
+      Fn::If:
+        - isWafEnabled
+        - ${file(../settings.js):cloudfrontWafAcl}
+        - Ref: AWS::NoValue
+    Origins:
+      - Id: s3StaticOrigin
+        DomainName: !GetAtt s3Static.RegionalDomainName
+        OriginAccessControlId: !GetAtt cloudfrontS3OriginAccessControl.Id
+        S3OriginConfig: {}
+        OriginShield:
+          Enabled: true
+          OriginShieldRegion: ${opt:region}
+      - Id: apigwRestOrigin
+        DomainName: !Join
+          - ''
+          - - !Ref apigwRest
+            - !Sub '.execute-api.${AWS::Region}.amazonaws.com'
+        CustomOriginConfig:
+          OriginProtocolPolicy: match-viewer
+        OriginShield:
+          Enabled: true
+          OriginShieldRegion: ${opt:region}
+      - Id: s3ProtectedMediaOrigin
+        DomainName: !GetAtt s3ProtectedMedia.RegionalDomainName
+        OriginAccessControlId: !GetAtt cloudfrontS3OriginAccessControl.Id
+        S3OriginConfig: {}
+        OriginShield:
+          Enabled: true
+          OriginShieldRegion: ${opt:region}
+      - Id: s3MediaOrigin
+        DomainName: !GetAtt s3Media.RegionalDomainName
+        OriginAccessControlId: !GetAtt cloudfrontS3OriginAccessControl.Id
+        S3OriginConfig: {}
+        OriginShield:
+          Enabled: true
+          OriginShieldRegion: ${opt:region}
+      - Id: apigwHttpOrigin
+        DomainName: !Select [1, !Split ['//', !GetAtt apigwHttp.ApiEndpoint]]
+        CustomOriginConfig:
+          OriginProtocolPolicy: match-viewer
+        OriginShield:
+          Enabled: true
+          OriginShieldRegion: ${opt:region}
+      - Id: apigwWebSocketOrigin
+        DomainName:
+          !Select [1, !Split ['//', !GetAtt apigwWebSocket.ApiEndpoint]]
+        CustomOriginConfig:
+          OriginProtocolPolicy: match-viewer
+    DefaultCacheBehavior:
+      AllowedMethods: ['GET', 'HEAD']
+      CachedMethods: ['GET', 'HEAD']
+      CachePolicyId: !Ref staticCachePolicy
+      OriginRequestPolicyId: !Ref basicOriginRequestPolicy
+      TargetOriginId: apigwRestOrigin
+      ViewerProtocolPolicy: redirect-to-https
+      ResponseHeadersPolicyId: !Ref cloudfrontHeadersPolicy
+      SmoothStreaming: false
+      Compress: true
+      FunctionAssociations:
+        - EventType: viewer-response
+          FunctionARN: !GetAtt cloudfrontViewerResponse.FunctionARN
+        - EventType: viewer-request
+          FunctionARN: !GetAtt cloudfrontViewerRequest.FunctionARN
+    CacheBehaviors:
+      - AllowedMethods: ['GET', 'HEAD']
+        CachedMethods: ['GET', 'HEAD']
+        CachePolicyId: !Ref staticCachePolicy
+        OriginRequestPolicyId: !Ref basicOriginRequestPolicy
+        TargetOriginId: s3ProtectedMediaOrigin
+        ViewerProtocolPolicy: redirect-to-https
+        ResponseHeadersPolicyId: !Ref cloudfrontHeadersPolicy
+        SmoothStreaming: false
+        Compress: true
+        FunctionAssociations:
+          - EventType: viewer-response
+            FunctionARN: !GetAtt cloudfrontViewerResponse.FunctionARN
+          - EventType: viewer-request
+            FunctionARN: !GetAtt cloudfrontViewerRequest.FunctionARN
+        PathPattern: '/media/~/*'
+      - AllowedMethods: ['GET', 'HEAD']
+        CachedMethods: ['GET', 'HEAD']
+        CachePolicyId: !Ref staticCachePolicy
+        OriginRequestPolicyId: !Ref basicOriginRequestPolicy
+        TargetOriginId: s3MediaOrigin
+        ViewerProtocolPolicy: redirect-to-https
+        ResponseHeadersPolicyId: !Ref cloudfrontHeadersPolicy
+        SmoothStreaming: false
+        Compress: true
+        FunctionAssociations:
+          - EventType: viewer-response
+            FunctionARN: !GetAtt cloudfrontViewerResponse.FunctionARN
+          - EventType: viewer-request
+            FunctionARN: !GetAtt cloudfrontViewerRequest.FunctionARN
+        PathPattern: '/media/*'
+      - AllowedMethods: ['GET', 'HEAD']
+        CachePolicyId: '4135ea2d-6df8-44a3-9df3-4b5a84be39ad' # disabled
+        OriginRequestPolicyId: !Ref websocketOriginRequestPolicy
+        TargetOriginId: apigwWebSocketOrigin
+        ViewerProtocolPolicy: https-only
+        ResponseHeadersPolicyId: !Ref cloudfrontHeadersPolicy
+        SmoothStreaming: false
+        Compress: true
+        FunctionAssociations:
+          - EventType: viewer-response
+            FunctionARN: !GetAtt cloudfrontViewerResponse.FunctionARN
+          - EventType: viewer-request
+            FunctionARN: !GetAtt cloudfrontViewerRequest.FunctionARN
+        PathPattern: '/api/ws*'
+      - AllowedMethods:
+          ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS']
+        CachedMethods: ['GET', 'HEAD']
+        CachePolicyId: !Ref queryCachePolicy
+        OriginRequestPolicyId: !Ref basicOriginRequestPolicy
+        TargetOriginId: apigwRestOrigin
+        ViewerProtocolPolicy: redirect-to-https
+        ResponseHeadersPolicyId: !Ref cloudfrontHeadersPolicy
+        SmoothStreaming: false
+        Compress: true
+        FunctionAssociations:
+          - EventType: viewer-response
+            FunctionARN: !GetAtt cloudfrontViewerResponse.FunctionARN
+          - EventType: viewer-request
+            FunctionARN: !GetAtt cloudfrontViewerRequest.FunctionARN
+        PathPattern: '/api/*'
+      - AllowedMethods: ['GET', 'HEAD']
+        CachedMethods: ['GET', 'HEAD']
+        CachePolicyId: !Ref queryCachePolicy
+        OriginRequestPolicyId: !Ref basicOriginRequestPolicy
+        TargetOriginId: s3StaticOrigin
+        ViewerProtocolPolicy: redirect-to-https
+        ResponseHeadersPolicyId: !Ref cloudfrontHeadersPolicy
+        SmoothStreaming: false
+        Compress: true
+        FunctionAssociations:
+          - EventType: viewer-response
+            FunctionARN: !GetAtt cloudfrontViewerResponse.FunctionARN
+          - EventType: viewer-request
+            FunctionARN: !GetAtt cloudfrontViewerRequest.FunctionARN
+        PathPattern: '/*.*'
+    ViewerCertificate:
+      AcmCertificateArn: ${file(../settings.js):acmCertificateArn}
+      MinimumProtocolVersion: TLSv1.2_2021
+      SslSupportMethod: sni-only
+    Logging:
+      Bucket: !GetAtt s3CloudFrontLogs.DomainName
+  Tags:
+    - Key: 'Name'
+      Value: !Sub '${AWS::StackName}'
+    - Key: 'ManagedBy'
+      Value: '${file(../settings.js):stackName}'

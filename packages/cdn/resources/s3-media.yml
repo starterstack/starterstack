@@ -1,0 +1,60 @@
+Type: AWS::S3::Bucket
+Properties:
+  PublicAccessBlockConfiguration:
+    BlockPublicAcls: true
+    BlockPublicPolicy: true
+    IgnorePublicAcls: true
+    RestrictPublicBuckets: true
+  LifecycleConfiguration:
+    Rules:
+      - Id: TransitionToIntelligentTiering
+        Status: Enabled
+        Prefix: media
+        Transitions:
+          - StorageClass: INTELLIGENT_TIERING
+            TransitionInDays: 0
+      - Id: ExpireTemp
+        Status: Enabled
+        ExpirationInDays: 1
+        Prefix: temp
+      - Id: NonCurrentRetentionMedia
+        Status: Enabled
+        Prefix: media
+        NoncurrentVersionExpiration:
+          NewerNoncurrentVersions: 3
+          NoncurrentDays: 7
+      - Id: NonCurrentRetentionTemp
+        Status: Enabled
+        Prefix: temp
+        NoncurrentVersionExpiration:
+          NoncurrentDays: 1
+      - Id: DeleteNonCurrent
+        ExpiredObjectDeleteMarker: true
+        Status: Enabled
+  AccelerateConfiguration:
+    AccelerationStatus: Enabled
+  CorsConfiguration:
+    CorsRules:
+      - AllowedMethods:
+          - POST
+        AllowedOrigins:
+          - '${file(../settings.js):stageRootUrl}'
+        MaxAge: 600
+  BucketEncryption:
+    ServerSideEncryptionConfiguration:
+      - BucketKeyEnabled: true
+        ServerSideEncryptionByDefault:
+          SSEAlgorithm: 'AES256'
+  VersioningConfiguration:
+    Status: Enabled
+  NotificationConfiguration:
+    EventBridgeConfiguration:
+      EventBridgeEnabled: true
+  MetricsConfigurations:
+    - Id: !Sub ${AWS::StackName}-media-temp-filter
+      Prefix: temp
+  Tags:
+    - Key: 'Name'
+      Value: !Sub ${AWS::StackName}-media
+    - Key: 'ManagedBy'
+      Value: '${file(../settings.js):stackName}'
