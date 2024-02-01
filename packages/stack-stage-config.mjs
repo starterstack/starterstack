@@ -9,7 +9,6 @@ import { fileURLToPath } from 'node:url'
 import process from 'node:process'
 import * as parse from '@starterstack/sam-expand/parse'
 import logInfo from '@starterstack/sam-expand/log'
-import sanitizeValue from './sanitize-argv.mjs'
 import {
   STSClient,
   GetCallerIdentityCommand,
@@ -96,6 +95,7 @@ export const metadataConfig = 'stackStageConfig'
 export const lifecycle = async function stackStageConfig({
   command,
   argv,
+  argvReader,
   template,
   lifecycle,
   log
@@ -106,13 +106,8 @@ export const lifecycle = async function stackStageConfig({
       template.Mappings ||= {}
       template.Mappings.AWSAccounts = settings.awsAccounts
     }
-    const stageIndex = argv.findIndex((x) => x.startsWith('Stage='))
-    let stage =
-      stageIndex === -1
-        ? ''
-        : sanitizeValue(argv[stageIndex].slice('Stage='.length))
-    const regionIndex = argv.indexOf('--region')
-    let region = regionIndex === -1 ? '' : sanitizeValue(argv[regionIndex + 1])
+    let stage = argvReader('Stage', { parameter: true })
+    let region = argvReader('region')
 
     if (['build', 'deploy', 'delete', 'validate'].includes(command)) {
       if (!stage && process.env.STAGE) {
@@ -144,9 +139,11 @@ export const lifecycle = async function stackStageConfig({
               choices: config.regions
             })
 
-      region = regionValue
-      if (['build', 'deploy', 'delete', 'validate'].includes(command)) {
-        argv.push('--region', `'${region}'`)
+      if (regionValue) {
+        region = regionValue
+        if (['build', 'deploy', 'delete', 'validate'].includes(command)) {
+          argv.push('--region', regionValue)
+        }
       }
     }
 
@@ -188,9 +185,18 @@ export const lifecycle = async function stackStageConfig({
     log('applied stack stage config %O', { config, argv })
   } else {
     if (argv.includes('--s3-bucket') && argv.includes('--s3-prefix')) {
-      const region = sanitizeValue(argv[argv.indexOf('--region') + 1])
-      const s3Bucket = sanitizeValue(argv[argv.indexOf('--s3-bucket') + 1])
-      const s3Prefix = sanitizeValue(argv[argv.indexOf('--s3-prefix') + 1])
+      const region = argvReader('region')
+      if (!region) {
+        throw new TypeError('missing region')
+      }
+      const s3Bucket = argvReader('s3-bucket')
+      if (!s3Bucket) {
+        throw new TypeError('missing s3-bucket')
+      }
+      const s3Prefix = argvReader('s3-prefix')
+      if (!s3Prefix) {
+        throw new TypeError('missing s3-prefix')
+      }
 
       let s3Client = s3Clients.get(region)
 
@@ -386,15 +392,11 @@ async function getStackOutput(outputKey) {
 export default async function getSettings({
   template,
   templateDirectory,
-  argv,
+  argvReader,
   region: defaultRegion
 }) {
-  const region = sanitizeValue(
-    argv[argv.indexOf('--region') + 1] ?? defaultRegion
-  )
-  const stage = sanitizeValue(
-    argv[argv.findIndex((x) => x.startsWith('Stage='))]
-  )
+  const region = argvReader('region') ?? defaultRegion
+  const stage = argvReader('Stage', { parameter: true })
 
   if (!region) {
     throw new TypeError('missing region')
@@ -405,7 +407,7 @@ export default async function getSettings({
   }
 
   const config = await getConfig({
-    stage: stage.slice('Stage='.length),
+    stage,
     template,
     directory: templateDirectory
   })
