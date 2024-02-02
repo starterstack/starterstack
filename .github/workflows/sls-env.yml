@@ -130,11 +130,7 @@ jobs:
 
       - name: root npm install
         run: |
-          npm install \
-            --no-save \
-            --audit false \
-            --fund false \
-            --ignore-scripts
+          npm ci --ignore-scripts
           npm run patch-files
         if: steps.npm-cache.outputs.cache-hit != 'true'
 

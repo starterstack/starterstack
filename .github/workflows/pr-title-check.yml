@@ -37,11 +37,7 @@ jobs:
             **/node_modules
           key: ${{ runner.os }}-node-${{ steps.node-version.outputs.result}}-v7-${{ inputs.stage }}-${{ hashFiles('package-lock.json') }}-${{ hashFiles('**/package-lock.json') }}
       - run: |
-          npm install \
-            --no-save \
-            --audit false \
-            --fund false \
-            --ignore-scripts
+          npm ci --ignore-scripts
           npm run patch-files
         if: steps.npm-cache.outputs.cache-hit != 'true'
       - name: check pr title

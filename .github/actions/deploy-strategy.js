@@ -105,7 +105,7 @@ export default async function deployStrategy({
 
     if (hasPackageLock && !npmCacheHit) {
       await execCommand(
-        `npm install --no-save --audit false --fund false --ignore-scripts # ${stackDirectory}`,
+        `npm ci --ignore-scripts # ${stackDirectory}`,
         stackDirectory
       )
     }

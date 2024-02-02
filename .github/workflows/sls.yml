@@ -51,19 +51,14 @@ jobs:
 
       - name: root npm install
         run: |
-          npm install \
-            --no-save \
-            --audit false \
-            --fund false \
-            --loglevel=error \
-            --ignore-scripts
+          npm ci --ignore-scripts
           npm run patch-files
         if: steps.npm-cache.outputs.cache-hit != 'true'
 
       - name: local npm install
         # node_modules for the stack exists because it's created by .github/actions/deploy-strategy.js
         if: matrix.package-lock && steps.npm-cache.outputs.cache-hit != 'true'
-        run: npm install --no-save --audit false --fund false --ignore-scripts
+        run: npm ci --ignore-scripts
         working-directory: ${{ matrix.directory }}
 
       - uses: aws-actions/configure-aws-credentials@v4.0.1
