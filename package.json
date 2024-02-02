@@ -60,8 +60,8 @@
   ],
   "lint-staged": {
     "*.{ts,js,mjs,mts,cjs,mts}": [
-      "npm run lint -- --fix",
-      "prettier --write"
+      "npm run lint -- --fix --no-error-on-unmatched-pattern",
+      "prettier --write --no-error-on-unmatched-pattern"
     ],
     ".github/actions/*.js": "bash ./scripts/build-actions.sh",
     "scripts/directory-hash.mjs": "bash ./scripts/build-actions.sh",
@@ -80,7 +80,7 @@
   "private": true,
   "devDependencies": {
     "@actions/github": "6.0.0",
-    "@aws-sdk/client-acm": "3.499.0",
+    "@aws-sdk/client-acm": "3.507.0",
     "@aws-sdk/client-cloudformation": "3.490.0",
     "@aws-sdk/client-dynamodb": "3.490.0",
     "@aws-sdk/client-lambda": "3.490.0",
