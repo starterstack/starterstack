@@ -1,24 +1,32 @@
-export default class ApiGatewayDeployment {
-  constructor(serverless) {
-    this.hooks = {
-      'after:aws:package:finalize:mergeCustomProviderResources': () =>
-        this.randomizeDeploymentLogicalIds(serverless)
-    }
-  }
+// @ts-check
 
-  randomizeDeploymentLogicalIds(serverless) {
-    const instanceId = serverless.instanceId
-    const resources =
-      serverless.service.provider.compiledCloudFormationTemplate.Resources
+import log from '@starterstack/sam-expand/log'
+import { randomUUID } from 'node:crypto'
+
+/** @type {import('@starterstack/sam-expand/plugins').Lifecycles} */
+export const lifecycles = ['pre:expand']
+
+/** @type {import('@starterstack/sam-expand/plugins').Plugin} */
+// eslint-disable-next-line @typescript-eslint/require-await
+export const lifecycle = async function randomizeDeploymentLogicalIds({
+  command,
+  template
+}) {
+  if (command === 'build') {
+    const randomSuffix = randomUUID()
+    const resources = template.Resources
     for (const resource of Object.values(resources)) {
       if (resource.Type === 'AWS::ApiGateway::Stage') {
         const deploymentId = resource.Properties.DeploymentId?.Ref
         if (deploymentId) {
-          const newDeploymentId = `${deploymentId}${instanceId}`
+          const newDeploymentId = `${deploymentId}${randomSuffix}`
           resources[newDeploymentId] = structuredClone(resources[deploymentId])
           resource.Properties.DeploymentId.Ref = newDeploymentId
           delete resources[deploymentId]
-          serverless.cli.log(`replaced ${deploymentId} with ${newDeploymentId}`)
+          log('randomize api gateway stages to force redeployment %O', {
+            deploymentId,
+            newDeploymentId
+          })
         }
       }
     }

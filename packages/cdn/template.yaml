@@ -58,6 +58,7 @@ Metadata:
       - '../stack-stage-config.mjs'
       - '@starterstack/sam-expand/plugins/parameter-overrides'
       - '@starterstack/sam-expand/plugins/run-script-hooks'
+      - './apigateway-deployment.mjs'
       - '../purge-lambda-versions.mjs'
       - '../generate-cloudwatch-alarms.mjs'
     config:
