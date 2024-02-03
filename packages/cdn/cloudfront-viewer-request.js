@@ -1,4 +1,5 @@
-import crypto from 'node:crypto'
+// eslint-disable-next-line unicorn/prefer-node-protocol
+import crypto from 'crypto'
 import cf from 'cloudfront'
 
 const stageRoot = '${StageRoot}'
@@ -131,7 +132,7 @@ function constantTimeEquals(a, b) {
   }
   let xor = 0
   for (let i = 0; i < a.length; i++) {
-    xor |= a.charPointAt(i) ^ b.charPointAt(i)
+    xor |= a.codePointAt(i) ^ b.codePointAt(i)
   }
   return 0 === xor
 }
