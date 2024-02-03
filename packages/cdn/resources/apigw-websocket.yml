@@ -1,9 +1,0 @@
-Type: AWS::ApiGatewayV2::Api
-Properties:
-  Name: !Sub '${AWS::StackName}-websocket'
-  Description: !Sub 'Created by Serverless Framework by ${AWS::StackName}'
-  ProtocolType: WEBSOCKET
-  RouteSelectionExpression: $request.body.type
-  Tags:
-    Name: !Sub '${AWS::StackName} websocket'
-    ManagedBy: '${file(../settings.js):stackName}'

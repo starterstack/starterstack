@@ -1,8 +1,0 @@
-Type: 'AWS::ApiGateway::Method'
-Properties:
-  RestApiId: !Ref apigwRest
-  ResourceId: !GetAtt apigwRest.RootResourceId
-  HttpMethod: HEAD
-  AuthorizationType: AWS_IAM
-  Integration:
-    Type: MOCK

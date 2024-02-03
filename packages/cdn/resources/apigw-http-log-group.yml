@@ -1,9 +1,0 @@
-Type: AWS::Logs::LogGroup
-Properties:
-  LogGroupName: !Sub '/aws/apigateway/http-api/${AWS::StackName}'
-  RetentionInDays: ${file(../settings.js):defaultLogRetentionInDays}
-  Tags:
-    - Key: 'Name'
-      Value: !Sub '${AWS::StackName} http api log group'
-    - Key: 'ManagedBy'
-      Value: '${file(../settings.js):stackName}'
