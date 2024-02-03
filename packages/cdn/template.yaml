@@ -43,9 +43,9 @@ Parameters:
     Type: String
   ApiGatewayRestLogFormat:
     Type: String
-  CloudFrontRequestCode:
+  CloudFrontViewerRequestCode:
     Type: String
-  CloudFrontResponseCode:
+  CloudFrontViewerResponseCode:
     Type: String
   SNSAlarmTopic:
     Type: String
@@ -91,14 +91,12 @@ Metadata:
               exportName: priceClass
             - name: CaptureUserLanguageAndDeviceValue
               exportName: captureUserLanguageAndDevice
-
         - location: ./cloudfront-functions.mjs
           overrides:
-            - name: CloudFrontRequestCode
-              exportName: requestCode
-            - name: CloudFrontResponseCode
-              exportName: responseCode
-
+            - name: CloudFrontViewerRequestCode
+              exportName: viewerRequestCode
+            - name: CloudFrontViewerResponseCode
+              exportName: viewerResponseCode
         - location: ../git.mjs
           overrides:
             - name: GITCommit
@@ -107,6 +105,12 @@ Metadata:
         keep: 3
       script:
         hooks:
+          pre:build:
+            - command: npm
+              args:
+                - value: --prefix
+                - value: ./unit/test
+                - value: test
           pre:delete:
             - command: ../empty-s3-bucket.sh
               args:
@@ -623,7 +627,7 @@ Resources:
     Type: AWS::CloudFront::ResponseHeadersPolicy
     Properties:
       ResponseHeadersPolicyConfig:
-        Comment: !Sub 'Created by Serverless Framework by ${AWS::StackName}'
+        Comment: !Sub 'Created by SAM by ${AWS::StackName}'
         Name: !Sub '${AWS::StackName}-default-headers-policy'
         CustomHeadersConfig:
           Items:
@@ -689,6 +693,12 @@ Resources:
             - cloudfrontServerTiming
             - DefaultValue: 0
 
+  CloudFrontKeyValueStore:
+    Type: AWS::CloudFront::KeyValueStore
+    Properties:
+      Comment: !Sub '${AWS::StackName} key value store'
+      Name: !Sub '${Stack}-${Stage}-Store'
+
   CloudFront:
     Type: AWS::CloudFront::Distribution
     Properties:
@@ -698,7 +708,7 @@ Resources:
         HttpVersion: http2and3
         Aliases:
           - !Ref StageRoot
-        Comment: !Sub 'Created by Serverless Framework by ${AWS::StackName}'
+        Comment: !Sub 'Created by SAM by ${AWS::StackName}'
         PriceClass: !Ref PriceClass
         WebACLId:
           Fn::If:
@@ -850,7 +860,7 @@ Resources:
     Properties:
       OriginAccessControlConfig:
         Name: !Sub '${AWS::StackName} S3 Origin Access Control'
-        Description: !Sub 'S3 OAC Created by Serverless Framework by ${AWS::StackName}'
+        Description: !Sub 'S3 OAC Created by SAM by ${AWS::StackName}'
         OriginAccessControlOriginType: 's3'
         SigningBehavior: 'always'
         SigningProtocol: 'sigv4'
@@ -860,9 +870,16 @@ Resources:
     Properties:
       Name: !Sub '${AWS::StackName}-viewer-request'
       AutoPublish: true
-      FunctionCode: !Ref CloudFrontRequestCode
+      FunctionCode: !Sub
+        - '${CloudFrontViewerRequestCode}'
+        - Stage: !Ref Stage
+          StageRoot: !Ref StageRoot
+          StageRootUrl: !Ref StageRootUrl
+          CloudFrontKeyValueStore: !Ref CloudFrontKeyValueStore
       FunctionConfig:
-        Comment: !Sub 'Created by Serverless Framework by ${AWS::StackName}'
+        Comment: !Sub 'Created by SAM by ${AWS::StackName}'
+        KeyValueStoreAssociations:
+          - KeyValueStoreARN: !GetAtt CloudFrontKeyValueStore.Arn
         Runtime: cloudfront-js-2.0
 
   CloudFrontViewerResponse:
@@ -870,9 +887,11 @@ Resources:
     Properties:
       Name: !Sub '${AWS::StackName}-viewer-response'
       AutoPublish: true
-      FunctionCode: !Ref CloudFrontResponseCode
+      FunctionCode: !Sub
+        - '${CloudFrontViewerResponseCode}'
+        - Stage: !Ref Stage
       FunctionConfig:
-        Comment: !Sub 'Created by Serverless Framework by ${AWS::StackName}'
+        Comment: !Sub 'Created by SAM by ${AWS::StackName}'
         Runtime: cloudfront-js-2.0
 
   Route53:
@@ -895,7 +914,7 @@ Resources:
     Type: AWS::ApiGateway::RestApi
     Properties:
       Name: !Sub '${AWS::StackName}-rest-api'
-      Description: !Sub 'Created by Serverless Framework by ${AWS::StackName}'
+      Description: !Sub 'Created by SAM by ${AWS::StackName}'
       BinaryMediaTypes:
         - 'application/octet-stream'
         - 'audio/*'
@@ -964,7 +983,7 @@ Resources:
     Type: AWS::ApiGatewayV2::Api
     Properties:
       Name: !Sub '${AWS::StackName}-websocket'
-      Description: !Sub 'Created by Serverless Framework by ${AWS::StackName}'
+      Description: !Sub 'Created by SAM by ${AWS::StackName}'
       ProtocolType: WEBSOCKET
       RouteSelectionExpression: $request.body.type
       Tags:
@@ -1002,7 +1021,7 @@ Resources:
     Type: AWS::CloudFront::CachePolicy
     Properties:
       CachePolicyConfig:
-        Comment: !Sub 'Created by Serverless Framework by ${AWS::StackName}'
+        Comment: !Sub 'Created by SAM by ${AWS::StackName}'
         DefaultTTL: 0
         Name: !Sub '${AWS::StackName}Static'
         MinTTL: 0
@@ -1021,7 +1040,7 @@ Resources:
     Type: AWS::CloudFront::CachePolicy
     Properties:
       CachePolicyConfig:
-        Comment: !Sub 'Created by Serverless Framework by ${AWS::StackName}'
+        Comment: !Sub 'Created by SAM by ${AWS::StackName}'
         DefaultTTL: 0
         Name: !Sub '${AWS::StackName}Query'
         MinTTL: 0
@@ -1047,7 +1066,7 @@ Resources:
     Type: AWS::CloudFront::OriginRequestPolicy
     Properties:
       OriginRequestPolicyConfig:
-        Comment: !Sub 'Created by Serverless Framework by ${AWS::StackName}'
+        Comment: !Sub 'Created by SAM by ${AWS::StackName}'
         Name: !Sub '${AWS::StackName}BasicOriginRequestPolicy'
         CookiesConfig:
           CookieBehavior: 'whitelist'
@@ -1080,7 +1099,7 @@ Resources:
     Type: AWS::CloudFront::OriginRequestPolicy
     Properties:
       OriginRequestPolicyConfig:
-        Comment: !Sub 'Created by Serverless Framework by ${AWS::StackName}'
+        Comment: !Sub 'Created by SAM by ${AWS::StackName}'
         Name: !Sub '${AWS::StackName}WebSocketOriginRequestPolicy'
         CookiesConfig:
           CookieBehavior: whitelist
