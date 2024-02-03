@@ -957,6 +957,127 @@ Resources:
         - Key: 'ManagedBy'
           Value: !Ref Stack
 
+  ApiGatewayRestApiWafAcl:
+    Type: AWS::WAFv2::WebACL
+    Condition: IsWafEnabled
+    Properties:
+      DefaultAction:
+        Allow: {}
+      Scope: REGIONAL
+      VisibilityConfig:
+        SampledRequestsEnabled: true
+        CloudWatchMetricsEnabled: true
+        MetricName: !Sub '${AWS::StackName}-waf-acl-rest-api'
+      Rules:
+        - Name: RateLimit
+          Priority: 0
+          Action:
+            Block:
+              CustomResponse:
+                ResponseCode: 429
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: !Sub '${AWS::StackName}-waf-acl-rest-api-rate-limit'
+          Statement:
+            RateBasedStatement:
+              AggregateKeyType: IP
+              Limit: 1000
+        - Name: AWS-AWSManagedRulesCommonRuleSet
+          Priority: 1
+          OverrideAction:
+            None: {}
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: !Sub '${AWS::StackName}-waf-acl-rest-api-common'
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesCommonRuleSet
+              ExcludedRules:
+                - Name: 'SizeRestrictions_BODY'
+        - Name: block-too-large-body-requests
+          Priority: 2
+          Statement:
+            AndStatement:
+              Statements:
+                - LabelMatchStatement:
+                    Scope: LABEL
+                    Key: awswaf:managed:aws:core-rule-set:SizeRestrictions_Body
+                - NotStatement:
+                    Statement:
+                      ByteMatchStatement:
+                        SearchString: !Sub '/${Stage}/api-rest/sentry-tunnel'
+                        FieldToMatch:
+                          UriPath: {}
+                        TextTransformations:
+                          - Priority: 0
+                            Type: NONE
+                        PositionalConstraint: STARTS_WITH
+          Action:
+            Block: {}
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: !Sub '${AWS::StackName}-block-too-large-body-requests'
+        - Name: AWS-ManagedRulesKnownBadInputsRuleSet
+          Priority: 3
+          OverrideAction:
+            None: {}
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: !Sub '${AWS::StackName}-waf-acl-rest-api-bad-inputs'
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesKnownBadInputsRuleSet
+        - Name: AWS-ManagedRulesAmazonIpReputationList
+          Priority: 4
+          OverrideAction:
+            None: {}
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: !Sub '${AWS::StackName}-waf-acl-rest-api-ip-reputation'
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesAmazonIpReputationList
+  ApiGatewayRestApiWafAssocation:
+    Type: AWS::WAFv2::WebACLAssociation
+    Condition: IsWafEnabled
+    DependsOn: ApiGatewayRestStage
+    Properties:
+      ResourceArn: !Sub 'arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${ApiGatewayRest}/stages/${Stage}'
+      WebACLArn: !GetAtt ApiGatewayRestApiWafAcl.Arn
+  ApiGatewayRestApiWafLogGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: IsWafEnabled
+    Properties:
+      LogGroupName: !Sub 'aws-waf-logs-rest-api/${AWS::StackName}'
+      RetentionInDays: !Ref LogRetentionInDays
+      Tags:
+        - Key: 'Name'
+          Value: !Sub '${AWS::StackName} waf acl log group for rest api'
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+  ApiGatewayRestApiWafLogging:
+    Type: AWS::WAFv2::LoggingConfiguration
+    Condition: IsWafEnabled
+    Properties:
+      LogDestinationConfigs:
+        - !Select [0, !Split [':*', !GetAtt ApiGatewayRestApiWafLogGroup.Arn]]
+      LoggingFilter:
+        DefaultBehavior: DROP
+        Filters:
+          - Behavior: KEEP
+            Conditions:
+              - ActionCondition:
+                  Action: BLOCK
+            Requirement: MEETS_ANY
+      ResourceArn: !GetAtt ApiGatewayRestApiWafAcl.Arn
   ApiGatewayRestStage:
     Type: AWS::ApiGateway::Stage
     Properties:
@@ -1189,11 +1310,11 @@ Outputs:
   #  Value: !Ref apigwRestApiWafLogGroup
   #  Export:
   #    Name: !Sub '${AWS::StackName}ApigwRestApiWafLogGroup'
-  #apigwWebSocket:
-  #  Description: api gateway websocket
-  #  Value: !Ref apigwWebSocket
-  #  Export:
-  #    Name: !Sub '${AWS::StackName}ApigwWebSocket'
+  ApiGatewayWebSocket:
+    Description: Api gateway websocket
+    Value: !Ref ApiGatewayWebSocket
+    Export:
+      Name: !Sub '${AWS::StackName}ApigwWebSocket'
   #webSocketAuthLambdaFunction:
   #  Description: lambda websocket authorizer
   #  Value: !GetAtt WebSocketAuthLambdaFunction.Arn
