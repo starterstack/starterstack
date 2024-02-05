@@ -104,7 +104,7 @@
     "husky": "9.0.10",
     "inquirer": "9.2.14",
     "lint-staged": "15.2.1",
-    "prettier": "3.2.4",
+    "prettier": "3.2.5",
     "prettier-config-standard": "7.0.0",
     "sls-mentor": "2.4.5",
     "typescript": "5.3.3"
