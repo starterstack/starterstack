@@ -282,9 +282,9 @@ export async function getConfig({ stage, template, directory }) {
   const stageName =
     stage === 'global'
       ? 'global'
-      : settings.stages.includes(stage)
+      : (settings.stages.includes(stage)
         ? stage
-        : 'feature'
+        : 'feature')
   const accountStage = settings.regions[settings.awsAccounts[accountId]?.stage]
 
   const regions = settings.accountPerStage
@@ -447,11 +447,7 @@ export default async function getSettings({
       return config.stage
     },
     get sentryEnvironment() {
-      if (settings.stages.includes(config.stage)) {
-        return config.stage
-      } else {
-        return 'feature'
-      }
+      return settings.stages.includes(config.stage) ? config.stage : 'feature';
     },
     get sentryDSN() {
       return 'https://_@_._/0'

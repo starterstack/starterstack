@@ -26,14 +26,14 @@ export const handler = lambdaHandler(async function sentryTunnel(
         return jsonParse(message)
       })
 
-      if (!errors.length) return
+      if (errors.length === 0) return
 
       const release = errors[0]['x-correlation-git-commit']
 
       Sentry.init({
         dsn: process.env.SENTRY_DSN,
         normalizeDepth: 4,
-        tracesSampleRate: 1.0,
+        tracesSampleRate: 1,
         environment: process.env.SENTRY_ENVIRONMENT,
         ...(release && { release }),
         tunnel: process.env.SENTRY_TUNNEL
@@ -72,11 +72,11 @@ export const handler = lambdaHandler(async function sentryTunnel(
         })
       }
       await Sentry.flush(200)
-    } catch (err) {
-      log.error({ logEvents, logGroup, logStream }, err)
+    } catch (error) {
+      log.error({ logEvents, logGroup, logStream }, error)
     }
-  } catch (err) {
-    log.error({ event }, err)
+  } catch (error) {
+    log.error({ event }, error)
   }
 })
 
@@ -141,8 +141,7 @@ function parseError({ error, from, logGroup, logStream, jsonParse }) {
 }
 
 function exception(message, type) {
-  const exception = new Error()
-  exception.message = message
+  const exception = new Error(message)
   exception.stack = ''
   exception.name = type ?? 'Error'
   return exception

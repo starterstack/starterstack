@@ -8,7 +8,7 @@ import { GetCommand } from '@aws-sdk/lib-dynamodb'
 import lambdaHandler from './lambda-handler.js'
 import roleMapping from './role-mapping.js'
 
-const { SSM_API_JWT_SECRET } = process.env
+const { SSM_API_JWT_SECRET, IS_OFFLINE, DYNAMODB_TABLE } = process.env
 
 function getTokenVersion(token) {
   try {
@@ -25,7 +25,9 @@ function getTokenVersion(token) {
     if (version) {
       return String(version)
     }
-  } catch {}
+  }
+  // eslint-disable-next-line no-empty
+  catch {}
 }
 
 export const httpAuth = lambdaHandler(async function httpAuth(
@@ -72,7 +74,6 @@ export const webSocketAnonymousAuth = lambdaHandler(
 
 async function httpAuthPayload({
   event,
-  context,
   abortSignal,
   log,
   allowAnonymous
@@ -83,22 +84,21 @@ async function httpAuthPayload({
       token:
         event.cookies?.find((cookie) => cookie?.includes('token=')) ??
         Object.entries(event.multiValueHeaders || {})
-          ?.find(([key, value]) => key.toLowerCase() === 'cookie')?.[1]
+          ?.find(([key, ]) => key.toLowerCase() === 'cookie')?.[1]
           ?.find((cookie) => cookie?.includes('token=')),
       sourceArn: event.routeArn ?? event.methodArn,
       allowAnonymous,
       abortSignal,
       log
     })
-  } catch (err) {
-    log.error({ event }, err)
-    throw err
+  } catch (error) {
+    log.error({ event }, error)
+    throw error
   }
 }
 
 async function websocketAuthPayload({
   event,
-  context,
   abortSignal,
   log,
   allowAnonymous
@@ -106,14 +106,14 @@ async function websocketAuthPayload({
   log.debug({ event }, 'received')
   const headers = Object.entries(event.multiValueHeaders ?? {})
   const cookieToken = headers
-    ?.find(([key, value]) => key.toLowerCase() === 'cookie')?.[1]
+    ?.find(([key, ]) => key.toLowerCase() === 'cookie')?.[1]
     ?.find((cookie) => cookie?.includes('token='))
   const webSocketProtocol = headers?.find(
-    ([key, value]) => key.toLowerCase() === 'sec-websocket-protocol'
+    ([key, ]) => key.toLowerCase() === 'sec-websocket-protocol'
   )?.[1]?.[0]
 
   const requestUrl = headers?.find(
-    ([key, value]) => key.toLowerCase() === 'x-url'
+    ([key, ]) => key.toLowerCase() === 'x-url'
   )?.[1]?.[0]
 
   try {
@@ -126,16 +126,16 @@ async function websocketAuthPayload({
       abortSignal,
       log
     })
-  } catch (err) {
-    log.error({ event }, err)
-    throw err
+  } catch (error) {
+    log.error({ event }, error)
+    throw error
   }
 }
 
 async function session({ ref, abortSignal }) {
   const { Item: { ttl, email } = {} } = await dynamodb.send(
     new GetCommand({
-      TableName: process.env.DYNAMODB_TABLE,
+      TableName: DYNAMODB_TABLE,
       Key: {
         pk: `session#${ref}`,
         sk: `session#${ref}`
@@ -151,11 +151,9 @@ async function session({ ref, abortSignal }) {
     }
   )
 
-  if (ttl) {
-    if (ttl * 1000 - Date.now() > 0) {
+  if (ttl && ttl * 1000 - Date.now() > 0) {
       return { email }
     }
-  }
   return {}
 }
 
@@ -176,7 +174,7 @@ async function auth({
 
   const { v, role, ref } = tokenData
 
-  const tokenAllowed = process.env.IS_OFFLINE
+  const tokenAllowed = IS_OFFLINE
     ? allowAnonymous || role
     : v && (allowAnonymous || role)
 
@@ -248,7 +246,7 @@ async function getSecretForToken(token, { abortSignal }) {
 
 async function verifyToken(token, { abortSignal }) {
   const apiSecret = await getSecretForToken(token, { abortSignal })
-  const apiSecretPrefix = process.env.IS_OFFLINE ? '' : 'cf:'
+  const apiSecretPrefix = IS_OFFLINE ? '' : 'cf:'
 
   if (!apiSecret) return {}
 

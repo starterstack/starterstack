@@ -40,8 +40,8 @@ export const handler = lambdaHandler(async function trigger(
         abortSignal
       }
     )
-  } catch (err) {
-    log.error({ event }, err)
-    throw err
+  } catch (error) {
+    log.error({ event }, error)
+    throw error
   }
 })

@@ -30,7 +30,9 @@ const {
   STAGE_ROOT,
   STAGE,
   REST_API_ID,
-  HTTP_API_ID
+  HTTP_API_ID,
+  LAMBDA_TASK_ROOT,
+  AWS_EXECUTION_ENV
 } = process.env
 
 export const handler = lambdaHandler(async function update(
@@ -42,7 +44,7 @@ export const handler = lambdaHandler(async function update(
   try {
     const updatedFunctions = await Promise.all(
       [CLOUDFRONT_VIEWER_REQUEST_ARN].map(async function updateFunction(arn) {
-        const viewerName = arn.split('/').slice(-1)[0]
+        const viewerName = arn.split('/').at(-1)
         const existing = await cloudfront.send(
           new DescribeFunctionCommand({
             Name: viewerName,
@@ -58,7 +60,7 @@ export const handler = lambdaHandler(async function update(
         const replaced = await cloudfront.send(
           new UpdateFunctionCommand({
             Name: viewerName,
-            FunctionCode: new TextEncoder('utf-8').encode(
+            FunctionCode: new TextEncoder('utf8').encode(
               await code({
                 stackName: STACK_NAME,
                 stageRoot: STAGE_ROOT,
@@ -114,14 +116,14 @@ export const handler = lambdaHandler(async function update(
         }
       )
     ])
-  } catch (err) {
-    log.error({ event }, err)
-    throw err
+  } catch (error) {
+    log.error({ event }, error)
+    throw error
   }
 })
 
 function trace(client) {
-  return process.env.LAMBDA_TASK_ROOT && process.env.AWS_EXECUTION_ENV
+  return LAMBDA_TASK_ROOT && AWS_EXECUTION_ENV
     ? AWSXRay.captureAWSv3Client(client)
     : client
 }
