@@ -1,7 +1,6 @@
 // @ts-check
 
 import log from '@starterstack/sam-expand/log'
-import { randomUUID } from 'node:crypto'
 
 /** @type {import('@starterstack/sam-expand/plugins').Lifecycles} */
 export const lifecycles = ['pre:expand']
@@ -13,7 +12,7 @@ export const lifecycle = async function randomizeDeploymentLogicalIds({
   template
 }) {
   if (command === 'build') {
-    const randomSuffix = randomUUID()
+    const randomSuffix = Date.now().toString(32)
     const resources = template.Resources
     for (const resource of Object.values(resources)) {
       if (resource.Type === 'AWS::ApiGateway::Stage') {

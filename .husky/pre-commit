@@ -7,4 +7,4 @@ if [ -z "${npm_command}" ]; then
   printf "\e[0m\e[1;33mconsider using npx cz or npm run cz instead of git commit\e[0m\n"
 fi
 
-npx --no-install lint-staged -r
+npx --no-install lint-staged -r -v

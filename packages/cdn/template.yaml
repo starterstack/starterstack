@@ -25,6 +25,10 @@ Parameters:
     Type: String
   StageRootUrl:
     Type: String
+  SentryDSN:
+    Type: String
+  SentryEnvironment:
+    Type: String
   PriceClass:
     Type: String
   CaptureUserLanguageAndDeviceValue:
@@ -36,6 +40,8 @@ Parameters:
   LogRetentionInDays:
     Type: String
   GITCommit:
+    Type: String
+  DynamoDBStackTable:
     Type: String
   StackRegion:
     Type: String
@@ -74,6 +80,10 @@ Metadata:
               exportName: stageOrStackRoot
             - name: StageRootUrl
               exportName: stageRootUrl
+            - name: SentryDSN
+              exportName: sentryDSN
+            - name: SentryEnvironment
+              exportName: sentryEnvironment
             - name: AcmCertificateArn
               exportName: acmCertificateArn
             - name: CloudFrontWafACL
@@ -86,6 +96,8 @@ Metadata:
               exportName: snsAlarmTopic
             - name: ApiGatewayRestLogFormat
               exportName: apiGatewayRestLogFormat
+            - name: DynamoDBStackTable
+              exportName: dynamodbStackTable
         - location: ../settings.json
           overrides:
             - name: PriceClass
@@ -1253,6 +1265,76 @@ Resources:
                 - CloudFront-Is-Mobile-Viewer
                 - CloudFront-Is-Desktop-Viewer
                 - x-url
+
+  SentryFunction:
+    Condition: IsWafEnabled
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/sentry/
+      Handler: index.handler
+      Description: 'send waf cloudwatch logs to sentry'
+      Timeout: 6
+      MemorySize: 128
+      Environment:
+        Variables:
+          SENTRY_DSN: !Ref SentryDSN
+          SENTRY_ENVIRONMENT: !Ref SentryEnvironment
+          SENTRY_TUNNEL: !Sub ${StageRootUrl}/api/rest/sentry-tunnel
+          STAGE: !Ref Stage
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Sid: CloudWatchLogGroup
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !GetAtt CloudWatchLogGroup.Arn
+              Effect: Allow
+      LoggingConfig:
+        LogGroup: !Ref CloudWatchLogGroup
+    Metadata:
+      BuildMethod: makefile
+
+  WebSocketAuthFunction:
+    Condition: IsWafEnabled
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/request-auth/
+      Handler: index.handler
+      Description: 'WebSocket authorizer'
+      Timeout: 6
+      MemorySize: 128
+      Environment:
+        Variables:
+          SSM_API_JWT_SECRET: !Sub /${Stack}/${Stage}/API_JWT_SECRET
+          DYNAMODB_TABLE: !Ref DynamoDBStackTable
+      Policies:
+        - SSMParameterReadPolicy:
+            ParameterName: !Sub /${Stack}/${Stage}/API_JWT_SECRET
+        - Version: 2012-10-17
+          Statement:
+            - Sid: CloudWatchLogGroup
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !GetAtt CloudWatchLogGroup.Arn
+              Effect: Allow
+        - Version: 2012-10-17
+          Statement:
+            - Sid: DynamoDB
+              Action:
+                - dynamodb:GetItem
+              Resource: !Ref DynamoDBStackTable
+              Effect: Allow
+              Condition:
+                ForAllValues:StringLike:
+                  dynamodb:LeadingKeys:
+                    - 'session#*'
+      LoggingConfig:
+        LogGroup: !Ref CloudWatchLogGroup
+    Metadata:
+      BuildMethod: makefile
+
 Outputs:
   DistributionId:
     Description: CloudFront distribution id

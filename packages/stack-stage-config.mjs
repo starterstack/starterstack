@@ -424,6 +424,18 @@ export default async function getSettings({
     })
   }
 
+  /**
+   * @param {string} outputKey
+   * @returns {Promise<string | undefined>}
+   */
+  const getDynamoDBOutput = (outputKey) => {
+    return getCloudFormationOutput({
+      region: config.stackRegion,
+      stackName: `${settings.stackName}-dynamodb-${stage}`,
+      outputKey
+    })
+  }
+
   return {
     get stackName() {
       return config.stackName
@@ -433,6 +445,16 @@ export default async function getSettings({
     },
     get stage() {
       return config.stage
+    },
+    get sentryEnvironment() {
+      if (settings.stages.includes(config.stage)) {
+        return config.stage
+      } else {
+        return 'feature'
+      }
+    },
+    get sentryDSN() {
+      return 'https://_@_._/0'
     },
     get rootDomain() {
       return settings.rootDomain
@@ -598,7 +620,19 @@ export default async function getSettings({
           ? ',"wafError":"$context.waf.error","wafLatency":"$context.waf.latency","wafStatus":"$context.waf.status","wafResponse":"$context.wafResponseCode"'
           : ''
       }}`
-    }
+    },
+    get dynamodbStackTable() {
+      return getDynamoDBOutput('DynamoDBStackTable')
+    },
+    get dynamodbStackAuditTable() {
+      return getDynamoDBOutput('DynamoDBStackAuditTable')
+    },
+    get dynamodbWebSocketTable() {
+      return getDynamoDBOutput('DynamoDBWebSocketTable')
+    },
+    get dynamodbStackTableStream() {
+      return getDynamoDBOutput('DynamoDBStackTableStream')
+    },
   }
 }
 
