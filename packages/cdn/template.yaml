@@ -1314,7 +1314,6 @@ Resources:
       SourceArn: !GetAtt ApiGatewayWebSocketLogGroup.Arn
 
   WebSocketAuthFunction:
-    Condition: IsWafEnabled
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: functions/request-auth/
@@ -1354,7 +1353,6 @@ Resources:
       BuildMethod: makefile
 
   WebSocketAnonymousAuthFunction:
-    Condition: IsWafEnabled
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: functions/request-auth/
@@ -1394,7 +1392,6 @@ Resources:
       BuildMethod: makefile
 
   HttpAuthFunction:
-    Condition: IsWafEnabled
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: functions/request-auth/
@@ -1434,7 +1431,6 @@ Resources:
       BuildMethod: makefile
 
   HttpAnonymousAuthFunction:
-    Condition: IsWafEnabled
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: functions/request-auth/
@@ -1472,6 +1468,42 @@ Resources:
         LogGroup: !Ref CloudWatchLogGroup
     Metadata:
       BuildMethod: makefile
+
+  ApiGatewayRestApiAuthorizer:
+    Type: AWS::ApiGateway::Authorizer
+    Properties:
+      RestApiId: !Ref ApiGatewayRest
+      Name: !Sub '${AWS::StackName}-apigw-restapi-authorizer'
+      Type: 'REQUEST'
+      AuthorizerResultTtlInSeconds: 900
+      AuthorizerUri: !Sub 'arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${HttpAuthFunction.Arn}/invocations'
+      IdentitySource: 'method.request.header.cookie'
+
+  ApiGatewayRestApiAuthorizerPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt HttpAuthFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: 'apigateway.amazonaws.com'
+      SourceArn: !Sub 'arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayRest}/authorizers/${ApiGatewayRestApiAuthorizer}'
+
+  ApiGatewayRestApiAnonymousAuthorizer:
+    Type: AWS::ApiGateway::Authorizer
+    Properties:
+      RestApiId: !Ref ApiGatewayRest
+      Name: !Sub '${AWS::StackName}-apigw-restapi-anonymous-authorizer'
+      Type: 'REQUEST'
+      AuthorizerResultTtlInSeconds: 900
+      AuthorizerUri: !Sub 'arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${HttpAuthFunction.Arn}/invocations'
+      IdentitySource: 'method.request.header.cookie'
+
+  ApiGatewayRestApiAnonymousAuthorizerPermission:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt HttpAnonymousAuthFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: 'apigateway.amazonaws.com'
+      SourceArn: !Sub 'arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayRest}/authorizers/${ApiGatewayRestApiAnonymousAuthorizer}'
 
 Outputs:
   DistributionId:
@@ -1515,34 +1547,33 @@ Outputs:
     Value: !GetAtt ApiGatewayRest.RootResourceId
     Export:
       Name: !Sub '${AWS::StackName}ApigwRestRootResourceId'
-  #apigwRestApiAuthorizer:
-  #  Description: api gateway restapi authorizer
-  #  Value: !Ref apigwRestApiAuthorizer
-  #  Export:
-  #    Name: !Sub '${AWS::StackName}ApigwRestApiAuthorizer'
-  #apigwRestApiAnonymousAuthorizer:
-  #  Description: api gateway restapi authorizer allowing anonymous access
-  #  Value: !Ref apigwRestApiAnonymousAuthorizer
-  #  Export:
-  #    Name: !Sub '${AWS::StackName}ApigwRestApiAnonymousAuthorizer'
-  #apigwRestApiWafLogGroup:
-  #  Condition: IsWafEnabled
-  #  Description: Api gateway waf log group
-  #  Value: !Ref apigwRestApiWafLogGroup
-  #  Export:
-  #    Name: !Sub '${AWS::StackName}ApigwRestApiWafLogGroup'
+
+  ApiGatewayRestApiAuthorizer:
+    Description: api gateway restapi authorizer
+    Value: !Ref ApiGatewayRestApiAuthorizer
+    Export:
+      Name: !Sub '${AWS::StackName}ApigwRestApiAuthorizer'
+
+  ApiGatewayRestApiAnonymousAuthorizer:
+    Description: api gateway restapi authorizer allowing anonymous access
+    Value: !Ref ApiGatewayRestApiAnonymousAuthorizer
+    Export:
+      Name: !Sub '${AWS::StackName}ApigwRestApiAnonymousAuthorizer'
+
   ApiGatewayWebSocket:
     Description: Api gateway websocket
     Value: !Ref ApiGatewayWebSocket
     Export:
       Name: !Sub '${AWS::StackName}ApigwWebSocket'
-  #webSocketAuthLambdaFunction:
-  #  Description: lambda websocket authorizer
-  #  Value: !GetAtt WebSocketAuthLambdaFunction.Arn
-  #  Export:
-  #    Name: !Sub '${AWS::StackName}WebSocketAuthLambdaFunction'
-  #webSocketAnonymousAuthLambdaFunction:
-  #  Description: lambda websocket authorizer allowing anonymous access
-  #  Value: !GetAtt WebSocketAnonymousAuthLambdaFunction.Arn
-  #  Export:
-  #    Name: !Sub '${AWS::StackName}WebSocketAnonymousAuthLambdaFunction'
+
+  WebSocketAuthFunction:
+    Description: lambda websocket authorizer
+    Value: !GetAtt WebSocketAuthFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}WebSocketAuthFunction'
+
+  WebSocketAnonymousAuthFunction:
+    Description: lambda websocket authorizer allowing anonymous access
+    Value: !GetAtt WebSocketAnonymousAuthFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}WebSocketAnonymousAuthFunction'
