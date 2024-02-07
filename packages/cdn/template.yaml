@@ -1318,8 +1318,128 @@ Resources:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: functions/request-auth/
-      Handler: index.handler
+      Handler: index.webSocketAuth
       Description: 'WebSocket authorizer'
+      Timeout: 6
+      MemorySize: 128
+      Environment:
+        Variables:
+          SSM_API_JWT_SECRET: !Sub /${Stack}/${Stage}/API_JWT_SECRET
+          DYNAMODB_TABLE: !Ref DynamoDBStackTable
+      Policies:
+        - SSMParameterReadPolicy:
+            ParameterName: !Sub /${Stack}/${Stage}/API_JWT_SECRET
+        - Version: 2012-10-17
+          Statement:
+            - Sid: CloudWatchLogGroup
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !GetAtt CloudWatchLogGroup.Arn
+              Effect: Allow
+        - Version: 2012-10-17
+          Statement:
+            - Sid: DynamoDB
+              Action:
+                - dynamodb:GetItem
+              Resource: !Ref DynamoDBStackTable
+              Effect: Allow
+              Condition:
+                ForAllValues:StringLike:
+                  dynamodb:LeadingKeys:
+                    - 'session#*'
+      LoggingConfig:
+        LogGroup: !Ref CloudWatchLogGroup
+    Metadata:
+      BuildMethod: makefile
+
+  WebSocketAnonymousAuthFunction:
+    Condition: IsWafEnabled
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/request-auth/
+      Handler: index.webSocketAnonymousAuth
+      Description: 'WebSocket anonmymous authorizer'
+      Timeout: 6
+      MemorySize: 128
+      Environment:
+        Variables:
+          SSM_API_JWT_SECRET: !Sub /${Stack}/${Stage}/API_JWT_SECRET
+          DYNAMODB_TABLE: !Ref DynamoDBStackTable
+      Policies:
+        - SSMParameterReadPolicy:
+            ParameterName: !Sub /${Stack}/${Stage}/API_JWT_SECRET
+        - Version: 2012-10-17
+          Statement:
+            - Sid: CloudWatchLogGroup
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !GetAtt CloudWatchLogGroup.Arn
+              Effect: Allow
+        - Version: 2012-10-17
+          Statement:
+            - Sid: DynamoDB
+              Action:
+                - dynamodb:GetItem
+              Resource: !Ref DynamoDBStackTable
+              Effect: Allow
+              Condition:
+                ForAllValues:StringLike:
+                  dynamodb:LeadingKeys:
+                    - 'session#*'
+      LoggingConfig:
+        LogGroup: !Ref CloudWatchLogGroup
+    Metadata:
+      BuildMethod: makefile
+
+  HttpAuthFunction:
+    Condition: IsWafEnabled
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/request-auth/
+      Handler: index.httpAuth
+      Description: 'http authorizer'
+      Timeout: 6
+      MemorySize: 128
+      Environment:
+        Variables:
+          SSM_API_JWT_SECRET: !Sub /${Stack}/${Stage}/API_JWT_SECRET
+          DYNAMODB_TABLE: !Ref DynamoDBStackTable
+      Policies:
+        - SSMParameterReadPolicy:
+            ParameterName: !Sub /${Stack}/${Stage}/API_JWT_SECRET
+        - Version: 2012-10-17
+          Statement:
+            - Sid: CloudWatchLogGroup
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !GetAtt CloudWatchLogGroup.Arn
+              Effect: Allow
+        - Version: 2012-10-17
+          Statement:
+            - Sid: DynamoDB
+              Action:
+                - dynamodb:GetItem
+              Resource: !Ref DynamoDBStackTable
+              Effect: Allow
+              Condition:
+                ForAllValues:StringLike:
+                  dynamodb:LeadingKeys:
+                    - 'session#*'
+      LoggingConfig:
+        LogGroup: !Ref CloudWatchLogGroup
+    Metadata:
+      BuildMethod: makefile
+
+  HttpAnonymousAuthFunction:
+    Condition: IsWafEnabled
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/request-auth/
+      Handler: index.httpAnonymousAuth
+      Description: 'http anonmymous authorizer'
       Timeout: 6
       MemorySize: 128
       Environment:
