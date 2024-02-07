@@ -1295,6 +1295,24 @@ Resources:
     Metadata:
       BuildMethod: makefile
 
+  CloudWatchLogGroupSubscriptionFilter:
+    Condition: IsWafEnabled
+    Type: AWS::Logs::SubscriptionFilter
+    Properties:
+      DestinationArn: !GetAtt SentryFunction.Arn
+      FilterName: Lambda
+      FilterPattern: '{$.httpRequest.uri != "*sentry-tunnel*"}'
+      LogGroupName: !Ref ApiGatewayWebSocketLogGroup
+
+  CloudWatchSubscriptionFunctionPermission:
+    Condition: IsWafEnabled
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt SentryFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: 'logs.amazonaws.com'
+      SourceArn: !GetAtt ApiGatewayWebSocketLogGroup.Arn
+
   WebSocketAuthFunction:
     Condition: IsWafEnabled
     Type: AWS::Serverless::Function
