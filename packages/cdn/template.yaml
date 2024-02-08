@@ -1490,6 +1490,27 @@ Resources:
           SSM_API_JWT_SECRET: !Sub /${Stack}/${Stage}/API_JWT_SECRET
           DYNAMODB_TABLE: !Ref DynamoDBStackTable
       Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Sid: ApiGateway
+              Action:
+                - apigateway:GET
+              Resource:
+                - !Sub arn:${AWS::Partition}:apigateway:*::/restapis*
+                - !Sub arn:${AWS::Partition}:apigateway:*::/apikeys*
+                - !Sub arn:${AWS::Partition}:apigateway:*::/usageplans*
+              Effect: Allow
+        - Version: 2012-10-17
+          Statement:
+            - Sid: DynamoDB
+              Action:
+                - dynamodb:GetItem
+              Resource: !Ref DynamoDBStackTable
+              Effect: Allow
+              Condition:
+                ForAllValues:StringLike:
+                  dynamodb:LeadingKeys:
+                    - 'session#*'
         - SSMParameterReadPolicy:
             ParameterName: !Sub /${Stack}/${Stage}/API_JWT_SECRET
         - Version: 2012-10-17
@@ -1529,6 +1550,16 @@ Resources:
           SSM_API_JWT_SECRET: !Sub /${Stack}/${Stage}/API_JWT_SECRET
           DYNAMODB_TABLE: !Ref DynamoDBStackTable
       Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Sid: ApiGateway
+              Action:
+                - apigateway:GET
+              Resource:
+                - !Sub arn:${AWS::Partition}:apigateway:*::/restapis*
+                - !Sub arn:${AWS::Partition}:apigateway:*::/apikeys*
+                - !Sub arn:${AWS::Partition}:apigateway:*::/usageplans*
+              Effect: Allow
         - SSMParameterReadPolicy:
             ParameterName: !Sub /${Stack}/${Stage}/API_JWT_SECRET
         - Version: 2012-10-17
