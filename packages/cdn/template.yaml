@@ -23,7 +23,13 @@ Parameters:
     Type: String
   StageRoot:
     Type: String
+  S3BackupBucket:
+    Type: String
+  BackupRegion:
+    Type: String
   StageRootUrl:
+    Type: String
+  AccountPerStage:
     Type: String
   SentryDSN:
     Type: String
@@ -80,6 +86,12 @@ Metadata:
               exportName: stageOrStackRoot
             - name: StageRootUrl
               exportName: stageRootUrl
+            - name: AccountPerStage
+              exportName: accountPerStage
+            - name: S3BackupBucket
+              exportName: ssmS3LogBucket
+            - name: BackupRegion
+              exportName: backupRegion
             - name: SentryDSN
               exportName: sentryDSN
             - name: SentryEnvironment
@@ -186,6 +198,9 @@ Metadata:
         snsTopicRef: SNSAlarmTopic
 
 Conditions:
+  IsAccountPerStage: !Equals
+    - !Ref AccountPerStage
+    - 'true'
   IsWafEnabled: !Equals
     - !FindInMap
       - AWSAccounts
@@ -1265,6 +1280,77 @@ Resources:
                 - CloudFront-Is-Mobile-Viewer
                 - CloudFront-Is-Desktop-Viewer
                 - x-url
+
+  S3ReplicateFunction:
+    Condition: IsAccountPerStage
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/s3-replicate/
+      Handler: index.handler
+      Description: 'replicate cloudfront logs'
+      Timeout: 6
+      MemorySize: 128
+      Environment:
+        Variables:
+          S3_BACKUP_BUCKET: !Ref S3BackupBucket
+          S3_BACKUP_BUCKET_REGION: !Ref BackupRegion
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Sid: S3Read
+              Action:
+                - s3:GetObject
+                - s3:GetObjectTagging
+              Resource:
+                - !Sub '${S3CloudFrontLogs.Arn}/*'
+              Effect: Allow
+        - Version: 2012-10-17
+          Statement:
+            - Sid: S3Write
+              Action:
+                - s3:PutObject
+                - s3:PutObjectACL
+                - s3:PutObjectTagging
+              Resource:
+                - !Sub 'arn:${AWS::Partition}:s3:::${S3BackupBucket}/*'
+              Effect: Allow
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt LambdaDlq.Arn
+        - Version: 2012-10-17
+          Statement:
+            - Sid: CloudWatchLogGroup
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !GetAtt CloudWatchLogGroup.Arn
+              Effect: Allow
+      LoggingConfig:
+        LogGroup: !Ref CloudWatchLogGroup
+      Events:
+        Trigger:
+          Type: EventBridgeRule
+          Properties:
+            Pattern:
+              source:
+                - 'aws.s3'
+              detail-type:
+                - 'Object Created'
+              detail:
+                bucket:
+                  name:
+                    - !Ref S3CloudFrontLogs
+      DeadLetterQueue:
+        TargetArn: !GetAtt LambdaDlq.Arn
+        Type: SQS
+      EventInvokeConfig:
+        DestinationConfig:
+          OnFailure:
+            Type: SQS
+            TargetArn: !GetAtt LambdaDlq.Arn
+        MaximumEventAgeInSeconds: 900
+        MaximumRetryAttempts: 2
+    Metadata:
+      BuildMethod: makefile
 
   SentryFunction:
     Condition: IsWafEnabled

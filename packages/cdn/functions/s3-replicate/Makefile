@@ -1,2 +1,2 @@
-build-S3Replicate:
+build-S3ReplicateFunction:
 	./npm-copy.sh
