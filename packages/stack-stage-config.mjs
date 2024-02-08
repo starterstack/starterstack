@@ -54,7 +54,12 @@ const ssm = new SSMClient({ region: 'us-east-1' })
 let accountId
 
 /** @type {import('@starterstack/sam-expand/plugins').Lifecycles} */
-export const lifecycles = ['pre:expand', 'post:delete', 'post:deploy']
+export const lifecycles = [
+  'pre:expand',
+  'post:delete',
+  'post:deploy',
+  'post:build'
+]
 
 /** @type {import('@starterstack/sam-expand/plugins').PluginSchema<{ region?: string, 'suffixStage': boolean, stage?: string, regions?: string }>} */
 export const schema = {
@@ -100,6 +105,17 @@ export const lifecycle = async function stackStageConfig({
   lifecycle,
   log
 }) {
+  if (lifecycle === 'post:build') {
+    if (!process.env.CI) {
+      const stage = argvReader('Stage', { parameter: true })
+      const offline = process.env.IS_OFFLINE ? ' IS_OFFLINE=true' : ''
+      console.log(
+        `\u001B[0;33m[*] Lint SAM template: STAGE=${stage}${offline} npx sam-expand validate -t .aws-sam/build/template.yaml --lint\u001B[0;33m`
+      )
+    }
+    return
+  }
+
   if (lifecycle === 'pre:expand') {
     const stackStageConfig = await getStackStageConfig(template)
     if (command === 'build' && stackStageConfig.addMappings) {
@@ -282,9 +298,9 @@ export async function getConfig({ stage, template, directory }) {
   const stageName =
     stage === 'global'
       ? 'global'
-      : (settings.stages.includes(stage)
+      : settings.stages.includes(stage)
         ? stage
-        : 'feature')
+        : 'feature'
   const accountStage = settings.regions[settings.awsAccounts[accountId]?.stage]
 
   const regions = settings.accountPerStage
@@ -447,7 +463,7 @@ export default async function getSettings({
       return config.stage
     },
     get sentryEnvironment() {
-      return settings.stages.includes(config.stage) ? config.stage : 'feature';
+      return settings.stages.includes(config.stage) ? config.stage : 'feature'
     },
     get sentryDSN() {
       return 'https://_@_._/0'
@@ -628,7 +644,7 @@ export default async function getSettings({
     },
     get dynamodbStackTableStream() {
       return getDynamoDBOutput('DynamoDBStackTableStream')
-    },
+    }
   }
 }
 
