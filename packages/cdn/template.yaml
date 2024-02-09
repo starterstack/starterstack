@@ -1151,7 +1151,7 @@ Resources:
   ApiGatewayWebSocketLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
-      LogGroupName: !Sub '/aws/apigateway/{ApiGatewayWebSocket}/${Stage}'
+      LogGroupName: !Sub '/aws/apigateway/${ApiGatewayWebSocket}/${Stage}'
       RetentionInDays: !Ref LogRetentionInDays
       Tags:
         - Key: 'Name'
