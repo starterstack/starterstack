@@ -168,11 +168,11 @@ export const lifecycle = async function stackStageConfig({
     }
 
     if (['deploy', 'delete'].includes(command)) {
-      argv.push('--stack-name', `'${config.stackName}`)
+      argv.push('--stack-name', `'${config.stackName}'`)
       if (config.s3DeploymentBucket[region]) {
         argv.push(
           '--s3-bucket',
-          `'${config.s3DeploymentBucket[region]}`,
+          `'${config.s3DeploymentBucket[region]}'`,
           '--s3-prefix',
           command === 'deploy'
             ? `'${config.stackName}/${template.Outputs.DeployedCommit.Value}'`
