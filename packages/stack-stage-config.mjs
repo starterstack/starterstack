@@ -587,11 +587,7 @@ export default async function getSettings({
       return config.stackRegion
     },
     get apiGatewayCloudwatchRole() {
-      return getCloudFormationOutput({
-        region: 'us-east-1',
-        stackName: 'stack',
-        outputKey: 'ApiGatewayCloudwatchRole'
-      })
+      return getStackOutput('ApiGatewayCloudwatchRole')
     },
     get s3Media() {
       return getCDNOutput('S3Media')
