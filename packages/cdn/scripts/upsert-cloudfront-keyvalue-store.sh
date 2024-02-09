@@ -17,6 +17,7 @@ function refresh_secret() {
   declare -r output=$(aws lambda invoke \
     --region "${region:?}" \
     --function-name "${lambda:?}" \
+    --cli-binary-format raw-in-base64-out \
     --payload '{"refreshSecretOnly": true}' \
     --log-type 'None' \
     --invocation-type 'RequestResponse' \
