@@ -49,8 +49,6 @@ Parameters:
     Type: String
   DynamoDBStackTable:
     Type: String
-  StackRegion:
-    Type: String
   ZoneId:
     Type: String
   ApiGatewayRestLogFormat:
@@ -80,8 +78,6 @@ Metadata:
       parameterOverrides:
         - location: ../stack-stage-config.mjs
           overrides:
-            - name: StackRegion
-              exportName: stackRegion
             - name: StageRoot
               exportName: stageOrStackRoot
             - name: StageRootUrl
@@ -759,28 +755,28 @@ Resources:
             S3OriginConfig: {}
             OriginShield:
               Enabled: true
-              OriginShieldRegion: !Ref StackRegion
+              OriginShieldRegion: !Sub '${AWS::Region}'
           - Id: ApiGatewayRestOrigin
             DomainName: !Sub '${ApiGatewayRest}.execute-api.${AWS::Region}.amazonaws.com'
             CustomOriginConfig:
               OriginProtocolPolicy: match-viewer
             OriginShield:
               Enabled: true
-              OriginShieldRegion: !Ref StackRegion
+              OriginShieldRegion: !Sub '${AWS::Region}'
           - Id: S3ProtectedMediaOrigin
             DomainName: !GetAtt S3ProtectedMedia.RegionalDomainName
             OriginAccessControlId: !GetAtt CloudFrontOriginAccessControl.Id
             S3OriginConfig: {}
             OriginShield:
               Enabled: true
-              OriginShieldRegion: !Ref StackRegion
+              OriginShieldRegion: !Sub '${AWS::Region}'
           - Id: S3MediaOrigin
             DomainName: !GetAtt S3Media.RegionalDomainName
             OriginAccessControlId: !GetAtt CloudFrontOriginAccessControl.Id
             S3OriginConfig: {}
             OriginShield:
               Enabled: true
-              OriginShieldRegion: !Ref StackRegion
+              OriginShieldRegion: !Sub '${AWS::Region}'
           - Id: ApiGatewayWebSocketOrigin
             DomainName:
               !Select [
@@ -912,7 +908,7 @@ Resources:
         - Stage: !Ref Stage
           StageRoot: !Ref StageRoot
           StageRootUrl: !Ref StageRootUrl
-          CloudFrontKeyValueStore: !Ref CloudFrontKeyValueStore
+          CloudFrontKeyValueStore: !GetAtt CloudFrontKeyValueStore.Id
       FunctionConfig:
         Comment: !Sub 'Created by SAM by ${AWS::StackName}'
         KeyValueStoreAssociations:

@@ -14,9 +14,10 @@ import {
 } from '@aws-sdk/client-cloudfront-keyvaluestore'
 import getSecrets from './get-secrets.js'
 import trace from './trace.js'
+import { SignatureV4MultiRegion } from '@aws-sdk/signature-v4-multi-region'
 
 const cloudFrontKeyValueStoreClient = new CloudFrontKeyValueStoreClient({
-  region: 'us-east-1'
+  signerConstructor: SignatureV4MultiRegion
 })
 
 const apigateway = trace(new APIGatewayClient({ apiVersion: '2015-07-09' }))
