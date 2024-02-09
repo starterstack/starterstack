@@ -869,7 +869,7 @@ Resources:
             CachedMethods: ['GET', 'HEAD']
             CachePolicyId: !Ref QueryCachePolicy
             OriginRequestPolicyId: !Ref BasicOriginRequestPolicy
-            TargetOriginId: s3StaticOrigin
+            TargetOriginId: S3StaticOrigin
             ViewerProtocolPolicy: redirect-to-https
             ResponseHeadersPolicyId: !Ref CloudFrontResponseHeaderPolicy
             SmoothStreaming: false
