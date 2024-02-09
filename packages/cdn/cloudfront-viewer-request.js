@@ -69,7 +69,7 @@ async function handler(event) {
   ) {
     try {
       verifyJWT(request)
-    } catch {
+    } catch (_) {
       return {
         statusCode: 403,
         statusDescription: 'Forbidden'
@@ -119,7 +119,7 @@ async function handler(event) {
     } else {
       request.cookies.token = { value: config.anonymousTokenString }
     }
-  } catch {
+  } catch (_) {
     request.cookies.token = { value: config.anonymousTokenString }
   }
 

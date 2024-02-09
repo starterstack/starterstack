@@ -56,7 +56,9 @@
   },
   "eslintIgnore": [
     "!.github",
-    ".github/actions/dist"
+    ".github/actions/dist",
+    "packages/cdn/cloudfront-viewer-request.js",
+    "packages/cdn/cloudfront-viewer-response.js"
   ],
   "lint-staged": {
     "*.{ts,js,mjs,mts,cjs,mts}": [
