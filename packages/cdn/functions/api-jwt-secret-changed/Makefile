@@ -1,2 +1,2 @@
-build-ApiJWTSecretChangedFunction:
+build-ApiJwtSecretChangedFunction:
 	./npm-copy.sh

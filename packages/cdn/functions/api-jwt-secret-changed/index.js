@@ -1,5 +1,4 @@
 import process from 'node:process'
-import { createRequire } from 'node:module'
 import {
   CloudFrontClient,
   DescribeFunctionCommand,
@@ -10,27 +9,19 @@ import {
   APIGatewayClient,
   FlushStageAuthorizersCacheCommand
 } from '@aws-sdk/client-api-gateway'
-import {
-  ApiGatewayV2Client,
-  ResetAuthorizersCacheCommand
-} from '@aws-sdk/client-apigatewayv2'
 import AWSXRay from 'aws-xray-sdk-core'
 import lambdaHandler from './lambda-handler.js'
+import '@aws-sdk/signature-v4-crt'
+import { GetKeyCommand, CloudFrontKeyValueStoreClient, DescribeKeyValueStoreCommand, PutKeyCommand } from '@aws-sdk/client-cloudfront-keyvaluestore'
 
-const require = createRequire(import.meta.url)
-const request = require('../../resources/cloudfront-viewer-request')
+const cloudFrontKeyValueStoreClient = new CloudFrontKeyValueStoreClient({ region: 'us-east-1' })
 
 const cloudfront = trace(new CloudFrontClient({ apiVersion: '2020-05-31' }))
-const apigatewayv2 = trace(new ApiGatewayV2Client({ apiVersion: '2018-11-29' }))
 const apigateway = trace(new APIGatewayClient({ apiVersion: '2015-07-09' }))
 
 const {
-  CLOUDFRONT_VIEWER_REQUEST_ARN,
-  STACK_NAME,
-  STAGE_ROOT,
-  STAGE,
+  KvsARN,
   REST_API_ID,
-  HTTP_API_ID,
   LAMBDA_TASK_ROOT,
   AWS_EXECUTION_ENV
 } = process.env
@@ -42,6 +33,10 @@ export const handler = lambdaHandler(async function update(
 ) {
   log.debug({ event }, 'received')
   try {
+    // TODO
+    const { ETag: etag } = await client.send(new DescribeKeyValueStoreCommand({
+      KvsARN
+    }))
     const updatedFunctions = await Promise.all(
       [CLOUDFRONT_VIEWER_REQUEST_ARN].map(async function updateFunction(arn) {
         const viewerName = arn.split('/').at(-1)
@@ -97,15 +92,6 @@ export const handler = lambdaHandler(async function update(
           }
         )
       }),
-      apigatewayv2.send(
-        new ResetAuthorizersCacheCommand({
-          ApiId: HTTP_API_ID,
-          StageName: '$default'
-        }),
-        {
-          abortSignal
-        }
-      ),
       apigateway.send(
         new FlushStageAuthorizersCacheCommand({
           restApiId: REST_API_ID,
