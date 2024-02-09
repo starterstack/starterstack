@@ -399,7 +399,7 @@ async function getStackStageConfig({ template, directory }) {
 async function getStackOutput(outputKey) {
   return await getCloudFormationOutput({
     region: 'us-east-1',
-    stackName: settings.stackName,
+    stackName: `${settings.stackName}-stack`,
     outputKey
   })
 }
@@ -610,7 +610,7 @@ export default async function getSettings({
     },
     get cloudFrontWafACL() {
       return getCloudFormationOutput({
-        region: config.stackRegion,
+        region: 'us-east-1',
         stackName: `${settings.stackName}-cloudfront-us-east-1-${stage}`,
         outputKey: 'CloudFrontWafACL'
       })
