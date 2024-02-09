@@ -1380,7 +1380,7 @@ Resources:
         - SQSSendMessagePolicy:
             QueueName: !GetAtt LambdaDlq.Arn
         - SSMParameterReadPolicy:
-            ParameterName: !Sub /${Stack}/${Stage}/API_JWT_SECRET
+            ParameterName: !Sub ${Stack}/${Stage}/API_JWT_SECRET
         - Version: 2012-10-17
           Statement:
             - Sid: CloudWatchLogGroup
@@ -1492,7 +1492,7 @@ Resources:
           DYNAMODB_TABLE: !Ref DynamoDBStackTable
       Policies:
         - SSMParameterReadPolicy:
-            ParameterName: !Sub /${Stack}/${Stage}/API_JWT_SECRET
+            ParameterName: !Sub ${Stack}/${Stage}/API_JWT_SECRET
         - Version: 2012-10-17
           Statement:
             - Sid: CloudWatchLogGroup
@@ -1532,7 +1532,7 @@ Resources:
           DYNAMODB_TABLE: !Ref DynamoDBStackTable
       Policies:
         - SSMParameterReadPolicy:
-            ParameterName: !Sub /${Stack}/${Stage}/API_JWT_SECRET
+            ParameterName: !Sub ${Stack}/${Stage}/API_JWT_SECRET
         - Version: 2012-10-17
           Statement:
             - Sid: CloudWatchLogGroup
@@ -1594,7 +1594,7 @@ Resources:
                   dynamodb:LeadingKeys:
                     - 'session#*'
         - SSMParameterReadPolicy:
-            ParameterName: !Sub /${Stack}/${Stage}/API_JWT_SECRET
+            ParameterName: !Sub ${Stack}/${Stage}/API_JWT_SECRET
         - Version: 2012-10-17
           Statement:
             - Sid: CloudWatchLogGroup
@@ -1644,7 +1644,7 @@ Resources:
                 - !Sub arn:${AWS::Partition}:apigateway:*::/usageplans*
               Effect: Allow
         - SSMParameterReadPolicy:
-            ParameterName: !Sub /${Stack}/${Stage}/API_JWT_SECRET
+            ParameterName: !Sub ${Stack}/${Stage}/API_JWT_SECRET
         - Version: 2012-10-17
           Statement:
             - Sid: CloudWatchLogGroup
