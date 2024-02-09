@@ -1370,6 +1370,7 @@ Resources:
           REST_API_ID: !Ref ApiGatewayRest
           KvsARN: !GetAtt CloudFrontKeyValueStore.Arn
           SSM_API_JWT_SECRET: !Sub /${Stack}/${Stage}/API_JWT_SECRET
+          STAGE: !Ref Stage
       Policies:
         - SQSSendMessagePolicy:
             QueueName: !GetAtt LambdaDlq.Arn
