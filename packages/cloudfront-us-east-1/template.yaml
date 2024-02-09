@@ -62,6 +62,10 @@ Metadata:
               exportName: snsAlarmTopic
             - name: LogRetentionInDays
               exportName: logRetentionInDays
+        - location: ../git.mjs
+          overrides:
+            - name: GITCommit
+              exportName: commit
       script:
         hooks:
           post:deploy:
