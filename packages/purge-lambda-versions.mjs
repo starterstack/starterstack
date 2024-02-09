@@ -89,7 +89,8 @@ async function purgeLambdaFunctionVersions({
       })
     )
   if (!resourceId) {
-    throw new TypeError(`lambda ${logicalId} not found in ${stackName}`)
+    // Could be a resource with a Condition
+    return
   }
 
   const versions = await listLambdaVersions({
