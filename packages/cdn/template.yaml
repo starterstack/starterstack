@@ -194,6 +194,14 @@ Metadata:
                 - file:
                     location: ../stack-stage-config.mjs
                     exportName: stage
+            - command: ./scripts/upsert-cloudfront-keyvalue-store.sh
+              args:
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: stackName
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: region
       alarms:
         snsTopicRef: SNSAlarmTopic
 
@@ -1762,6 +1770,12 @@ Outputs:
     Value: !GetAtt WebSocketAuthFunction.Arn
     Export:
       Name: !Sub '${AWS::StackName}WebSocketAuthFunction'
+
+  ApiJwtSecretChangedFunction:
+    Description: lambda to propagate key changes
+    Value: !GetAtt ApiJwtSecretChangedFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}ApiJwtSecretChangedFunction'
 
   WebSocketAnonymousAuthFunction:
     Description: lambda websocket authorizer allowing anonymous access

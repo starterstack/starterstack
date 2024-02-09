@@ -38,18 +38,25 @@ export const handler = lambdaHandler(async function update(
     )
     const secrets = await getSecrets(abortSignal)
     const currentConfig = (await getCurrentConfig(abortSignal)) ?? {}
-    await cloudFrontKeyValueStoreClient.send(
-      new PutKeyCommand({
-        KvsARN,
-        IfMatch: etag,
-        Key: 'config',
-        Value: JSON.stringify({
-          ...currentConfig,
-          ...secrets
-        })
-      }),
-      { abortSignal }
-    )
+
+    if (
+      !Object.entries(secrets.apiSecrets).every(
+        ([key, value]) => currentConfig?.apiSecrets?.[key] === value
+      )
+    ) {
+      await cloudFrontKeyValueStoreClient.send(
+        new PutKeyCommand({
+          KvsARN,
+          IfMatch: etag,
+          Key: 'config',
+          Value: JSON.stringify({
+            ...currentConfig,
+            ...secrets
+          })
+        }),
+        { abortSignal }
+      )
+    }
     if (event?.action !== 'refreshSecretOnly') {
       await apigateway.send(
         new FlushStageAuthorizersCacheCommand({
