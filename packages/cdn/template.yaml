@@ -1510,7 +1510,8 @@ Resources:
             - Sid: DynamoDB
               Action:
                 - dynamodb:GetItem
-              Resource: !Ref DynamoDBStackTable
+              Resource:
+                - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTable}'
               Effect: Allow
               Condition:
                 ForAllValues:StringLike:
@@ -1549,7 +1550,8 @@ Resources:
             - Sid: DynamoDB
               Action:
                 - dynamodb:GetItem
-              Resource: !Ref DynamoDBStackTable
+              Resource:
+                - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTable}'
               Effect: Allow
               Condition:
                 ForAllValues:StringLike:
@@ -1588,7 +1590,8 @@ Resources:
             - Sid: DynamoDB
               Action:
                 - dynamodb:GetItem
-              Resource: !Ref DynamoDBStackTable
+              Resource:
+                - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTable}'
               Effect: Allow
               Condition:
                 ForAllValues:StringLike:
@@ -1609,7 +1612,8 @@ Resources:
             - Sid: DynamoDB
               Action:
                 - dynamodb:GetItem
-              Resource: !Ref DynamoDBStackTable
+              Resource:
+                - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTable}'
               Effect: Allow
               Condition:
                 ForAllValues:StringLike:
@@ -1658,7 +1662,8 @@ Resources:
             - Sid: DynamoDB
               Action:
                 - dynamodb:GetItem
-              Resource: !Ref DynamoDBStackTable
+              Resource:
+                - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTable}'
               Effect: Allow
               Condition:
                 ForAllValues:StringLike:
