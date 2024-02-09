@@ -486,11 +486,6 @@ export default async function getSettings({
       } else if (accountStage === 'prod') {
         return settings.stackRootDomain
       } else {
-        if (stage === 'global') {
-          throw new Error(
-            'stageOrStackRoot not available for feature + global stage'
-          )
-        }
         return `${stage}.feature.${settings.stackRootDomain}`
       }
     },
