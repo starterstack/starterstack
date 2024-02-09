@@ -69,7 +69,7 @@ Metadata:
       - '@starterstack/sam-expand/plugins/parameter-overrides'
       - '@starterstack/sam-expand/plugins/run-script-hooks'
       - './apigateway-deployment.mjs'
-      - '../purge-lambda-versions.mjs'
+      #- '../purge-lambda-versions.mjs' TODO handle conditional resources
       - '../generate-cloudwatch-alarms.mjs'
     config:
       stackStageConfig:
@@ -284,6 +284,11 @@ Resources:
           - ObjectOwnership: BucketOwnerPreferred
       LifecycleConfiguration:
         Rules:
+          - Id: TransitionToIntelligentTiering
+            Status: Enabled
+            Transitions:
+              - StorageClass: INTELLIGENT_TIERING
+                TransitionInDays: 0
           - Id: ExpirationInDays
             Status: Enabled
             ExpirationInDays: 7
