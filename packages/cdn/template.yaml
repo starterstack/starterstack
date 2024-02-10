@@ -635,10 +635,10 @@ Resources:
   S3ProtectedMediaLogsPolicy:
     Type: AWS::S3::BucketPolicy
     Properties:
-      Bucket: !Ref S3ProtectedMedia
+      Bucket: !Ref S3ProtectedMediaLogs
       PolicyDocument:
         Version: '2012-10-17'
-        Id: PolicyToEnforceHttps
+        Id: PolicyForAccessLoggingForProtectedMedia
         Statement:
           - Effect: Deny
             Action: 's3:*'
@@ -649,6 +649,21 @@ Resources:
             Condition:
               Bool:
                 'aws:SecureTransport': false
+          - Effect: Allow
+            Action:
+              - 's3:PutObject'
+              - 's3:PutObjectACL'
+            Resource:
+              - !Sub '${S3ProtectedMediaLogs.Arn}/*'
+            Condition:
+              Bool:
+                'aws:SecureTransport': true
+              ArnLike:
+                'aws:SourceArn': !GetAtt S3ProtectedMedia.Arn
+              StringEquals:
+                'aws:SourceAccount': !Sub '${AWS::AccountId}'
+            Principal:
+              Service: 'logging.s3.amazonaws.com'
 
   CloudFrontResponseHeaderPolicy:
     Type: AWS::CloudFront::ResponseHeadersPolicy
