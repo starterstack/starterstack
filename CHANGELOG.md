@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.0.5](https://github.com/starterstack/starterstack/compare/v0.0.4...v0.0.5) (2024-02-10)
+
+
+### Bug Fixes
+
+* cdn config ([55417ad](https://github.com/starterstack/starterstack/commit/55417adef33e0d75aa51aa34b60340bf63977209))
+* cdn stack ([#59](https://github.com/starterstack/starterstack/issues/59)) ([d79ab9e](https://github.com/starterstack/starterstack/commit/d79ab9e25957e236e67bbc6108c8f71b512fb0c8))
+* **cdn:** outputs ([ecb4d4d](https://github.com/starterstack/starterstack/commit/ecb4d4d0389831c70ec2d65dc036177cf588843b))
+* cloudfront us-east-1 resources ([bb9bcac](https://github.com/starterstack/starterstack/commit/bb9bcac354a41e226db6b91d8d5ef8dea14786d2))
+* **cloudfront-us-east-1:** danling acm certificates ([3d80e09](https://github.com/starterstack/starterstack/commit/3d80e0931c14d0ee6fe80b53cc5b17e26d6816f5))
+* **get-node-version:** handle v prefix ([45d81bd](https://github.com/starterstack/starterstack/commit/45d81bd6c8a638f08679d9581f0eb37be29fa48f))
+* initial slic-watch-plugin ([3aaff65](https://github.com/starterstack/starterstack/commit/3aaff65d1369ca0fdab1130d1bdd4b2b890f4c96))
+* npm ci ([d544774](https://github.com/starterstack/starterstack/commit/d54477485ea01e64ec24a528ce402308eec9d7cf))
+* release-please config ([c792a8e](https://github.com/starterstack/starterstack/commit/c792a8e4f60b41626dc390c6847f987c0c27efef))
+* release-please config (draft) ([d20018c](https://github.com/starterstack/starterstack/commit/d20018c8bc68662701048bb1af3d366712e233e7))
+* setup (repo protection) ([bd5a79f](https://github.com/starterstack/starterstack/commit/bd5a79f5ea203f5185079772c8e1552d55495dbe))
+* **sls workflow:** delete ([e3bfb21](https://github.com/starterstack/starterstack/commit/e3bfb210689328a876ab19767d087bc7da8b21a0))
+* sls-mentor ignore rules ([2007b7e](https://github.com/starterstack/starterstack/commit/2007b7e9fc54d8e21c10a30823c73bd9f1dd4817))
+* **stack-stage-config:** local stage ([e9c7135](https://github.com/starterstack/starterstack/commit/e9c7135a8cb41b2efc6eb39c93b2b9bac3f0b7b3))
+* **stack-stage-config:** no credential support ([e06ba6d](https://github.com/starterstack/starterstack/commit/e06ba6da70d448a1e64abe581d3d8b586d093713))
+* update sam-expand property plugin schema ([43242f6](https://github.com/starterstack/starterstack/commit/43242f620f6845e5aa9aa2d5a6d4d247b3c77cc9))
+
 ## [0.0.4](https://github.com/starterstack/starterstack/compare/v0.0.3...v0.0.4) (2024-01-19)
 
 
