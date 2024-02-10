@@ -3,3 +3,5 @@ build
 tap-snapshots
 docs/structurizr/workspace.json
 CHANGELOG.md
+packages/cdn/cloudfront-viewer-request.js
+packages/cdn/cloudfront-viewer-response.js

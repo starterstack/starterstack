@@ -45,7 +45,7 @@ export default async function ({ context, name, url, success }) {
               text: `<${runUrl}|delete environment run> ${name} by ${context.actor}`
             }
           }
-        : context.workflow === 'automerge'
+        : (context.workflow === 'automerge'
           ? {
               type: 'section',
               text: {
@@ -61,7 +61,7 @@ export default async function ({ context, name, url, success }) {
                   url ? `<${url}|${name}>` : name
                 } by ${context.actor}`
               }
-            },
+            }),
       commitUrl && {
         type: 'section',
         text: {

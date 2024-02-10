@@ -6,6 +6,8 @@ export const lifecycles = ['pre:expand']
 
 export const metadataConfig = 'slicWatch'
 
+export { slicWatchSchema as schema } from 'slic-watch-core'
+
 // eslint-disable-next-line @typescript-eslint/require-await
 export const lifecycle = async function generateCloudwatchAlarms({
   command,
@@ -20,5 +22,3 @@ export const lifecycle = async function generateCloudwatchAlarms({
     addDashboard(config.dashboard, template)
   }
 }
-
-export { slicWatchSchema as schema } from 'slic-watch-core'

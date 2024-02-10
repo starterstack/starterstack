@@ -17,7 +17,7 @@ cp -r . ${ARTIFACTS_DIR:?}
 
 cd ${ARTIFACTS_DIR:?}
 
-git init
+git init &>/dev/null
 git config init.defaultBranch main
 git config user.email "user@example.com"
 git config user.name "${me:?}"
@@ -155,9 +155,9 @@ node_modules/pdf-lib/src
 !.include-lambda-blob-files/*
 ${me:?}
 """ >.gitignore
-git add -f .gitignore
-git commit -m ".gitignore"
-git add .
-git commit -m "files"
-git clean -dfX
+git add -f .gitignore &>/dev/null
+git commit -m ".gitignore" &>/dev/null
+git add . &>/dev/null
+git commit -m "files" &>/dev/null
+git clean -dfXq
 rm -rf .git

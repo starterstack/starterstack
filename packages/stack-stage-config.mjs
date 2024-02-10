@@ -54,7 +54,12 @@ const ssm = new SSMClient({ region: 'us-east-1' })
 let accountId
 
 /** @type {import('@starterstack/sam-expand/plugins').Lifecycles} */
-export const lifecycles = ['pre:expand', 'post:delete', 'post:deploy']
+export const lifecycles = [
+  'pre:expand',
+  'post:delete',
+  'post:deploy',
+  'post:build'
+]
 
 /** @type {import('@starterstack/sam-expand/plugins').PluginSchema<{ region?: string, 'suffixStage': boolean, stage?: string, regions?: string }>} */
 export const schema = {
@@ -95,23 +100,33 @@ export const metadataConfig = 'stackStageConfig'
 export const lifecycle = async function stackStageConfig({
   command,
   argv,
+  argvReader,
   template,
   lifecycle,
   log
 }) {
+  if (lifecycle === 'post:build') {
+    if (!process.env.CI) {
+      const stage = argvReader('Stage', { parameter: true })
+      const offline = process.env.IS_OFFLINE ? ' IS_OFFLINE=true' : ''
+      console.log(
+        `\u001B[0;33m[*] Lint SAM template: STAGE=${stage}${offline} npx sam-expand validate -t .aws-sam/build/template.yaml --lint\u001B[0;33m`
+      )
+    }
+    return
+  }
+
   if (lifecycle === 'pre:expand') {
     const stackStageConfig = await getStackStageConfig(template)
     if (command === 'build' && stackStageConfig.addMappings) {
       template.Mappings ||= {}
       template.Mappings.AWSAccounts = settings.awsAccounts
     }
-    const stageIndex = argv.findIndex((x) => x.startsWith('Stage='))
-    let stage = stageIndex === -1 ? '' : argv[stageIndex].slice('Stage='.length)
-    const regionIndex = argv.indexOf('--region')
-    let region = regionIndex === -1 ? '' : argv[regionIndex + 1]
+    let stage = argvReader('Stage', { parameter: true })
+    let region = argvReader('region')
 
     if (['build', 'deploy', 'delete', 'validate'].includes(command)) {
-      if (process.env.STAGE) {
+      if (!stage && process.env.STAGE) {
         stage = process.env.STAGE
       }
       if (!process.env.CI && !stage) {
@@ -140,9 +155,11 @@ export const lifecycle = async function stackStageConfig({
               choices: config.regions
             })
 
-      region = regionValue
-      if (['build', 'deploy', 'delete', 'validate'].includes(command)) {
-        argv.push('--region', region)
+      if (regionValue) {
+        region = regionValue
+        if (['build', 'deploy', 'delete', 'validate'].includes(command)) {
+          argv.push('--region', regionValue)
+        }
       }
     }
 
@@ -151,28 +168,30 @@ export const lifecycle = async function stackStageConfig({
     }
 
     if (['deploy', 'delete'].includes(command)) {
-      argv.push('--stack-name', config.stackName)
+      argv.push('--stack-name', `'${config.stackName}'`)
       if (config.s3DeploymentBucket[region]) {
         argv.push(
           '--s3-bucket',
-          config.s3DeploymentBucket[region],
-
+          `'${config.s3DeploymentBucket[region]}'`,
           '--s3-prefix',
           command === 'deploy'
-            ? `${config.stackName}/${template.Outputs.DeployedCommit.Value}`
-            : config.stackName
+            ? `'${config.stackName}/${template.Outputs.DeployedCommit.Value}'`
+            : `'${config.stackName}`
         )
       }
     }
     if (command === 'deploy') {
       if (config.snsOpsTopic[region]) {
-        argv.push('--notification-arns', config.snsOpsTopic[region] ?? '')
+        argv.push(
+          '--notification-arns',
+          `'${config.snsOpsTopic[region] ?? ''}'`
+        )
       }
       argv.push(
         '--tags',
-        `STAGE=${stage}`,
-        `ManagedBy=${settings.stackName}`,
-        `Name=${config.stackName}`
+        `STAGE='${stage}'`,
+        `ManagedBy='${settings.stackName}'`,
+        `Name='${config.stackName}'`
       )
     }
     if (['build', 'deploy'].includes(command)) {
@@ -182,9 +201,18 @@ export const lifecycle = async function stackStageConfig({
     log('applied stack stage config %O', { config, argv })
   } else {
     if (argv.includes('--s3-bucket') && argv.includes('--s3-prefix')) {
-      const region = argv[argv.indexOf('--region') + 1]
-      const s3Bucket = argv[argv.indexOf('--s3-bucket') + 1]
-      const s3Prefix = argv[argv.indexOf('--s3-prefix') + 1]
+      const region = argvReader('region')
+      if (!region) {
+        throw new TypeError('missing region')
+      }
+      const s3Bucket = argvReader('s3-bucket')
+      if (!s3Bucket) {
+        throw new TypeError('missing s3-bucket')
+      }
+      const s3Prefix = argvReader('s3-prefix')
+      if (!s3Prefix) {
+        throw new TypeError('missing s3-prefix')
+      }
 
       let s3Client = s3Clients.get(region)
 
@@ -371,7 +399,7 @@ async function getStackStageConfig({ template, directory }) {
 async function getStackOutput(outputKey) {
   return await getCloudFormationOutput({
     region: 'us-east-1',
-    stackName: settings.stackName,
+    stackName: `${settings.stackName}-stack`,
     outputKey
   })
 }
@@ -380,11 +408,11 @@ async function getStackOutput(outputKey) {
 export default async function getSettings({
   template,
   templateDirectory,
-  argv,
+  argvReader,
   region: defaultRegion
 }) {
-  const region = argv[argv.indexOf('--region') + 1] ?? defaultRegion
-  const stage = argv[argv.findIndex((x) => x.startsWith('Stage='))]
+  const region = argvReader('region') ?? defaultRegion
+  const stage = argvReader('Stage', { parameter: true })
 
   if (!region) {
     throw new TypeError('missing region')
@@ -395,7 +423,7 @@ export default async function getSettings({
   }
 
   const config = await getConfig({
-    stage: stage.slice('Stage='.length),
+    stage,
     template,
     directory: templateDirectory
   })
@@ -412,6 +440,18 @@ export default async function getSettings({
     })
   }
 
+  /**
+   * @param {string} outputKey
+   * @returns {Promise<string | undefined>}
+   */
+  const getDynamoDBOutput = (outputKey) => {
+    return getCloudFormationOutput({
+      region: config.stackRegion,
+      stackName: `${settings.stackName}-dynamodb-${stage}`,
+      outputKey
+    })
+  }
+
   return {
     get stackName() {
       return config.stackName
@@ -421,6 +461,12 @@ export default async function getSettings({
     },
     get stage() {
       return config.stage
+    },
+    get sentryEnvironment() {
+      return settings.stages.includes(config.stage) ? config.stage : 'feature'
+    },
+    get sentryDSN() {
+      return 'https://_@_._/0'
     },
     get rootDomain() {
       return settings.rootDomain
@@ -440,11 +486,6 @@ export default async function getSettings({
       } else if (accountStage === 'prod') {
         return settings.stackRootDomain
       } else {
-        if (stage === 'global') {
-          throw new Error(
-            'stageOrStackRoot not available for feature + global stage'
-          )
-        }
         return `${stage}.feature.${settings.stackRootDomain}`
       }
     },
@@ -546,11 +587,7 @@ export default async function getSettings({
       return config.stackRegion
     },
     get apiGatewayCloudwatchRole() {
-      return getCloudFormationOutput({
-        region: 'us-east-1',
-        stackName: 'stack',
-        outputKey: 'ApiGatewayCloudwatchRole'
-      })
+      return getStackOutput('ApiGatewayCloudwatchRole')
     },
     get s3Media() {
       return getCDNOutput('S3Media')
@@ -569,13 +606,35 @@ export default async function getSettings({
     },
     get cloudFrontWafACL() {
       return getCloudFormationOutput({
-        region: config.stackRegion,
+        region: 'us-east-1',
         stackName: `${settings.stackName}-cloudfront-us-east-1-${stage}`,
         outputKey: 'CloudFrontWafACL'
       })
     },
     get zoneId() {
       return getStackOutput('ZoneId')
+    },
+    get apiGatewayRestLogFormat() {
+      const awsAccountSettings = settings.awsAccounts[accountId]
+      const wafEnabled = awsAccountSettings?.wafEnabled
+
+      return `{"requestTime":"$context.requestTime","requestId":"$context.requestId","httpMethod":"$context.httpMethod","path":"$context.path","resourcePath":"$context.resourcePath","status":$context.status,"responseLatency":"$context.responseLatency","xrayTraceId":"$context.xrayTraceId","integrationRequestId":"$context.integration.requestId","functionResponseStatus":"$context.integration.status","integrationLatency":"$context.integration.latency","integrationServiceStatus":"$context.integration.integrationStatus","authorizeResultStatus":"$context.authorize.status","authorizerLatency":"$context.authorizer.latency","authorizerRequestId":"$context.authorizer.requestId","ip":"$context.identity.sourceIp","userAgent":"$context.identity.userAgent","user":"$context.authorizer.id"${
+        wafEnabled
+          ? ',"wafError":"$context.waf.error","wafLatency":"$context.waf.latency","wafStatus":"$context.waf.status","wafResponse":"$context.wafResponseCode"'
+          : ''
+      }}`
+    },
+    get dynamodbStackTable() {
+      return getDynamoDBOutput('DynamoDBStackTable')
+    },
+    get dynamodbStackAuditTable() {
+      return getDynamoDBOutput('DynamoDBStackAuditTable')
+    },
+    get dynamodbWebSocketTable() {
+      return getDynamoDBOutput('DynamoDBWebSocketTable')
+    },
+    get dynamodbStackTableStream() {
+      return getDynamoDBOutput('DynamoDBStackTableStream')
     }
   }
 }
@@ -686,9 +745,9 @@ function addParameter({ argv, name, value }) {
 
   if (parameterIndex === -1) {
     const parameterOverridesIndex = argv.indexOf('--parameter-overrides')
-    argv.splice(parameterOverridesIndex + 1, 0, `${name}=${value}`)
+    argv.splice(parameterOverridesIndex + 1, 0, `${name}='${value}'`)
   } else {
-    argv.splice(parameterIndex, 1, `${name}=${value}`)
+    argv.splice(parameterIndex, 1, `${name}='${value}'`)
   }
 }
 

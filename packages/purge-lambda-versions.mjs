@@ -5,7 +5,8 @@
 import logInfo from '@starterstack/sam-expand/log'
 import {
   CloudFormationClient,
-  DescribeStackResourceCommand
+  DescribeStackResourceCommand,
+  ListStackResourcesCommand
 } from '@aws-sdk/client-cloudformation'
 
 import {
@@ -36,37 +37,38 @@ export const schema = {
 export const metadataConfig = 'purgeLambdaVersions'
 
 /** @type {import('@starterstack/sam-expand/plugins').Plugin} */
-export const lifecycle = async function purgeLambdaVersion({ argv, template }) {
-  const regionIndex = argv.indexOf('--region')
+export const lifecycle = async function purgeLambdaVersion({
+  template,
+  argvReader
+}) {
+  const region = argvReader('region')
 
-  if (regionIndex === -1) {
-    throw new TypeError('mssing region')
+  if (!region) {
+    throw new TypeError('missing region')
   }
 
-  const stackNameIndex = argv.indexOf('--stack-name')
+  const stackName = argvReader('stack-name')
 
-  if (stackNameIndex === -1) {
+  if (!stackName) {
     throw new TypeError('missing stack name')
   }
-
-  const region = argv[regionIndex + 1]
-  const stackName = argv[stackNameIndex + 1]
 
   const cloudformation = new CloudFormationClient({ region })
   const lambda = new LambdaClient({ region })
   /** @type {Schema} */
   const config = template.Metadata.expand.config[metadataConfig]
 
-  for (const [key, value] of Object.entries(template.Resources)) {
-    if (value.Type === 'AWS::Serverless::Function') {
-      await purgeLambdaFunctionVersions({
-        keep: config.keep,
-        cloudformation,
-        lambda,
-        logicalId: key,
-        stackName
-      })
-    }
+  for await (const logicalId of listLambdaResources({
+    client: cloudformation,
+    stackName
+  })) {
+    await purgeLambdaFunctionVersions({
+      keep: config.keep,
+      cloudformation,
+      lambda,
+      logicalId,
+      stackName
+    })
   }
 }
 
@@ -89,7 +91,8 @@ async function purgeLambdaFunctionVersions({
       })
     )
   if (!resourceId) {
-    throw new TypeError(`lambda ${logicalId} not found in ${stackName}`)
+    // Could be a resource with a Condition
+    return
   }
 
   const versions = await listLambdaVersions({
@@ -188,4 +191,33 @@ async function deleteLambdaFunction({ client, name, version }) {
       FunctionName: `${name}:${version}`
     })
   )
+}
+
+async function* listLambdaResources({ client, stackName }) {
+  let lastToken
+  while (true) {
+    /** @type {import('@aws-sdk/client-cloudformation').ListStackResourcesCommandOutput} */
+    const {
+      NextToken: nextToken,
+      StackResourceSummaries: stackResourceSummaries
+    } = await client.send(
+      new ListStackResourcesCommand({
+        StackName: stackName,
+        ...(lastToken && { NextToken: lastToken })
+      })
+    )
+    for (const {
+      ResourceType: resourceType,
+      LogicalResourceId: logicalResourceId
+    } of stackResourceSummaries ?? []) {
+      if (resourceType === 'AWS::Lambda::Function') {
+        yield String(logicalResourceId)
+      }
+    }
+    if (nextToken) {
+      lastToken = nextToken
+    } else {
+      break
+    }
+  }
 }

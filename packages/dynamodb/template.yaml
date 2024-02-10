@@ -97,13 +97,13 @@ Resources:
       MemorySize: 512
       Environment:
         Variables:
-          DYNAMODB_STACK_TABLE: !Ref DynamodbStackTable
+          DYNAMODB_STACK_TABLE: !Ref DynamoDBStackTable
           LOG_DEBUG: true
           STACK_NAME: !Ref Stack
           STAGE: !Ref Stage
       Policies:
         - DynamoDBCrudPolicy:
-            TableName: !Ref DynamodbStackTable
+            TableName: !Ref DynamoDBStackTable
         - Version: 2012-10-17
           Statement:
             - Sid: CloudWatchLogGroup
@@ -117,7 +117,7 @@ Resources:
     Metadata:
       BuildMethod: makefile
 
-  DynamodbStackTable:
+  DynamoDBStackTable:
     Type: AWS::DynamoDB::GlobalTable
     Properties:
       BillingMode: 'PAY_PER_REQUEST'
@@ -166,7 +166,7 @@ Resources:
         StreamViewType: NEW_AND_OLD_IMAGES
       SSESpecification:
         SSEEnabled: true
-  DynamodbStackAuditTable:
+  DynamoDBStackAuditTable:
     Type: AWS::DynamoDB::GlobalTable
     Properties:
       BillingMode: 'PAY_PER_REQUEST'
@@ -196,9 +196,9 @@ Resources:
         Enabled: true
       SSESpecification:
         SSEEnabled: true
-  DynamodbWebSocketTable:
+  DynamoDBWebSocketTable:
     Type: AWS::DynamoDB::GlobalTable
-    DependsOn: DynamodbStackTable
+    DependsOn: DynamoDBStackTable
     Properties:
       BillingMode: 'PAY_PER_REQUEST'
       Replicas:
@@ -261,23 +261,23 @@ Outputs:
     Value: !GetAtt MigrationFunction.Arn
     Export:
       Name: !Sub '${AWS::StackName}MigrationFunction'
-  DynamodbStackTable:
+  DynamoDBStackTable:
     Description: dynamodb stack table
-    Value: !Ref DynamodbStackTable
+    Value: !Ref DynamoDBStackTable
     Export:
       Name: !Sub '${AWS::StackName}DynamoDBStackTable'
-  DynamodbStackAuditTable:
+  DynamoDBStackAuditTable:
     Description: dynamodb stack audit table
-    Value: !Ref DynamodbStackAuditTable
+    Value: !Ref DynamoDBStackAuditTable
     Export:
       Name: !Sub '${AWS::StackName}DynamoDBStackAuditTable'
-  DynamodbWebSocketTable:
+  DynamoDBWebSocketTable:
     Description: dynamodb websocket table
-    Value: !Ref DynamodbWebSocketTable
+    Value: !Ref DynamoDBWebSocketTable
     Export:
       Name: !Sub '${AWS::StackName}DynamoDBWebSocketTable'
-  DynamodbStackTableStream:
+  DynamoDBStackTableStream:
     Description: dynamodb stack table stream
-    Value: !GetAtt DynamodbStackTable.StreamArn
+    Value: !GetAtt DynamoDBStackTable.StreamArn
     Export:
       Name: !Sub '${AWS::StackName}DynamoDBStackTableStream'

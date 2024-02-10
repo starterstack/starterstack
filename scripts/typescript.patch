@@ -1,0 +1,11 @@
+--- a.out	2024-02-06 19:30:44
++++ node_modules/typescript/lib/typescript.js	2024-02-06 19:31:03
+@@ -18134,7 +18134,7 @@
+       const canonicalPath = toCanonical(realpath(absolutePath));
+       if (visited.has(canonicalPath))
+         return;
+-      visited.set(canonicalPath, true);
++      // visited.set(canonicalPath, true);
+       const { files, directories } = getFileSystemEntries(path2);
+       for (const current of sort(files, compareStringsCaseSensitive)) {
+         const name = combinePaths(path2, current);

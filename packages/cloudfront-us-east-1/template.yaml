@@ -5,12 +5,33 @@ Transform:
 
 Description: CloudFront us-east-1 resources
 
+Globals:
+  Function:
+    Tracing: Active
+    Architectures:
+      - arm64
+    Runtime: nodejs20.x
+    PropagateTags: true
+    Environment:
+      Variables:
+        GIT_COMMIT: !Ref GITCommit
+
 Parameters:
   Stack:
+    Type: String
+  Stage:
+    Type: String
+  StageRootUrl:
     Type: String
   LogRetentionInDays:
     Type: String
   SNSAlarmTopic:
+    Type: String
+  GITCommit:
+    Type: String
+  SentryDSN:
+    Type: String
+  SentryEnvironment:
     Type: String
 
 Metadata:
@@ -29,10 +50,22 @@ Metadata:
       parameterOverrides:
         - location: ../stack-stage-config.mjs
           overrides:
+            - name: StageRootUrl
+              exportName: stageRootUrl
+            - name: SentryDSN
+              exportName: sentryDSN
+            - name: SentryEnvironment
+              exportName: sentryEnvironment
+            - name: LogRetentionInDays
+              exportName: logRetentionInDays
             - name: SNSAlarmTopic
               exportName: snsAlarmTopic
             - name: LogRetentionInDays
               exportName: logRetentionInDays
+        - location: ../git.mjs
+          overrides:
+            - name: GITCommit
+              exportName: commit
       script:
         hooks:
           post:deploy:
@@ -208,6 +241,64 @@ Resources:
                   Action: BLOCK
             Requirement: MEETS_ANY
       ResourceArn: !GetAtt CloudFrontWafAcl.Arn
+
+  CloudWatchLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}
+      RetentionInDays: !Ref LogRetentionInDays
+      Tags:
+        - Key: 'Name'
+          Value: !Sub '${AWS::StackName} lambda logs'
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+
+  SentryFunction:
+    Condition: IsWafEnabled
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/sentry/
+      Handler: index.handler
+      Description: 'send waf cloudwatch logs to sentry'
+      Timeout: 6
+      MemorySize: 128
+      Environment:
+        Variables:
+          SENTRY_DSN: !Ref SentryDSN
+          SENTRY_ENVIRONMENT: !Ref SentryEnvironment
+          SENTRY_TUNNEL: !Sub ${StageRootUrl}/api/rest/sentry-tunnel
+          STAGE: !Ref Stage
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Sid: CloudWatchLogGroup
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !GetAtt CloudWatchLogGroup.Arn
+              Effect: Allow
+      LoggingConfig:
+        LogGroup: !Ref CloudWatchLogGroup
+    Metadata:
+      BuildMethod: makefile
+
+  CloudWatchLogGroupSubscriptionFilter:
+    Condition: IsWafEnabled
+    Type: AWS::Logs::SubscriptionFilter
+    Properties:
+      DestinationArn: !GetAtt SentryFunction.Arn
+      FilterName: Lambda
+      FilterPattern: '{$.httpRequest.uri != "*sentry-tunnel*"}'
+      LogGroupName: !Ref CloudFrontWafLogGroup
+
+  CloudWatchSubscriptionFunctionPermission:
+    Condition: IsWafEnabled
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt SentryFunction.Arn
+      Action: 'lambda:InvokeFunction'
+      Principal: 'logs.amazonaws.com'
+      SourceArn: !GetAtt CloudFrontWafLogGroup.Arn
 
 Outputs:
   CloudFrontWafLogGroup:

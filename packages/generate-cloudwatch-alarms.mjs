@@ -28,10 +28,11 @@ const { stackName } = JSON.parse(
   await readFile(path.join(__dirname, 'settings.json'), 'utf8')
 )
 
+/** @type {import('@starterstack/sam-expand/plugins').Plugin} */
 // eslint-disable-next-line @typescript-eslint/require-await
 export const lifecycle = async function generateCloudwatchAlarms({
   command,
-  argv,
+  argvReader,
   template,
   lifecycle,
   log
@@ -40,16 +41,14 @@ export const lifecycle = async function generateCloudwatchAlarms({
     if (!template.Mappings?.AWSAccounts) {
       throw new Error('missing mappings for AWSAccounts')
     }
-    const stageIndex = argv.findIndex((/** @type {string} */ x) =>
-      x.startsWith('Stage=')
-    )
-    const stage =
-      stageIndex === -1 ? '' : argv[stageIndex].slice('Stage='.length)
+    const stage = argvReader('Stage', { parameter: true })
+
     if (!stage) {
       throw new TypeError('missing stage')
     }
-    const regionIndex = argv.indexOf('--region')
-    const region = regionIndex === -1 ? '' : argv[regionIndex + 1]
+
+    const region = argvReader('region')
+
     if (!region) {
       throw new TypeError('missing region')
     }

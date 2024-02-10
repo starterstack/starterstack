@@ -77,20 +77,19 @@ const { stackRootDomain } = await inquirer.prompt({
   validate: (f) => !!f
 })
 
-const priceClassKeys = {
-  'US and Europe': 'usAndEurope',
-  'US, Europe, Hong Kong, Singapore, and Japan':
-    'usEuropeHongKongSingaporeAndJapan',
-  all: 'all'
+const priceClasses = {
+  'US and Europe': 'PriceClass_100',
+  'US, Europe, Hong Kong, Singapore, and Japan': 'PriceClass_200',
+  All: 'PriceClass_All'
 }
 
-const currentPriceClassValue = Object.entries(priceClassKeys).find(
-  ([, value]) => value === defaults.priceClassKey
+const currentPriceClassValue = Object.entries(priceClasses).find(
+  ([, value]) => value === defaults.priceClass
 )[0]
 
-const { priceClass } = await inquirer.prompt({
+const { priceClassValue } = await inquirer.prompt({
   type: 'list',
-  name: 'priceClass',
+  name: 'priceClassValue',
   message: 'What price class should our CloudFront distribution use',
   choices: [
     currentPriceClassValue,
@@ -102,7 +101,7 @@ const { priceClass } = await inquirer.prompt({
   ].filter(Boolean)
 })
 
-const priceClassKey = priceClassKeys[priceClass]
+const priceClass = priceClasses[priceClassValue]
 
 const { captureUserLanguageAndDevice } = await inquirer.prompt({
   type: 'confirm',
@@ -326,7 +325,7 @@ const settings =
       stackDisplayName,
       rootDomain,
       stackRootDomain,
-      priceClassKey,
+      priceClass,
       captureUserLanguageAndDevice,
       owner,
       repo,
