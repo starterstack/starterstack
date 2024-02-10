@@ -643,8 +643,8 @@ Resources:
           - Effect: Deny
             Action: 's3:*'
             Resource:
-              - !Sub '${S3ProtectedMedia.Arn}'
-              - !Sub '${S3ProtectedMedia.Arn}/*'
+              - !Sub '${S3ProtectedMediaLogs.Arn}'
+              - !Sub '${S3ProtectedMediaLogs.Arn}/*'
             Principal: '*'
             Condition:
               Bool:
