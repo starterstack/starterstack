@@ -14,7 +14,7 @@
     },
     "encryptedSnsTopics": {
       "ignoredResources": [
-        "ses-(pr-)?[^-]*-snsEmailDeliveryTopic",
+        "ses-(pr-)?[^-]*-SnsEmailDeliveryTopic",
         "monitoring-SNSAlarmTopic",
         "deployment-SNSOpsTopic"
       ]
@@ -22,23 +22,23 @@
     "noMonoPackage": {
       "ignoredResources": [
         "-pr-[\\d]+",
-        "graphql-(pr-)?[^-]*-http-(post|get)",
-        "-(pr-)?[^-]*-sentry",
-        "cdn-(pr-)?[^-]*-(http|webSocket)(Anonymous)?Auth",
-        "rest-(pr-)?[^-]*-session-(get|post)",
-        "graphql-(pr-)?[^-]*-broadcast",
-        "-(pr-)?[^-]*-s3-replicate",
-        "websocket-(pr-)?[^-]*-(connections|default|echo)"
+        "graphql-(pr-)?[^-]*-Http(Post|Get)",
+        "-(pr-)?[^-]*-Sentry",
+        "cdn-(pr-)?[^-]*-(Http|WebSocket)(Anonymous)?Auth",
+        "rest-(pr-)?[^-]*-Session(Get|Post)",
+        "graphql-(pr-)?[^-]*-Broadcast",
+        "-(pr-)?[^-]*-S3Replicate",
+        "websocket-(pr-)?[^-]*-(Connections|Default|Echo)"
       ]
     },
     "lightBundle": {
       "ignoredResources": [
-        "dynamodb-(pr-)?[^-]*-migration",
-        "media-(pr-)?[^-]*-s3-trigger"
+        "dynamodb-(pr-)?[^-]*-Migration",
+        "media-(pr-)?[^-]*-S3Trigger"
       ]
     },
     "asyncSpecifyFailureDestination": {
-      "ignoredResources": ["test-(pr-)?[^-]*-capture-token"]
+      "ignoredResources": ["test-(pr-)?[^-]*-CaptureToken"]
     }
   }
 }
