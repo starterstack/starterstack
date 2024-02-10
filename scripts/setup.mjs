@@ -545,7 +545,8 @@ async function updateGithubSecrets() {
           required_conversation_resolution: false,
           lock_branch: false,
           allow_fork_syncing: false,
-          restrictions: undefined
+          // eslint-disable-next-line unicorn/no-null
+          restrictions: null
         })
       ])
     }
