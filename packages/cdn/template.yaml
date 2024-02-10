@@ -638,7 +638,7 @@ Resources:
       Bucket: !Ref S3ProtectedMedia
       PolicyDocument:
         Version: '2012-10-17'
-        Id: PolicyForCloudFrontPrivateContent
+        Id: PolicyToEnforceHttps
         Statement:
           - Effect: Deny
             Action: 's3:*'
@@ -649,17 +649,6 @@ Resources:
             Condition:
               Bool:
                 'aws:SecureTransport': false
-          - Effect: Allow
-            Action:
-              - 's3:GetObject'
-            Resource: !Sub '${S3ProtectedMediaLogs.Arn}/*'
-            Condition:
-              Bool:
-                'aws:SecureTransport': true
-              StringEquals:
-                'AWS:SourceArn': !Sub 'arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${CloudFront}'
-            Principal:
-              Service: 'cloudfront.amazonaws.com'
 
   CloudFrontResponseHeaderPolicy:
     Type: AWS::CloudFront::ResponseHeadersPolicy
