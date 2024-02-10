@@ -135,6 +135,7 @@ export const lifecycle = async function stackStageConfig({
             ? { stageValue: 'global' }
             : await inquirer.prompt({ name: 'stageValue', message: 'stage' })
         stage = stageValue
+        process.env.STAGE = stage
       }
     }
 
@@ -590,19 +591,19 @@ export default async function getSettings({
       return getStackOutput('ApiGatewayCloudwatchRole')
     },
     get s3Media() {
-      return getCDNOutput('S3Media')
+      return getCDNOutput('S3MediaBucket')
     },
     get s3ProtectedMedia() {
-      return getCDNOutput('S3ProtectedMedia')
+      return getCDNOutput('S3ProtectedMediaBucket')
     },
     get s3Static() {
-      return getCDNOutput('S3Static')
+      return getCDNOutput('S3StaticBucket')
     },
     get s3CloudFrontLogs() {
-      return getCDNOutput('S3CloudFrontLogs')
+      return getCDNOutput('S3CloudFrontLogsBucket')
     },
     get s3ProtectedMediaLogs() {
-      return getCDNOutput('S3ProtectedMediaLogs')
+      return getCDNOutput('S3ProtectedMediaLogsBucket')
     },
     get cloudFrontWafACL() {
       return getCloudFormationOutput({
