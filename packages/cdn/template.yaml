@@ -652,7 +652,7 @@ Resources:
           - Effect: Allow
             Action:
               - 's3:GetObject'
-            Resource: !Sub '${S3ProtectedMedia.Arn}/*'
+            Resource: !Sub '${S3ProtectedMediaLogs.Arn}/*'
             Condition:
               Bool:
                 'aws:SecureTransport': true
