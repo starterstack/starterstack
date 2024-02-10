@@ -176,7 +176,7 @@ export const lifecycle = async function stackStageConfig({
           '--s3-prefix',
           command === 'deploy'
             ? `'${config.stackName}/${template.Outputs.DeployedCommit.Value}'`
-            : `'${config.stackName}`
+            : `'${config.stackName}'`
         )
       }
     }
@@ -412,7 +412,7 @@ export default async function getSettings({
   region: defaultRegion
 }) {
   const region = argvReader('region') ?? defaultRegion
-  const stage = argvReader('Stage', { parameter: true })
+  const stage = argvReader('Stage', { parameter: true }) ?? process.env.STAGE
 
   if (!region) {
     throw new TypeError('missing region')
@@ -512,7 +512,7 @@ export default async function getSettings({
         : stage
 
       if (accountStage === 'dev') {
-        return getStackOutput('DevCert')
+        return getStackOutput(settings.accountPerStage ? 'RootCert' : 'DevCert')
       } else if (accountStage === 'prod') {
         return getStackOutput('RootCert')
       } else {

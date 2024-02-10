@@ -119,6 +119,7 @@ jobs:
             sam-expand \
               delete \
                 --region ${{matrix.region}}
+                --no-prompts
         working-directory: ${{ matrix.directory }}
         env:
           STAGE: ${{matrix.stage}}
