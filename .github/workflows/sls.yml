@@ -118,7 +118,7 @@ jobs:
           npx --no-install \
             sam-expand \
               delete \
-                --region ${{matrix.region}}
+                --region ${{matrix.region}} \
                 --no-prompts
         working-directory: ${{ matrix.directory }}
         env:
