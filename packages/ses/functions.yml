@@ -1,0 +1,178 @@
+verify-ses:
+  handler: functions/verify-ses/index.handler
+  description: 'custom resource to configure ses'
+  runtime: nodejs20.x
+  architecture: arm64
+  timeout: 6
+  memorySize: 128
+  iamRoleStatementsInherit: true
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - 'ses:DescribeActiveReceiptRuleSet'
+        - 'ses:CreateReceiptRuleSet'
+        - 'ses:SetActiveReceiptRuleSet'
+      Resource: '*'
+    - Effect: Allow
+      Action:
+        - 'ses:CreateEmailIdentity'
+        - 'ses:DeleteEmailIdentity'
+        - 'ses:GetEmailIdentity'
+        - 'ses:TagResource'
+        - 'ses:PutEmailIdentityMailFromAttributes'
+      Resource: !Sub 'arn:${AWS::Partition}:ses:${AWS::Region}:${AWS::AccountId}:identity/${file(../settings.js):stageRoot}'
+    - Effect: Allow
+      Action:
+        - 'ses:CreateConfigurationSet'
+        - 'ses:CreateConfigurationSetEventDestination'
+        - 'ses:DeleteConfigurationSet'
+        - 'ses:DeleteConfigurationSetEventDestination'
+        - 'ses:TagResource'
+      Resource: !Sub 'arn:${AWS::Partition}:ses:${AWS::Region}:${AWS::AccountId}:configuration-set/${file(../settings.js):stackName}-${opt:stage}*'
+    - Effect: Allow
+      Action:
+        - 'route53:ChangeResourceRecordSets'
+      Resource: !Sub 'arn:${AWS::Partition}:route53:::hostedzone/${file(../settings.js):zoneId}'
+  package:
+    individually: true
+    patterns: ${file(../settings.js):nodeFunctionPatterns.functions/verify-ses/**}
+ses-events:
+  handler: functions/events/index.handler
+  description: 'ses events'
+  runtime: nodejs20.x
+  architecture: arm64
+  timeout: 6
+  memorySize: 128
+  iamRoleStatementsInherit: true
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - 'sqs:SendMessage'
+      Resource:
+        - !GetAtt lambdaDlq.Arn
+    - Effect: Allow
+      Action:
+        - 'events:PutEvents'
+      Resource:
+        - ${file(../settings.js):eventBus}
+  environment:
+    EVENTBRIDGE_BUS_NAME: ${file(../settings.js):eventBus}
+    STACK_NAME: ${file(../settings.js):stackName}
+    AWS_ACCOUNT_ID: ${AWS::AccountId}
+    STAGE: ${opt:stage}
+    REGION: ${AWS::Region}
+  package:
+    individually: true
+    patterns: ${file(../settings.js):nodeFunctionPatterns.functions/events/**}
+  events:
+    - sns:
+        arn: !Ref snsEmailDeliveryTopic
+        topicName: ${self:service}-${opt:stage}-sns-email-delivery-topic
+        redrivePolicy:
+          deadLetterTargetRef: eventsDlq
+  maximumEventAge: 300
+  maximumRetryAttempts: 2
+  destinations:
+    onFailure:
+      arn: !GetAtt lambdaDlq.Arn
+      type: sqs
+ses-receive:
+  handler: functions/ses-receive/index.handler
+  description: 'ses receive incoming hello mail'
+  runtime: nodejs20.x
+  architecture: arm64
+  timeout: 300
+  memorySize: 128
+  iamRoleStatementsInherit: true
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - 'events:PutEvents'
+      Resource:
+        - ${file(../settings.js):eventBus}
+    - Effect: Allow
+      Action:
+        - 's3:GetObject'
+        - 's3:PutObject'
+        - 's3:PutObjectTagging'
+      Resource:
+        - !Join
+          - ''
+          - - !GetAtt s3Mail.Arn
+            - '/*'
+    - Effect: Allow
+      Action:
+        - 'sqs:SendMessage'
+      Resource:
+        - !GetAtt lambdaDlq.Arn
+  maximumEventAge: 900
+  maximumRetryAttempts: 2
+  destinations:
+    onFailure:
+      arn: !GetAtt lambdaDlq.Arn
+      type: sqs
+  environment:
+    S3_MAIL_BUCKET: !Ref s3Mail
+    EVENTBRIDGE_BUS_NAME: ${file(../settings.js):eventBus}
+    TEAM: '${file(../settings.js):stackDisplayName} Team'
+  package:
+    individually: true
+    patterns: ${file(../settings.js):nodeFunctionPatterns.functions/ses-receive/**}
+s3-replicate:
+  enabled: '${file(../settings.json):accountPerStage} && "${opt:stage, "local"}" === "prod"'
+  handler: functions/s3-replicate/index.handler
+  description: 'replicate media'
+  runtime: nodejs20.x
+  architecture: arm64
+  timeout: 40
+  memorySize: 1024
+  events:
+    - eventBridge:
+        pattern:
+          source:
+            - 'aws.s3'
+          detail-type:
+            - 'Object Created'
+          detail:
+            bucket:
+              name:
+                - !Ref s3Mail
+        deadLetterQueueArn: !GetAtt eventsDlq.Arn
+        retryPolicy:
+          maximumEventAge: 900
+          maximumRetryAttempts: 3
+  maximumEventAge: 900
+  maximumRetryAttempts: 2
+  destinations:
+    onFailure:
+      arn: !GetAtt lambdaDlq.Arn
+      type: sqs
+  environment:
+    S3_BACKUP_BUCKET: ${file(../settings.js):s3Backup}
+    S3_BACKUP_BUCKET_REGION: ${file(../settings.json):regions.backup,''}
+  iamRoleStatementsInherit: true
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - s3:GetObject
+        - s3:GetObjectTagging
+      Resource:
+        - !Join
+          - ''
+          - - !GetAtt s3Mail.Arn
+            - '/*'
+    - Effect: Allow
+      Action:
+        - s3:PutObject
+        - s3:PutObjectACL
+        - s3:PutObjectTagging
+      Resource:
+        - !Sub 'arn:${AWS::Partition}:s3:::${file(../settings.js):s3Backup}/*'
+    - Effect: Allow
+      Action:
+        - 'sqs:SendMessage'
+      Resource:
+        - !GetAtt lambdaDlq.Arn
+  package:
+    individually: true
+    patterns: ${file(../settings.js):nodeFunctionPatterns.functions/s3-replicate/**}

@@ -200,7 +200,7 @@ Resources:
         TargetArn: !GetAtt LambdaDlq.Arn
         Type: SQS
       Events:
-        SNSOpsTopic:
+        SNSEvent:
           Type: SNS
           Properties:
             Topic: !Ref SNSOpsTopic
@@ -245,7 +245,7 @@ Resources:
         TargetArn: !GetAtt LambdaDlq.Arn
         Type: SQS
       Events:
-        SNSAlarmTopic:
+        SNSEvent:
           Type: SNS
           Properties:
             Topic: !Ref SNSAlarmTopic

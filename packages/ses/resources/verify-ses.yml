@@ -1,0 +1,12 @@
+Type: 'Custom::VerifySES'
+Properties:
+  ServiceToken: !GetAtt VerifyDashsesLambdaFunction.Arn
+  Domain: ${file(../settings.js):stageRoot}
+  StackName: '${file(../settings.js):stackName}'
+  Commit: ${file(../git.js):shaCommit}
+  ConfigurationSet: ${file(../settings.js):stackName}-${opt:stage}-ssl-only
+  ZoneId: ${file(../settings.js):zoneId}
+  SnsDestinationTopicArn: !Ref snsEmailDeliveryTopic
+  Region: ${self:provider.region}
+  RuleSet: sesRuleSet-${file(../settings.js):stackName}-${self:provider.region}
+  Stage: ${opt:stage}

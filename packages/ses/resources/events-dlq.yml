@@ -1,0 +1,8 @@
+Type: AWS::SQS::Queue
+Properties:
+  SqsManagedSseEnabled: true
+  Tags:
+    - Key: 'Name'
+      Value: !Sub ${AWS::StackName}-events-dlq
+    - Key: 'ManagedBy'
+      Value: '${file(../settings.js):stackName}'
