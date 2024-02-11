@@ -56,6 +56,7 @@ Metadata:
       stackStageConfig:
         suffixStage: true
         addMappings: true
+        region: 'eu-west-1'
       parameterOverrides:
         - location: ../stack-stage-config.mjs
           overrides:
