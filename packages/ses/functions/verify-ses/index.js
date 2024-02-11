@@ -144,6 +144,7 @@ export const handler = lambdaHandler(async function verifySes(
     })
   } catch (error) {
     log.error({ event }, error)
+    error.cause = { event }
     throw error
   }
 })
