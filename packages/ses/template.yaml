@@ -62,6 +62,8 @@ Metadata:
           overrides:
             - name: StageRoot
               exportName: stageOrStackRoot
+            - name: EventBus
+              exportName: eventBus
             - name: AccountPerStage
               exportName: accountPerStage
             - name: S3BackupBucket
