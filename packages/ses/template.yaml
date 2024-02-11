@@ -426,7 +426,7 @@ Resources:
                 - 'ses:DeleteConfigurationSet'
                 - 'ses:DeleteConfigurationSetEventDestination'
                 - 'ses:TagResource'
-              Resource: !Sub 'arn:${AWS::Partition}:ses:${AWS::Region}:${AWS::AccountId}:configuration-set/${Stack}-${AWS::Region}*'
+              Resource: !Sub 'arn:${AWS::Partition}:ses:${AWS::Region}:${AWS::AccountId}:configuration-set/${Stack}-${Stage}*'
             - Sid: Route53
               Effect: Allow
               Action:
