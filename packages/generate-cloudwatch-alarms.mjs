@@ -120,7 +120,7 @@ export const lifecycle = async function generateCloudwatchAlarms({
           if (
             resource.Properties?.EventInvokeConfig &&
             resource?.Properties?.EventInvokeConfig?.DestinationConfig
-              ?.OnFailure?.Target
+              ?.OnFailure?.Destination
           ) {
             generateLambdaIteratorAgeAlarm({
               logicalId,

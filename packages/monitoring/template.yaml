@@ -209,7 +209,8 @@ Resources:
       EventInvokeConfig:
         DestinationConfig:
           OnFailure:
-            TargetArn: !GetAtt LambdaDlq.Arn
+            Type: SQS
+            Destination: !GetAtt LambdaDlq.Arn
         MaximumEventAgeInSeconds: 900
         MaximumRetryAttempts: 2
       Policies:
@@ -253,7 +254,8 @@ Resources:
       EventInvokeConfig:
         DestinationConfig:
           OnFailure:
-            TargetArn: !GetAtt LambdaDlq.Arn
+            Type: SQS
+            Destination: !GetAtt LambdaDlq.Arn
         MaximumEventAgeInSeconds: 900
         MaximumRetryAttempts: 2
       Policies:
