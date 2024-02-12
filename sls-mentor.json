@@ -14,7 +14,7 @@
     },
     "encryptedSnsTopics": {
       "ignoredResources": [
-        "ses-(pr-)?[^-]*-SnsEmailDeliveryTopic",
+        "ses-(pr-)?[^-]*-SNSEmailDeliveryTopic",
         "monitoring-SNSAlarmTopic",
         "deployment-SNSOpsTopic"
       ]
