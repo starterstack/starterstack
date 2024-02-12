@@ -203,9 +203,13 @@ Metadata:
         snsTopicRef: SNSAlarmTopic
 
 Conditions:
-  IsAccountPerStage: !Equals
-    - !Ref AccountPerStage
-    - 'true'
+  ShouldReplicate: !And
+    - !Equals
+      - !Ref AccountPerStage
+      - 'true'
+    - !Equals
+      - !Ref Stage
+      - 'prod'
   IsWafEnabled: !Equals
     - !FindInMap
       - AWSAccounts
@@ -1301,7 +1305,7 @@ Resources:
                 - x-url
 
   S3ReplicateFunction:
-    Condition: IsAccountPerStage
+    Condition: ShouldReplicate
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: functions/s3-replicate/
