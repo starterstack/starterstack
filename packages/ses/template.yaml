@@ -122,9 +122,13 @@ Metadata:
         snsTopicRef: SNSAlarmTopic
 
 Conditions:
-  IsAccountPerStage: !Equals
-    - !Ref AccountPerStage
-    - 'true'
+  ShouldReplicate: !And
+    - !Equals
+      - !Ref AccountPerStage
+      - 'true'
+    - !Equals
+      - !Ref Stage
+      - 'prod'
 
 Resources:
   CloudWatchLogGroup:
@@ -535,7 +539,7 @@ Resources:
       BuildMethod: makefile
 
   S3ReplicateFunction:
-    Condition: IsAccountPerStage
+    Condition: ShouldReplicate
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: functions/s3-replicate/
