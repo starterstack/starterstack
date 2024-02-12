@@ -215,7 +215,7 @@ Resources:
         MaximumRetryAttempts: 2
       Policies:
         - SQSSendMessagePolicy:
-            QueueName: !GetAtt LambdaDlq.Arn
+            QueueName: !GetAtt LambdaDlq.QueueName
         - SSMParameterReadPolicy:
             ParameterName: !Sub ${Stack}/global/SLACK_OPS_URL
         - Version: 2012-10-17
@@ -260,7 +260,7 @@ Resources:
         MaximumRetryAttempts: 2
       Policies:
         - SQSSendMessagePolicy:
-            QueueName: !GetAtt LambdaDlq.Arn
+            QueueName: !GetAtt LambdaDlq.QueueName
         - SSMParameterReadPolicy:
             ParameterName: !Sub ${Stack}/global/SLACK_ALARM_URL
         - Version: 2012-10-17

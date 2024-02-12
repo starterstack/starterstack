@@ -454,9 +454,15 @@ Resources:
           REGION: !Sub ${AWS::Region}
       Policies:
         - SQSSendMessagePolicy:
-            QueueName: !GetAtt LambdaDlq.Arn
-        - EventBridgePutEventsPolicy:
-            EventBusName: !Ref EventBus
+            QueueName: !GetAtt LambdaDlq.QueueName
+        - Version: 2012-10-17
+          Statement:
+            - Sid: EventBridge
+              Effect: Allow
+              Action:
+                - 'events:PutEvents'
+              Resource:
+                - !Ref EventBus
       Events:
         SNSEvent:
           Type: SNS
@@ -494,9 +500,15 @@ Resources:
           TEAM: !Sub '${StackDisplayName}Team'
       Policies:
         - SQSSendMessagePolicy:
-            QueueName: !GetAtt LambdaDlq.Arn
-        - EventBridgePutEventsPolicy:
-            EventBusName: !Ref EventBus
+            QueueName: !GetAtt LambdaDlq.QueueName
+        - Version: 2012-10-17
+          Statement:
+            - Sid: EventBridge
+              Effect: Allow
+              Action:
+                - 'events:PutEvents'
+              Resource:
+                - !Ref EventBus
         - Version: 2012-10-17
           Statement:
             - Sid: S3
@@ -507,6 +519,9 @@ Resources:
                 - 's3:PutObjectTagging'
               Resource:
                 - !Sub '${S3Mail.Arn}/*'
+              Condition:
+                Bool:
+                  'aws:SecureTransport': true
       DeadLetterQueue:
         TargetArn: !GetAtt LambdaDlq.Arn
         Type: SQS
@@ -552,9 +567,12 @@ Resources:
                 - s3:PutObjectTagging
               Resource:
                 - !Sub 'arn:${AWS::Partition}:s3:::${S3BackupBucket}/*'
+              Condition:
+                Bool:
+                  'aws:SecureTransport': true
               Effect: Allow
         - SQSSendMessagePolicy:
-            QueueName: !GetAtt LambdaDlq.Arn
+            QueueName: !GetAtt LambdaDlq.QueueName
         - Version: 2012-10-17
           Statement:
             - Sid: CloudWatchLogGroup
