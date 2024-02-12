@@ -394,7 +394,7 @@ Resources:
     Properties:
       CodeUri: functions/verify-ses/
       Handler: index.handler
-      Description: 'Custom resource to configure ses'
+      Description: 'custom resource to configure ses'
       Timeout: 6
       MemorySize: 128
       LoggingConfig:
@@ -440,7 +440,7 @@ Resources:
     Properties:
       CodeUri: functions/events/
       Handler: index.handler
-      Description: 'SES events'
+      Description: 'ses events'
       Timeout: 6
       MemorySize: 128
       LoggingConfig:
