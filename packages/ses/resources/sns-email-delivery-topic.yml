@@ -1,0 +1,7 @@
+Type: AWS::SNS::Topic
+Properties:
+  Tags:
+    - Key: 'Name'
+      Value: !Sub '${AWS::StackName}-sns-email-delivery-topic'
+    - Key: 'ManagedBy'
+      Value: '${file(../settings.js):stackName}'

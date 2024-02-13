@@ -200,7 +200,7 @@ Resources:
         TargetArn: !GetAtt LambdaDlq.Arn
         Type: SQS
       Events:
-        SNSOpsTopic:
+        SNSEvent:
           Type: SNS
           Properties:
             Topic: !Ref SNSOpsTopic
@@ -210,12 +210,12 @@ Resources:
         DestinationConfig:
           OnFailure:
             Type: SQS
-            TargetArn: !GetAtt LambdaDlq.Arn
+            Destination: !GetAtt LambdaDlq.Arn
         MaximumEventAgeInSeconds: 900
         MaximumRetryAttempts: 2
       Policies:
         - SQSSendMessagePolicy:
-            QueueName: !GetAtt LambdaDlq.Arn
+            QueueName: !GetAtt LambdaDlq.QueueName
         - SSMParameterReadPolicy:
             ParameterName: !Sub ${Stack}/global/SLACK_OPS_URL
         - Version: 2012-10-17
@@ -245,7 +245,7 @@ Resources:
         TargetArn: !GetAtt LambdaDlq.Arn
         Type: SQS
       Events:
-        SNSAlarmTopic:
+        SNSEvent:
           Type: SNS
           Properties:
             Topic: !Ref SNSAlarmTopic
@@ -255,12 +255,12 @@ Resources:
         DestinationConfig:
           OnFailure:
             Type: SQS
-            TargetArn: !GetAtt LambdaDlq.Arn
+            Destination: !GetAtt LambdaDlq.Arn
         MaximumEventAgeInSeconds: 900
         MaximumRetryAttempts: 2
       Policies:
         - SQSSendMessagePolicy:
-            QueueName: !GetAtt LambdaDlq.Arn
+            QueueName: !GetAtt LambdaDlq.QueueName
         - SSMParameterReadPolicy:
             ParameterName: !Sub ${Stack}/global/SLACK_ALARM_URL
         - Version: 2012-10-17

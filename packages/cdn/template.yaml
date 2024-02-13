@@ -203,9 +203,13 @@ Metadata:
         snsTopicRef: SNSAlarmTopic
 
 Conditions:
-  IsAccountPerStage: !Equals
-    - !Ref AccountPerStage
-    - 'true'
+  ShouldReplicate: !And
+    - !Equals
+      - !Ref AccountPerStage
+      - 'true'
+    - !Equals
+      - !Ref Stage
+      - 'prod'
   IsWafEnabled: !Equals
     - !FindInMap
       - AWSAccounts
@@ -1301,7 +1305,7 @@ Resources:
                 - x-url
 
   S3ReplicateFunction:
-    Condition: IsAccountPerStage
+    Condition: ShouldReplicate
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: functions/s3-replicate/
@@ -1334,7 +1338,7 @@ Resources:
                 - !Sub 'arn:${AWS::Partition}:s3:::${S3BackupBucket}/*'
               Effect: Allow
         - SQSSendMessagePolicy:
-            QueueName: !GetAtt LambdaDlq.Arn
+            QueueName: !GetAtt LambdaDlq.QueueName
         - Version: 2012-10-17
           Statement:
             - Sid: CloudWatchLogGroup
@@ -1370,7 +1374,7 @@ Resources:
         DestinationConfig:
           OnFailure:
             Type: SQS
-            TargetArn: !GetAtt LambdaDlq.Arn
+            Destination: !GetAtt LambdaDlq.Arn
         MaximumEventAgeInSeconds: 900
         MaximumRetryAttempts: 2
     Metadata:
@@ -1392,7 +1396,7 @@ Resources:
           STAGE: !Ref Stage
       Policies:
         - SQSSendMessagePolicy:
-            QueueName: !GetAtt LambdaDlq.Arn
+            QueueName: !GetAtt LambdaDlq.QueueName
         - SSMParameterReadPolicy:
             ParameterName: !Sub ${Stack}/${Stage}/API_JWT_SECRET
         - Version: 2012-10-17
@@ -1450,7 +1454,7 @@ Resources:
         DestinationConfig:
           OnFailure:
             Type: SQS
-            TargetArn: !GetAtt LambdaDlq.Arn
+            Destination: !GetAtt LambdaDlq.Arn
         MaximumEventAgeInSeconds: 900
         MaximumRetryAttempts: 2
     Metadata:

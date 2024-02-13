@@ -445,6 +445,30 @@ export default async function getSettings({
    * @param {string} outputKey
    * @returns {Promise<string | undefined>}
    */
+  const getEventBusOutput = (outputKey) => {
+    return getCloudFormationOutput({
+      region: config.stackRegion,
+      stackName: `${settings.stackName}-eventbus-${stage}`,
+      outputKey
+    })
+  }
+
+  /**
+   * @param {string} outputKey
+   * @returns {Promise<string | undefined>}
+   */
+  const getSESOutput = (outputKey) => {
+    return getCloudFormationOutput({
+      region: 'eu-west-1',
+      stackName: `${settings.stackName}-ses-${stage}`,
+      outputKey
+    })
+  }
+
+  /**
+   * @param {string} outputKey
+   * @returns {Promise<string | undefined>}
+   */
   const getDynamoDBOutput = (outputKey) => {
     return getCloudFormationOutput({
       region: config.stackRegion,
@@ -589,6 +613,18 @@ export default async function getSettings({
     },
     get apiGatewayCloudwatchRole() {
       return getStackOutput('ApiGatewayCloudwatchRole')
+    },
+    get eventBus() {
+      return getEventBusOutput('EventBus')
+    },
+    get s3Mail() {
+      return getSESOutput('S3MailBucket')
+    },
+    get sesTemplateLoginSignupEn() {
+      return getSESOutput('SESTemplateLoginSignupEn')
+    },
+    get sesTemplateHelloResponseEn() {
+      return getSESOutput('SESTemplateHelloResponseEn')
     },
     get s3Media() {
       return getCDNOutput('S3MediaBucket')

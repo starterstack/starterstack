@@ -10,11 +10,11 @@
       "ignoredResources": ["dynamodb-(pr-)?[^-]*-DynamoDB"]
     },
     "specifyDlqOnSqs": {
-      "ignoredResources": ["(Events|Lambda|Pipes|Scheduler)Dlq-", "EventInvo"]
+      "ignoredResources": ["(Events|Lambda|Pipes|Scheduler)Dlq-"]
     },
     "encryptedSnsTopics": {
       "ignoredResources": [
-        "ses-(pr-)?[^-]*-SnsEmailDeliveryTopic",
+        "ses-(pr-)?[^-]*-SNSEmailDeliveryTopic",
         "monitoring-SNSAlarmTopic",
         "deployment-SNSOpsTopic"
       ]

@@ -1,0 +1,60 @@
+Mappings:
+  awsAccounts: ${file(../settings.json):awsAccounts}
+Conditions:
+  isCloudwatchAlertsEnabled: !Equals
+    - !FindInMap
+      - awsAccounts
+      - !Ref 'AWS::AccountId'
+      - cloudwatchAlertsEnabled
+    - true
+Resources:
+  snsEmailDeliveryTopic: ${file(./resources/sns-email-delivery-topic.yml)}
+  snsEmailDeliveryTopicPolicy: ${file(./resources/sns-email-delivery-topic-policy.yml)}
+  verifySes: ${file(./resources/verify-ses.yml)}
+  s3Mail: ${file(./resources/s3-mail.yml)}
+  s3MailPolicy: ${file(./resources/s3-mail-policy.yml)}
+  lambdaPermission: ${file(./resources/lambda-permission.yml)}
+  sesRule: ${file(./resources/ses-rule.yml)}
+  sesTemplateLoginSignupEn: ${file(./resources/ses-template-login-signup-en.yml)}
+  sesTemplateHelloResponseEn: ${file(./resources/ses-template-hello-response-en.yml)}
+  eventsDlq: ${file(./resources/events-dlq.yml)}
+  eventsDlqPolicy: ${file(./resources/events-dlq-policy.yml)}
+  lambdaDlq: ${file(./resources/lambda-dlq.yml)}
+  cloudWatchAlarmSesBounceRate: ${file(./resources/cloudwatch-alarm-reputation-bounce-rate.yml)}
+  cloudWatchAlarmSesComplaintRate: ${file(./resources/cloudwatch-alarm-reputation-complaint-rate.yml)}
+Outputs:
+  s3Mail:
+    Description: s3 bucket to store emails
+    Value: !Ref s3Mail
+    Export:
+      Name: !Sub '${AWS::StackName}S3Mail'
+  sesDefaultConfigurationSet:
+    Description: default configuration set
+    Value: !GetAtt verifySes.ConfigurationSet
+    Export:
+      Name: !Sub '${AWS::StackName}SESDefaultConfigurationSet'
+  snsEmailDeliveryTopic:
+    Description: sns topic for email delivery events
+    Value: !Ref snsEmailDeliveryTopic
+    Export:
+      Name: !Sub '${AWS::StackName}SNSEmailDeliveryTopic'
+  sesTemplateLoginSignupEn:
+    Description: ses template for login and signup (en)
+    Value: !Ref sesTemplateLoginSignupEn
+    Export:
+      Name: !Sub '${AWS::StackName}SESTemplateLoginSignupEn'
+  sesTemplateHelloResponseEn:
+    Description: ses template for hello response (en)
+    Value: !Ref sesTemplateHelloResponseEn
+    Export:
+      Name: !Sub '${AWS::StackName}SESTemplateHelloResponseEn'
+  deployedHash:
+    Description: computed sha1 of stack
+    Value: ${file(../hash.js):sha1}
+    Export:
+      Name: !Sub '${AWS::StackName}DeployedHash'
+  deployedCommit:
+    Description: git commit sha deployed
+    Value: ${file(../git.js):shaCommit}
+    Export:
+      Name: !Sub '${AWS::StackName}DeployedCommit'

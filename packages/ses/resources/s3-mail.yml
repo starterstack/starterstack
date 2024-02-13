@@ -1,0 +1,37 @@
+Type: AWS::S3::Bucket
+Properties:
+  PublicAccessBlockConfiguration:
+    BlockPublicAcls: true
+    BlockPublicPolicy: true
+    IgnorePublicAcls: true
+    RestrictPublicBuckets: true
+  LifecycleConfiguration:
+    Rules:
+      - Id: TransitionToIntelligentTiering
+        Status: Enabled
+        Transitions:
+          - StorageClass: INTELLIGENT_TIERING
+            TransitionInDays: 0
+      - Id: ExpireNonCurrent
+        ExpiredObjectDeleteMarker: true
+        Status: Enabled
+      - Id: NonCurrentRetention
+        Status: Enabled
+        NoncurrentVersionExpiration:
+          NewerNoncurrentVersions: 3
+          NoncurrentDays: 7
+  BucketEncryption:
+    ServerSideEncryptionConfiguration:
+      - BucketKeyEnabled: true
+        ServerSideEncryptionByDefault:
+          SSEAlgorithm: 'AES256'
+  NotificationConfiguration:
+    EventBridgeConfiguration:
+      EventBridgeEnabled: true
+  VersioningConfiguration:
+    Status: Enabled
+  Tags:
+    - Key: 'Name'
+      Value: !Sub ${AWS::StackName}-s3-mail
+    - Key: 'ManagedBy'
+      Value: '${file(../settings.js):stackName}'
