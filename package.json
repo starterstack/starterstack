@@ -101,7 +101,7 @@
     "@sindresorhus/tsconfig": "5.0.0",
     "@starterstack/sam-expand": "0.2.7",
     "@types/aws-lambda": "8.10.131",
-    "@typescript-eslint/eslint-plugin": "6.21.0",
+    "@typescript-eslint/eslint-plugin": "7.0.1",
     "@typescript-eslint/parser": "7.0.1",
     "aws-xray-sdk-core": "3.5.3",
     "commitizen": "4.3.0",
