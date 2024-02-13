@@ -102,7 +102,7 @@
     "@starterstack/sam-expand": "0.2.7",
     "@types/aws-lambda": "8.10.131",
     "@typescript-eslint/eslint-plugin": "6.21.0",
-    "@typescript-eslint/parser": "6.21.0",
+    "@typescript-eslint/parser": "7.0.1",
     "aws-xray-sdk-core": "3.5.3",
     "commitizen": "4.3.0",
     "esbuild": "0.20.0",
