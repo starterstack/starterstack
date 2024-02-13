@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.6](https://github.com/starterstack/starterstack/compare/v0.0.5...v0.0.6) (2024-02-13)
+
+
+### Bug Fixes
+
+* add ses stack ([#71](https://github.com/starterstack/starterstack/issues/71)) ([e51117c](https://github.com/starterstack/starterstack/commit/e51117cefb68504e78452a8960c9e1cc57654b6f))
+
 ## [0.0.5](https://github.com/starterstack/starterstack/compare/v0.0.4...v0.0.5) (2024-02-10)
 
 
