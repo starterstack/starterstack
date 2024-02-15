@@ -216,6 +216,13 @@ Conditions:
       - !Ref 'AWS::AccountId'
       - wafEnabled
     - true
+  IsWafNotEnabled: !Not
+    - !Equals
+      - !FindInMap
+        - AWSAccounts
+        - !Ref 'AWS::AccountId'
+        - wafEnabled
+      - true
   CaptureUserLanguageAndDevice: !Equals
     - !Ref CaptureUserLanguageAndDeviceValue
     - true
@@ -1459,7 +1466,8 @@ Resources:
     Metadata:
       BuildMethod: makefile
 
-  SentryFunction:
+  SentryFunctionWithWaf:
+    Condition: IsWafEnabled
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: functions/sentry/
@@ -1489,11 +1497,43 @@ Resources:
           Type: CloudWatchLogs
           Condition: IsWafEnabled
           Properties:
-            LogGroupName: !If
-              - IsWafEnabled
-              - !Ref ApiGatewayRestApiWafLogGroup
-              - !Ref AWS::NoValue
+            LogGroupName: !Ref ApiGatewayRestApiWafLogGroup
             FilterPattern: '{$.httpRequest.uri != "*sentry-tunnel*"}'
+        ApiGatewayTrigger:
+          Type: CloudWatchLogs
+          Properties:
+            LogGroupName: !Ref ApiGatewayRestLogGroup
+            FilterPattern: '{$.status > 399 && $.status != 403 && $.resourcePath != "*sentry-tunnel*" }'
+    Metadata:
+      BuildMethod: makefile
+
+  SentryFunction:
+    Condition: IsWafNotEnabled
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/sentry/
+      Handler: index.handler
+      Description: 'send waf cloudwatch logs to sentry'
+      Timeout: 6
+      MemorySize: 128
+      Environment:
+        Variables:
+          SENTRY_DSN: !Ref SentryDSN
+          SENTRY_ENVIRONMENT: !Ref SentryEnvironment
+          SENTRY_TUNNEL: !Sub ${StageRootUrl}/api/rest/sentry-tunnel
+          STAGE: !Ref Stage
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Sid: CloudWatchLogGroup
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !GetAtt CloudWatchLogGroup.Arn
+              Effect: Allow
+      LoggingConfig:
+        LogGroup: !Ref CloudWatchLogGroup
+      Events:
         ApiGatewayTrigger:
           Type: CloudWatchLogs
           Properties:
