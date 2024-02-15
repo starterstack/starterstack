@@ -761,11 +761,10 @@ Resources:
           - !Ref StageRoot
         Comment: !Sub 'Created by SAM by ${AWS::StackName}'
         PriceClass: !Ref PriceClass
-        WebACLId:
-          Fn::If:
-            - IsWafEnabled
-            - !Ref CloudFrontWafACL
-            - Ref: AWS::NoValue
+        WebACLId: !If
+          - IsWafEnabled
+          - !Ref CloudFrontWafACL
+          - !Ref AWS::NoValue
         Origins:
           - Id: S3StaticOrigin
             DomainName: !GetAtt S3Static.RegionalDomainName
@@ -1490,7 +1489,10 @@ Resources:
           Type: CloudWatchLogs
           Condition: IsWafEnabled
           Properties:
-            LogGroupName: !Ref ApiGatewayRestApiWafLogGroup
+            LogGroupName: !If
+              - IsWafEnabled
+              - !Ref ApiGatewayRestApiWafLogGroup
+              - !Ref AWS::NoValue
             FilterPattern: '{$.httpRequest.uri != "*sentry-tunnel*"}'
         ApiGatewayTrigger:
           Type: CloudWatchLogs
