@@ -54,8 +54,8 @@ export default async function deployStrategy({
     stage: remove
       ? ['cdn', 'eventbus', 'dynamodb', 'cloudfront-us-east-1']
       : ['cdn', 'eventbus'],
-    // backend: ['rest', 'websocket', 'graphql', 'ses']
-    backend: []
+    //backend: ['rest', 'websocket', 'graphql', 'ses']
+    backend: ['ses']
   }
 
   const deployed = await listDeployed(awsRegions)
