@@ -276,12 +276,17 @@ Resources:
           Value: !Ref Stack
 
 Outputs:
-  EventBus:
-    Description: event bus
+  EventBusArn:
+    Description: event bus arn
     Value: !GetAtt EventBus.Arn
     Export:
-      Name: !Sub '${AWS::StackName}EventBus'
-  EventBusArchive:
+      Name: !Sub '${AWS::StackName}EventBusArn'
+  EventBusName:
+    Description: event bus name
+    Value: !Ref EventBus
+    Export:
+      Name: !Sub '${AWS::StackName}EventBusName'
+  EventBusArchiveArn:
     Description: event bus archive
     Value: !GetAtt EventBusArchive.Arn
     Export:

@@ -614,8 +614,11 @@ export default async function getSettings({
     get apiGatewayCloudwatchRole() {
       return getStackOutput('ApiGatewayCloudwatchRole')
     },
-    get eventBus() {
-      return getEventBusOutput('EventBus')
+    get eventBusArn() {
+      return getEventBusOutput('EventBusArn')
+    },
+    get eventBusName() {
+      return getEventBusOutput('EventBusName')
     },
     get s3Mail() {
       return getSESOutput('S3MailBucket')
@@ -625,6 +628,9 @@ export default async function getSettings({
     },
     get sesTemplateHelloResponseEn() {
       return getSESOutput('SESTemplateHelloResponseEn')
+    },
+    get sesDefaultConfigurationSet() {
+      return getSESOutput('SESDefaultConfigurationSet')
     },
     get s3Media() {
       return getCDNOutput('S3MediaBucket')
@@ -661,17 +667,20 @@ export default async function getSettings({
           : ''
       }}`
     },
-    get dynamodbStackTable() {
-      return getDynamoDBOutput('DynamoDBStackTable')
+    get dynamodbStackTableName() {
+      return getDynamoDBOutput('DynamoDBStackTableName')
     },
-    get dynamodbStackAuditTable() {
-      return getDynamoDBOutput('DynamoDBStackAuditTable')
+    get dynamodbStackAuditTableName() {
+      return getDynamoDBOutput('DynamoDBStackAuditTableName')
     },
-    get dynamodbWebSocketTable() {
-      return getDynamoDBOutput('DynamoDBWebSocketTable')
+    get dynamodbWebSocketTableName() {
+      return getDynamoDBOutput('DynamoDBWebSocketTableName')
     },
-    get dynamodbStackTableStream() {
-      return getDynamoDBOutput('DynamoDBStackTableStream')
+    get dynamodbStackTableStreamName() {
+      return getDynamoDBOutput('DynamoDBStackTableStreamName')
+    },
+    get dynamodbStackTableStreamArn() {
+      return getDynamoDBOutput('DynamoDBStackTableStreamArn')
     }
   }
 }

@@ -47,7 +47,7 @@ Parameters:
     Type: String
   GITCommit:
     Type: String
-  DynamoDBStackTable:
+  DynamoDBStackTableName:
     Type: String
   ZoneId:
     Type: String
@@ -105,8 +105,8 @@ Metadata:
               exportName: snsAlarmTopic
             - name: ApiGatewayRestLogFormat
               exportName: apiGatewayRestLogFormat
-            - name: DynamoDBStackTable
-              exportName: dynamodbStackTable
+            - name: DynamoDBStackTableName
+              exportName: dynamodbStackTableName
         - location: ../settings.json
           overrides:
             - name: PriceClass
@@ -1461,7 +1461,6 @@ Resources:
       BuildMethod: makefile
 
   SentryFunction:
-    Condition: IsWafEnabled
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: functions/sentry/
@@ -1487,12 +1486,17 @@ Resources:
       LoggingConfig:
         LogGroup: !Ref CloudWatchLogGroup
       Events:
-        Trigger:
+        ApiGatewayWAFTrigger:
+          Type: CloudWatchLogs
+          Condition: IsWafEnabled
+          Properties:
+            LogGroupName: !Ref ApiGatewayRestApiWafLogGroup
+            FilterPattern: '{$.httpRequest.uri != "*sentry-tunnel*"}'
+        ApiGatewayTrigger:
           Type: CloudWatchLogs
           Properties:
-            LogGroupName: !Ref ApiGatewayWebSocketLogGroup
-            FilterPattern: '{$.httpRequest.uri != "*sentry-tunnel*"}'
-
+            LogGroupName: !Ref ApiGatewayRestLogGroup
+            FilterPattern: '{$.status > 399 && $.status != 403 && $.resourcePath != "*sentry-tunnel*" }'
     Metadata:
       BuildMethod: makefile
 
@@ -1507,7 +1511,7 @@ Resources:
       Environment:
         Variables:
           SSM_API_JWT_SECRET: !Sub /${Stack}/${Stage}/API_JWT_SECRET
-          DYNAMODB_TABLE: !Ref DynamoDBStackTable
+          DYNAMODB_TABLE: !Ref DynamoDBStackTableName
       Policies:
         - SSMParameterReadPolicy:
             ParameterName: !Sub ${Stack}/${Stage}/API_JWT_SECRET
@@ -1525,7 +1529,7 @@ Resources:
               Action:
                 - dynamodb:GetItem
               Resource:
-                - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTable}'
+                - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTableName}'
               Effect: Allow
               Condition:
                 ForAllValues:StringLike:
@@ -1547,7 +1551,7 @@ Resources:
       Environment:
         Variables:
           SSM_API_JWT_SECRET: !Sub /${Stack}/${Stage}/API_JWT_SECRET
-          DYNAMODB_TABLE: !Ref DynamoDBStackTable
+          DYNAMODB_TABLE: !Ref DynamoDBStackTableName
       Policies:
         - SSMParameterReadPolicy:
             ParameterName: !Sub ${Stack}/${Stage}/API_JWT_SECRET
@@ -1565,7 +1569,7 @@ Resources:
               Action:
                 - dynamodb:GetItem
               Resource:
-                - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTable}'
+                - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTableName}'
               Effect: Allow
               Condition:
                 ForAllValues:StringLike:
@@ -1587,7 +1591,7 @@ Resources:
       Environment:
         Variables:
           SSM_API_JWT_SECRET: !Sub /${Stack}/${Stage}/API_JWT_SECRET
-          DYNAMODB_TABLE: !Ref DynamoDBStackTable
+          DYNAMODB_TABLE: !Ref DynamoDBStackTableName
       Policies:
         - Version: 2012-10-17
           Statement:
@@ -1605,7 +1609,7 @@ Resources:
               Action:
                 - dynamodb:GetItem
               Resource:
-                - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTable}'
+                - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTableName}'
               Effect: Allow
               Condition:
                 ForAllValues:StringLike:
@@ -1627,7 +1631,7 @@ Resources:
               Action:
                 - dynamodb:GetItem
               Resource:
-                - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTable}'
+                - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTableName}'
               Effect: Allow
               Condition:
                 ForAllValues:StringLike:
@@ -1649,7 +1653,7 @@ Resources:
       Environment:
         Variables:
           SSM_API_JWT_SECRET: !Sub /${Stack}/${Stage}/API_JWT_SECRET
-          DYNAMODB_TABLE: !Ref DynamoDBStackTable
+          DYNAMODB_TABLE: !Ref DynamoDBStackTableName
       Policies:
         - Version: 2012-10-17
           Statement:
@@ -1677,7 +1681,7 @@ Resources:
               Action:
                 - dynamodb:GetItem
               Resource:
-                - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTable}'
+                - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTableName}'
               Effect: Allow
               Condition:
                 ForAllValues:StringLike:

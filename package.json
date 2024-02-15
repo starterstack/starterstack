@@ -9,6 +9,7 @@
     "prepare": "husky install && npm run patch-files",
     "lint": "eslint --no-error-on-unmatched-pattern",
     "docs": "bash ./scripts/docs.sh",
+    "test": "bash ./scripts/test.sh",
     "cz": "cz"
   },
   "repository": {
@@ -106,6 +107,7 @@
     "@types/aws-lambda": "8.10.131",
     "@typescript-eslint/eslint-plugin": "7.0.1",
     "@typescript-eslint/parser": "7.0.1",
+    "aws-sdk-client-mock": "3.0.1",
     "aws-xray-sdk-core": "3.5.3",
     "commitizen": "4.3.0",
     "esbuild": "0.20.0",
