@@ -133,7 +133,7 @@ Conditions:
       - AWSAccounts
       - !Ref 'AWS::AccountId'
       - dynamodbPointInTimeDailyS3ExportsEnabled
-      - DefaultValue: false
+      - DefaultValue: 'false'
     - true
   ShouldReplicate: !And
     - !Equals
