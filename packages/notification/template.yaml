@@ -320,7 +320,7 @@ Resources:
       Environment:
         Variables:
           SES_LOGIN_TEMPLATE_EN: !Ref SESTemplateLoginSignupEn
-          SES_EMAIL_FROM: !Sub noreply${StageRoot}
+          SES_EMAIL_FROM: !Sub noreply@${StageRoot}
       Policies:
         - Version: 2012-10-17
           Statement:
@@ -390,7 +390,7 @@ Resources:
       Environment:
         Variables:
           SES_HELLO_TEMPLATE_EN: !Ref SESTemplateHelloResponseEn
-          SES_EMAIL_FROM: !Sub noreply${StageRoot}
+          SES_EMAIL_FROM: !Sub noreply@${StageRoot}
       Policies:
         - Version: 2012-10-17
           Statement:
