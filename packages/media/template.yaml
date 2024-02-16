@@ -1,0 +1,633 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform:
+  - AWS::LanguageExtensions
+  - AWS::Serverless-2016-10-31
+
+Description: Notification
+
+Globals:
+  Function:
+    Tracing: Active
+    Architectures:
+      - arm64
+    Runtime: nodejs20.x
+    PropagateTags: true
+    Environment:
+      Variables:
+        GIT_COMMIT: !Ref GITCommit
+        STAGE_ORIGIN: !Ref StageRoot
+
+Parameters:
+  Stack:
+    Type: String
+  Stage:
+    Type: String
+  AccountPerStage:
+    Type: String
+  LogRetentionInDays:
+    Type: String
+  StageRoot:
+    Type: String
+  S3BackupBucket:
+    Type: String
+  BackupRegion:
+    Type: String
+  GITCommit:
+    Type: String
+  DynamoDBStackTableName:
+    Type: String
+  DynamoDBStackAuditTableName:
+    Type: String
+  StageUrl:
+    Type: String
+  EventBusName:
+    Type: String
+  S3MediaBucket:
+    Type: String
+  S3ProtectedMediaBucket:
+    Type: String
+  SNSAlarmTopic:
+    Type: String
+
+Metadata:
+  expand:
+    plugins:
+      - '../git.mjs'
+      - '../hash.mjs'
+      - '@starterstack/sam-expand/plugins/parameter-overrides'
+      - '../stack-stage-config.mjs'
+      - '@starterstack/sam-expand/plugins/run-script-hooks'
+      - '../purge-lambda-versions.mjs'
+      - '../generate-cloudwatch-alarms.mjs'
+
+    config:
+      stackStageConfig:
+        suffixStage: true
+        addMappings: true
+      parameterOverrides:
+        - location: ../stack-stage-config.mjs
+          overrides:
+            - name: SNSAlarmTopic
+              exportName: snsAlarmTopic
+            - name: Stage
+              exportName: stage
+            - name: AccountPerStage
+              exportName: accountPerStage
+            - name: StageRoot
+              exportName: stageOrStackRoot
+            - name: S3BackupBucket
+              exportName: ssmS3LogBucket
+            - name: BackupRegion
+              exportName: backupRegion
+            - name: LogRetentionInDays
+              exportName: logRetentionInDays
+            - name: DynamoDBStackTableName
+              exportName: dynamodbStackTableName
+            - name: DynamoDBStackAuditTableName
+              exportName: dynamodbStackAuditTableName
+            - name: StageUrl
+              exportName: stageRootUrl
+            - name: EventBusName
+              exportName: eventBusName
+            - name: S3MediaBucket
+              exportName: s3Media
+            - name: S3ProtectedMediaBucket
+              exportName: s3ProtectedMedia
+        - location: ../git.mjs
+          overrides:
+            - name: GITCommit
+              exportName: commit
+      purgeLambdaVersions:
+        keep: 3
+      script:
+        hooks:
+          post:deploy:
+            - command: ../tag-eventbus-rules.sh
+              args:
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: stackName
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: region
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: stage
+            - command: ../tag-cloudwatch-alarms.sh
+              args:
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: stackName
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: region
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: stage
+      alarms:
+        snsTopicRef: SNSAlarmTopic
+
+Conditions:
+  IsDynamoDBPointInTimeDailyS3ExportsEnabled: !Equals
+    - !FindInMap
+      - AWSAccounts
+      - !Ref 'AWS::AccountId'
+      - dynamodbPointInTimeDailyS3ExportsEnabled
+      - DefaultValue: 'false'
+    - true
+  ShouldReplicate: !And
+    - !Equals
+      - !Ref AccountPerStage
+      - 'true'
+    - !Equals
+      - !Ref Stage
+      - 'prod'
+
+Resources:
+  CloudWatchLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}
+      RetentionInDays: !Ref LogRetentionInDays
+      Tags:
+        - Key: 'Name'
+          Value: !Sub '${AWS::StackName} lambda logs'
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+  EventsDlq:
+    Type: AWS::SQS::Queue
+    Properties:
+      SqsManagedSseEnabled: true
+      Tags:
+        - Key: 'Name'
+          Value: !Sub '${AWS::StackName}-events-dlq'
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+  EventsDlqPolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'sqs:SendMessage'
+            Principal:
+              Service: 'events.amazonaws.com'
+            Resource: !GetAtt EventsDlq.Arn
+            Condition:
+              ArnEquals:
+                'aws:SourceArn': !Sub 'arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/${AWS::StackName}*'
+          - Effect: Allow
+            Action:
+              - 'sqs:SendMessage'
+            Principal:
+              Service: 'sns.amazonaws.com'
+            Resource: !GetAtt EventsDlq.Arn
+            Condition:
+              ArnEquals:
+                'aws:SourceArn': !Sub 'arn:${AWS::Partition}:sns:${AWS::Region}:${AWS::AccountId}:${AWS::StackName}*'
+      Queues:
+        - !Ref EventsDlq
+  LambdaDlq:
+    Type: AWS::SQS::Queue
+    Properties:
+      SqsManagedSseEnabled: true
+      Tags:
+        - Key: 'Name'
+          Value: !Sub ${AWS::StackName}-lambda-dlq
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+  CreatePresignedPostFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/create-presigned-post/
+      Handler: index.handler
+      Description: 'create presigned url for direct upload to s3 media buckets'
+      Timeout: 6
+      MemorySize: 128
+      Environment:
+        Variables:
+          PRESIGN_SECONDS_EXPIRY: 300
+          UPLOAD_MB_LIMIT: 30
+          STACK: !Ref Stack
+          MEDIA_BUCKET: !Ref S3MediaBucket
+          PROTECTED_MEDIA_BUCKET: !Ref S3ProtectedMediaBucket
+          DYNAMODB_STACK_TABLE: !Ref DynamoDBStackTableName
+          BASE_URL: !Ref StageUrl
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Sid: S3
+              Effect: Allow
+              Action:
+                - s3:PutObject
+                - s3:PutObjectTagging
+              Resource:
+                - !Sub 'arn:${AWS::Partition}:s3:::${S3MediaBucket}/*'
+                - !Sub 'arn:${AWS::Partition}:s3:::${S3ProtectedMediaBucket}/*'
+        - Version: 2012-10-17
+          Statement:
+            - Sid: DynamoDB
+              Effect: Allow
+              Action:
+                - 'dynamodb:PutItem'
+              Condition:
+                ForAllValues:StringLike:
+                  dynamodb:LeadingKeys:
+                    - 'upload#*'
+              Resource:
+                - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTableName}'
+        - Version: 2012-10-17
+          Statement:
+            - Sid: CloudWatchLogGroup
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !GetAtt CloudWatchLogGroup.Arn
+              Effect: Allow
+      LoggingConfig:
+        LogGroup: !Ref CloudWatchLogGroup
+    Metadata:
+      BuildMethod: makefile
+
+  S3TriggerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/s3-trigger/
+      Handler: index.handler
+      Description: 'process uploads to s3 media buckets'
+      Timeout: 40
+      MemorySize: 1024
+      Environment:
+        Variables:
+          MEDIA_BUCKET: !Ref S3MediaBucket
+          PROTECTED_MEDIA_BUCKET: !Ref S3ProtectedMediaBucket
+          EVENTBRIDGE_BUS_NAME: !Ref EventBusName
+          DYNAMODB_STACK_TABLE: !Ref DynamoDBStackTableName
+      Policies:
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt LambdaDlq.QueueName
+        - EventBridgePutEventsPolicy:
+            EventBusName: !Ref EventBusName
+        - Version: 2012-10-17
+          Statement:
+            - Sid: S3
+              Effect: Allow
+              Action:
+                - s3:GetObject
+                - s3:PutObject
+                - s3:ListBucket
+                - s3:PutObjectTagging
+                - s3:GetObjectTagging
+              Resource:
+                - !Sub 'arn:${AWS::Partition}:s3:::${S3MediaBucket}/*'
+                - !Sub 'arn:${AWS::Partition}:s3:::${S3MediaBucket}'
+                - !Sub 'arn:${AWS::Partition}:s3:::${S3ProtectedMediaBucket}/*'
+                - !Sub 'arn:${AWS::Partition}:s3:::${S3ProtectedMediaBucket}'
+        - Version: 2012-10-17
+          Statement:
+            - Sid: DynamoDB
+              Action:
+                - 'dynamodb:PutItem'
+              Condition:
+                ForAllValues:StringLike:
+                  dynamodb:LeadingKeys:
+                    - 'upload#*'
+              Resource:
+                - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTableName}'
+              Effect: Allow
+        - Version: 2012-10-17
+          Statement:
+            - Sid: CloudWatchLogGroup
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !GetAtt CloudWatchLogGroup.Arn
+              Effect: Allow
+      LoggingConfig:
+        LogGroup: !Ref CloudWatchLogGroup
+      Events:
+        Trigger:
+          Type: EventBridgeRule
+          Properties:
+            EventBusName: !Ref EventBusName
+            Pattern:
+              source:
+                - 'aws.s3'
+              detail-type:
+                - 'Object Created'
+              detail:
+                bucket:
+                  name:
+                    - !Ref S3MediaBucket
+                    - !Ref S3ProtectedMediaBucket
+                object:
+                  key:
+                    - prefix: temp
+            DeadLetterConfig:
+              Arn: !GetAtt EventsDlq.Arn
+            RetryPolicy:
+              MaximumEventAgeInSeconds: 900
+              MaximumRetryAttempts: 3
+      DeadLetterQueue:
+        TargetArn: !GetAtt LambdaDlq.Arn
+        Type: SQS
+      EventInvokeConfig:
+        DestinationConfig:
+          OnFailure:
+            Type: SQS
+            Destination: !GetAtt LambdaDlq.Arn
+        MaximumEventAgeInSeconds: 900
+        MaximumRetryAttempts: 2
+    Metadata:
+      BuildMethod: makefile
+
+  S3ReplicateFunction:
+    Condition: ShouldReplicate
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/s3-replicate/
+      Handler: index.handler
+      Description: 'replicate media'
+      Timeout: 6
+      MemorySize: 128
+      Environment:
+        Variables:
+          S3_BACKUP_BUCKET: !Ref S3BackupBucket
+          S3_BACKUP_BUCKET_REGION: !Ref BackupRegion
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Sid: S3Read
+              Action:
+                - s3:GetObject
+                - s3:GetObjectTagging
+              Resource:
+                - !Sub '${S3MediaBucket}/media/*'
+                - !Sub '${S3ProtectedMediaBucket}/media/*'
+                - !Sub '${S3ProtectedMediaBucket}/AWSDynamoDB/*'
+              Effect: Allow
+        - Version: 2012-10-17
+          Statement:
+            - Sid: S3Write
+              Action:
+                - s3:PutObject
+                - s3:PutObjectACL
+                - s3:PutObjectTagging
+              Resource:
+                - !Sub 'arn:${AWS::Partition}:s3:::${S3BackupBucket}/*'
+              Effect: Allow
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt LambdaDlq.QueueName
+        - Version: 2012-10-17
+          Statement:
+            - Sid: CloudWatchLogGroup
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !GetAtt CloudWatchLogGroup.Arn
+              Effect: Allow
+      LoggingConfig:
+        LogGroup: !Ref CloudWatchLogGroup
+      Events:
+        Trigger:
+          Type: EventBridgeRule
+          Properties:
+            Pattern:
+              source:
+                - 'aws.s3'
+              detail-type:
+                - 'Object Created'
+              detail:
+                bucket:
+                  name:
+                    - !Ref S3MediaBucket
+                    - !Ref S3ProtectedMediaBucket
+            DeadLetterConfig:
+              Arn: !GetAtt EventsDlq.Arn
+            RetryPolicy:
+              MaximumEventAgeInSeconds: 900
+              MaximumRetryAttempts: 3
+      DeadLetterQueue:
+        TargetArn: !GetAtt LambdaDlq.Arn
+        Type: SQS
+      EventInvokeConfig:
+        DestinationConfig:
+          OnFailure:
+            Type: SQS
+            Destination: !GetAtt LambdaDlq.Arn
+        MaximumEventAgeInSeconds: 900
+        MaximumRetryAttempts: 2
+    Metadata:
+      BuildMethod: makefile
+
+  CreatePdfFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/create-pdf/
+      Handler: index.handler
+      Description: 'create pdf'
+      Timeout: 6
+      MemorySize: 512
+      Environment:
+        Variables:
+          MEDIA_BUCKET: !Ref S3MediaBucket
+          PROTECTED_MEDIA_BUCKET: !Ref S3ProtectedMediaBucket
+          STACK: !Ref Stack
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Sid: S3
+              Effect: Allow
+              Action:
+                - s3:PutObject
+                - s3:PutObjectTagging
+                - s3:GetObject
+              Resource:
+                - !Sub 'arn:${AWS::Partition}:s3:::${S3ProtectedMediaBucket}/pdf/*'
+                - !Sub 'arn:${AWS::Partition}:s3:::${S3ProtectedMediaBucket}/*'
+        - Version: 2012-10-17
+          Statement:
+            - Sid: CloudWatchLogGroup
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !GetAtt CloudWatchLogGroup.Arn
+              Effect: Allow
+      LoggingConfig:
+        LogGroup: !Ref CloudWatchLogGroup
+    Metadata:
+      BuildMethod: makefile
+
+  UploadProgress:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/upload-progress/
+      Handler: index.handler
+      Description: 's3 upload progress by key'
+      Timeout: 6
+      MemorySize: 128
+      Environment:
+        Variables:
+          DYNAMODB_TABLE: !Ref DynamoDBStackTableName
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Sid: DynamoDB
+              Effect: Allow
+              Action:
+                - 'dynamodb:Query'
+              Condition:
+                ForAllValues:StringLike:
+                  dynamodb:LeadingKeys:
+                    - 'upload#*'
+              Resource:
+                - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTableName}'
+        - Version: 2012-10-17
+          Statement:
+            - Sid: CloudWatchLogGroup
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !GetAtt CloudWatchLogGroup.Arn
+              Effect: Allow
+      LoggingConfig:
+        LogGroup: !Ref CloudWatchLogGroup
+    Metadata:
+      BuildMethod: makefile
+
+  DynamoDBS3ExportFunction:
+    Type: AWS::Serverless::Function
+    Condition: IsDynamoDBPointInTimeDailyS3ExportsEnabled
+    Properties:
+      CodeUri: functions/dynamodb-s3-export/
+      Handler: index.handler
+      Description: 'export dynamodb tables to s3'
+      Timeout: 6
+      MemorySize: 128
+      Environment:
+        Variables:
+          DYNAMODB_ARN_PREFIX: !Sub arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/
+          DYNAMODB_STACK_TABLE: !Ref DynamoDBStackTableName
+          DYNAMODB_STACK_AUDIT_TABLE: !Ref DynamoDBStackAuditTableName
+          S3_BUCKET: !Ref S3ProtectedMediaBucket
+      Policies:
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt LambdaDlq.QueueName
+        - Version: 2012-10-17
+          Statement:
+            - Sid: S3
+              Effect: Allow
+              Action:
+                - s3:PutObject
+              Resource:
+                - !Sub 'arn:${AWS::Partition}:s3:::${S3ProtectedMediaBucket}/AWSDynamoDB/*'
+        - Version: 2012-10-17
+          Statement:
+            - Sid: CloudWatchLogGroup
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !GetAtt CloudWatchLogGroup.Arn
+              Effect: Allow
+        - Version: 2012-10-17
+          Statement:
+            - Sid: DynamoDB
+              Effect: Allow
+              Action:
+                - dynamodb:ExportTableToPointInTime
+              Resource:
+                - !Sub arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTableName}
+                - !Sub arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackAuditTableName}
+      LoggingConfig:
+        LogGroup: !Ref CloudWatchLogGroup
+      Events:
+        Trigger:
+          Type: Schedule
+          Properties:
+            Enabled: true
+            # daily, mon-fri at 00:00
+            Schedule: 'cron(0 0 ? * 2-6 *)'
+            DeadLetterConfig:
+              Arn: !GetAtt EventsDlq.Arn
+            RetryPolicy:
+              MaximumEventAgeInSeconds: 900
+              MaximumRetryAttempts: 3
+      DeadLetterQueue:
+        TargetArn: !GetAtt LambdaDlq.Arn
+        Type: SQS
+      EventInvokeConfig:
+        DestinationConfig:
+          OnFailure:
+            Type: SQS
+            Destination: !GetAtt LambdaDlq.Arn
+        MaximumEventAgeInSeconds: 900
+        MaximumRetryAttempts: 0
+    Metadata:
+      BuildMethod: makefile
+
+  DynamoDBS3ExportAssertionFunction:
+    Type: AWS::Serverless::Function
+    Condition: IsDynamoDBPointInTimeDailyS3ExportsEnabled
+    Properties:
+      CodeUri: functions/dynamodb-s3-export-assertion/
+      Handler: index.handler
+      Description: 'export dynamodb s3 export assertion'
+      Timeout: 6
+      MemorySize: 128
+      Environment:
+        Variables:
+          DYNAMODB_ARN_PREFIX: !Sub arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/
+          DYNAMODB_STACK_TABLE: !Ref DynamoDBStackTableName
+          DYNAMODB_STACK_AUDIT_TABLE: !Ref DynamoDBStackAuditTableName
+      Policies:
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt LambdaDlq.QueueName
+        - Version: 2012-10-17
+          Statement:
+            - Sid: CloudWatchLogGroup
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !GetAtt CloudWatchLogGroup.Arn
+              Effect: Allow
+        - Version: 2012-10-17
+          Statement:
+            - Sid: DynamoDB
+              Effect: Allow
+              Action:
+                - dynamodb:ListExports
+              Resource: '*'
+            - Sid: DynamoDB
+              Effect: Allow
+              Action:
+                - dynamodb:DescribeExport
+              Resource:
+                - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTableName}/export/*'
+                - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackAuditTableName}/export/*'
+      LoggingConfig:
+        LogGroup: !Ref CloudWatchLogGroup
+      Events:
+        Trigger:
+          Type: Schedule
+          Properties:
+            Enabled: true
+            # daily, mon-fri at 02:00
+            Schedule: 'cron(0 2 ? * 2-6 *)'
+            DeadLetterConfig:
+              Arn: !GetAtt EventsDlq.Arn
+            RetryPolicy:
+              MaximumEventAgeInSeconds: 900
+              MaximumRetryAttempts: 3
+      DeadLetterQueue:
+        TargetArn: !GetAtt LambdaDlq.Arn
+        Type: SQS
+      EventInvokeConfig:
+        DestinationConfig:
+          OnFailure:
+            Type: SQS
+            Destination: !GetAtt LambdaDlq.Arn
+        MaximumEventAgeInSeconds: 900
+        MaximumRetryAttempts: 0
+    Metadata:
+      BuildMethod: makefile

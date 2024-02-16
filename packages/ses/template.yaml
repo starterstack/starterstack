@@ -28,8 +28,6 @@ Parameters:
     Type: String
   EventBusArn:
     Type: String
-  EventBusName:
-    Type: String
   S3BackupBucket:
     Type: String
   BackupRegion:
@@ -67,8 +65,6 @@ Metadata:
               exportName: stageOrStackRoot
             - name: EventBusArn
               exportName: eventBusArn
-            - name: EventBusName
-              exportName: eventBusName
             - name: AccountPerStage
               exportName: accountPerStage
             - name: S3BackupBucket
@@ -473,8 +469,14 @@ Resources:
       Policies:
         - SQSSendMessagePolicy:
             QueueName: !GetAtt LambdaDlq.QueueName
-        - EventBridgePutEventsPolicy:
-            EventBusName: !Ref EventBusName
+        - Version: 2012-10-17
+          Statement:
+            - Sid: EventBridge
+              Effect: Allow
+              Action:
+                - 'events:PutEvents'
+              Resource:
+                - !Ref EventBusArn
       Events:
         SNSEvent:
           Type: SNS
