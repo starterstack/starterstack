@@ -50,7 +50,7 @@ export async function createPdf({
     ].filter(Boolean)
     builder.links = []
 
-    await drawLayout(builder)
+    drawLayout(builder)
 
     if (i === 0) {
       while (pdfDoc.getPageCount() > 0) {
@@ -73,7 +73,7 @@ export async function createPdf({
   return pdfDoc
 }
 
-async function drawOperations({ builder, operations }) {
+function drawOperations({ builder, operations }) {
   const { template, data, images, fonts, links } = builder
   let { page } = builder
 
@@ -92,7 +92,7 @@ async function drawOperations({ builder, operations }) {
       }
       case 'position': {
         if (operation.y && page.getY() < operation.y) {
-          page = await createNextPage(builder)
+          page = createNextPage(builder)
         }
         page.moveTo(operation.x ?? page.getX(), operation.y ?? page.getY())
 
@@ -114,13 +114,7 @@ async function drawOperations({ builder, operations }) {
         break
       }
       case 'table': {
-        for await (const {
-          i,
-          rows,
-          tableHeight,
-          tableWidth,
-          page
-        } of wrapTable({
+        for (const { i, rows, tableHeight, tableWidth, page } of wrapTable({
           operation,
           builder
         })) {
@@ -271,20 +265,20 @@ async function drawOperations({ builder, operations }) {
   }
   if (maxHeight > 0) page.moveDown(maxHeight)
   if (page.getY() < 0) {
-    page = await createNextPage(builder)
+    page = createNextPage(builder)
   } else {
     page.moveTo(template.margin, page.getY())
   }
   builder.page = page
 }
 
-async function drawLayout(builder) {
+function drawLayout(builder) {
   const { pdfDoc, template, layout, data, images, links } = builder
   if (!builder.page) {
     builder.page = createPage({ pdfDoc, template, images, data })
   }
   for (const operations of layout) {
-    await drawOperations({ builder, operations })
+    drawOperations({ builder, operations })
   }
 
   for (const page of pdfDoc.getPages()) {
@@ -388,11 +382,11 @@ function color({ r, g, b }) {
   return rgb(r / 255, g / 255, b / 255)
 }
 
-async function createNextPage(builder) {
+function createNextPage(builder) {
   const { template } = builder
-  builder.page = await createPage(builder)
+  builder.page = createPage(builder)
   for (const operations of template.pageNumberHeader) {
-    await drawOperations({ builder, operations })
+    drawOperations({ builder, operations })
   }
   builder.page.moveTo(
     template.margin,
@@ -465,7 +459,7 @@ function getFieldValues({ value, data }) {
   }
 }
 
-async function* wrapTable({ operation, builder }) {
+function* wrapTable({ operation, builder }) {
   const { data, fonts } = builder
   const rows = [...getFieldValues({ value: operation.root, data })]
   const tableWidth = builder.page.getSize().width - 50 * 2
@@ -504,7 +498,7 @@ async function* wrapTable({ operation, builder }) {
     }
     i++
     if (rows.length > 0) {
-      builder.page = await createNextPage(builder)
+      builder.page = createNextPage(builder)
     }
   }
 }
