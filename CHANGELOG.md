@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.7](https://github.com/starterstack/starterstack/compare/v0.0.6...v0.0.7) (2024-02-16)
+
+
+### Bug Fixes
+
+* add notification stack ([#80](https://github.com/starterstack/starterstack/issues/80)) ([2e2a1ab](https://github.com/starterstack/starterstack/commit/2e2a1abe44adb12391a196da2cde09b7a4d34ee7))
+* run sls-mentor post stack deletions too ([c362af2](https://github.com/starterstack/starterstack/commit/c362af29b5105e94d8c2159e5cf83f7eafdf1699))
+
 ## [0.0.6](https://github.com/starterstack/starterstack/compare/v0.0.5...v0.0.6) (2024-02-13)
 
 
