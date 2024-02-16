@@ -5,13 +5,25 @@ set -euo pipefail
 declare -r me=$(basename "$0")
 
 rm -rf node_modules
-npm install \
-  --no-save \
-  --audit false \
-  --fund false \
-  --loglevel=error \
-  --ignore-scripts \
-  --omit=dev
+
+if [[ -n ${SHARP_IGNORE_GLOBAL_LIBVIPS:-} ]]; then
+  SHARP_IGNORE_GLOBAL_LIBVIPS=1 \
+    npm install \
+    --os=linux \
+    --cpu=arm64 \
+    --audit false \
+    --fund false \
+    --no-save \
+    --loglevel=error
+else
+  npm install \
+    --no-save \
+    --audit false \
+    --fund false \
+    --loglevel=error \
+    --ignore-scripts \
+    --omit=dev
+fi
 
 cp -r . ${ARTIFACTS_DIR:?}
 
