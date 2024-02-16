@@ -99,6 +99,15 @@ Metadata:
                 - file:
                     location: ../stack-stage-config.mjs
                     exportName: s3Mail
+          post:delete:
+            - command: ../delete-cloudwatch-lambda-log-group.sh
+              args:
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: stackName
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: region
           post:deploy:
             - command: ../tag-cloudwatch-alarms.sh
               args:
