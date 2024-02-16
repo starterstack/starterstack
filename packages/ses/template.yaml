@@ -509,7 +509,7 @@ Resources:
         Variables:
           S3_MAIL_BUCKET: !Ref S3Mail
           EVENTBRIDGE_BUS_NAME: !Ref EventBusArn
-          TEAM: !Sub '${StackDisplayName}Team'
+          TEAM: !Sub '${StackDisplayName} Team'
       Policies:
         - SQSSendMessagePolicy:
             QueueName: !GetAtt LambdaDlq.QueueName
