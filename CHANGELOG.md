@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.8](https://github.com/starterstack/starterstack/compare/v0.0.7...v0.0.8) (2024-02-16)
+
+
+### Bug Fixes
+
+* add media stack ([#84](https://github.com/starterstack/starterstack/issues/84)) ([65d75a0](https://github.com/starterstack/starterstack/commit/65d75a0db84cb4fdfb4fe5d81e91f0ee317fdef2))
+* add tracking stack ([#82](https://github.com/starterstack/starterstack/issues/82)) ([0cf19cf](https://github.com/starterstack/starterstack/commit/0cf19cf42dddb4163dde2edc2c3c19a7b2a8f7e0))
+
 ## [0.0.7](https://github.com/starterstack/starterstack/compare/v0.0.6...v0.0.7) (2024-02-16)
 
 
