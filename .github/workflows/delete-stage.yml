@@ -137,7 +137,7 @@ jobs:
         remove-parallel-stage,
         cleanup-environment
       ]
-    if: ${{ always() && !failure() && !cancelled() }}
+    if: ${{ always() && !failure() && !cancelled() && needs.check-github-env-exists.outputs.result == 'true' }}
     uses: 'starterstack/starterstack/.github/workflows/sls-mentor.yml@main'
     with:
       aws-regions: ${{ needs.env.outputs.aws-regions }}
