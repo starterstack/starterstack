@@ -261,23 +261,32 @@ Outputs:
     Value: !GetAtt MigrationFunction.Arn
     Export:
       Name: !Sub '${AWS::StackName}MigrationFunction'
-  DynamoDBStackTable:
+  DynamoDBStackTableName:
     Description: dynamodb stack table
     Value: !Ref DynamoDBStackTable
     Export:
-      Name: !Sub '${AWS::StackName}DynamoDBStackTable'
-  DynamoDBStackAuditTable:
+      Name: !Sub '${AWS::StackName}DynamoDBStackTableName'
+  DynamoDBStackAuditTableName:
     Description: dynamodb stack audit table
     Value: !Ref DynamoDBStackAuditTable
     Export:
-      Name: !Sub '${AWS::StackName}DynamoDBStackAuditTable'
-  DynamoDBWebSocketTable:
+      Name: !Sub '${AWS::StackName}DynamoDBStackAuditTableName'
+  DynamoDBWebSocketTableName:
     Description: dynamodb websocket table
     Value: !Ref DynamoDBWebSocketTable
     Export:
-      Name: !Sub '${AWS::StackName}DynamoDBWebSocketTable'
-  DynamoDBStackTableStream:
-    Description: dynamodb stack table stream
+      Name: !Sub '${AWS::StackName}DynamoDBWebSocketTableName'
+  DynamoDBStackTableStreamArn:
+    Description: dynamodb stack table stream arn
     Value: !GetAtt DynamoDBStackTable.StreamArn
     Export:
-      Name: !Sub '${AWS::StackName}DynamoDBStackTableStream'
+      Name: !Sub '${AWS::StackName}DynamoDBStackTableStreamArn'
+  DynamoDBStackTableStreamName:
+    Description: dynamodb stack table stream
+    Value: !Select
+      - 3
+      - !Split
+        - '/'
+        - !GetAtt DynamoDBStackTable.StreamArn
+    Export:
+      Name: !Sub '${AWS::StackName}DynamoDBStackTableStreamName'

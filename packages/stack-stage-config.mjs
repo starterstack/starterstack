@@ -245,7 +245,7 @@ export const lifecycle = async function stackStageConfig({
 
 /**
  * @param {{ stage: string, template: any, directory?: string }} options
- * @returns {Promise<{ addMappings: boolean, stackName: string, stage: string, regions: string[], s3DeploymentBucket: Record<string, string>, snsOpsTopic: Record<string, string>, snsAlarmTopic: Record<string, string>, stackRegion: string }>}
+ * @returns {Promise<{ addMappings: boolean, stackName: string, stage: string, regions: string[], s3DeploymentBucket: Record<string, string>, snsOpsTopic: Record<string, string>, snsAlarmTopic: Record<string, string>, stackRegion: string, accountId: string }>}
  **/
 export async function getConfig({ stage, template, directory }) {
   const config = await getStackStageConfig({ template, directory })
@@ -365,6 +365,7 @@ export async function getConfig({ stage, template, directory }) {
   )
 
   return {
+    accountId,
     stackName: cloudformationStackName,
     stage: stackStage,
     regions: stackRegions,
@@ -614,8 +615,11 @@ export default async function getSettings({
     get apiGatewayCloudwatchRole() {
       return getStackOutput('ApiGatewayCloudwatchRole')
     },
-    get eventBus() {
-      return getEventBusOutput('EventBus')
+    get eventBusArn() {
+      return getEventBusOutput('EventBusArn')
+    },
+    get eventBusName() {
+      return getEventBusOutput('EventBusName')
     },
     get s3Mail() {
       return getSESOutput('S3MailBucket')
@@ -625,6 +629,9 @@ export default async function getSettings({
     },
     get sesTemplateHelloResponseEn() {
       return getSESOutput('SESTemplateHelloResponseEn')
+    },
+    get sesDefaultConfigurationSet() {
+      return getSESOutput('SESDefaultConfigurationSet')
     },
     get s3Media() {
       return getCDNOutput('S3MediaBucket')
@@ -661,17 +668,20 @@ export default async function getSettings({
           : ''
       }}`
     },
-    get dynamodbStackTable() {
-      return getDynamoDBOutput('DynamoDBStackTable')
+    get dynamodbStackTableName() {
+      return getDynamoDBOutput('DynamoDBStackTableName')
     },
-    get dynamodbStackAuditTable() {
-      return getDynamoDBOutput('DynamoDBStackAuditTable')
+    get dynamodbStackAuditTableName() {
+      return getDynamoDBOutput('DynamoDBStackAuditTableName')
     },
-    get dynamodbWebSocketTable() {
-      return getDynamoDBOutput('DynamoDBWebSocketTable')
+    get dynamodbWebSocketTableName() {
+      return getDynamoDBOutput('DynamoDBWebSocketTableName')
     },
-    get dynamodbStackTableStream() {
-      return getDynamoDBOutput('DynamoDBStackTableStream')
+    get dynamodbStackTableStreamName() {
+      return getDynamoDBOutput('DynamoDBStackTableStreamName')
+    },
+    get dynamodbStackTableStreamArn() {
+      return getDynamoDBOutput('DynamoDBStackTableStreamArn')
     }
   }
 }

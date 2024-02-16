@@ -1,13 +1,5 @@
 # ses
 
-### SES Setup and templates.
-
-Test receive locally with [SWAKS](https://jetmore.org/john/code/swaks/installation.html).
-
-```sh
-./scripts/local-ses-receive.sh
-```
-
 ### VerifySES Custom resource
 
 ConfigurationSet, EmailIdentity, ReceiptRule resources are created by a custom resource.

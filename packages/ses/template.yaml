@@ -26,7 +26,9 @@ Parameters:
     Type: String
   StageRoot:
     Type: String
-  EventBus:
+  EventBusArn:
+    Type: String
+  EventBusName:
     Type: String
   S3BackupBucket:
     Type: String
@@ -63,8 +65,10 @@ Metadata:
           overrides:
             - name: StageRoot
               exportName: stageOrStackRoot
-            - name: EventBus
-              exportName: eventBus
+            - name: EventBusArn
+              exportName: eventBusArn
+            - name: EventBusName
+              exportName: eventBusName
             - name: AccountPerStage
               exportName: accountPerStage
             - name: S3BackupBucket
@@ -95,6 +99,15 @@ Metadata:
                 - file:
                     location: ../stack-stage-config.mjs
                     exportName: s3Mail
+          post:delete:
+            - command: ../delete-cloudwatch-lambda-log-group.sh
+              args:
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: stackName
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: region
           post:deploy:
             - command: ../tag-cloudwatch-alarms.sh
               args:
@@ -452,7 +465,7 @@ Resources:
         LogGroup: !Ref CloudWatchLogGroup
       Environment:
         Variables:
-          EVENTBRIDGE_BUS_NAME: !Ref EventBus
+          EVENTBRIDGE_BUS_NAME: !Ref EventBusArn
           STACK_NAME: !Ref Stack
           AWS_ACCOUNT_ID: !Sub ${AWS::AccountId}
           STAGE: !Ref Stage
@@ -460,14 +473,8 @@ Resources:
       Policies:
         - SQSSendMessagePolicy:
             QueueName: !GetAtt LambdaDlq.QueueName
-        - Version: 2012-10-17
-          Statement:
-            - Sid: EventBridge
-              Effect: Allow
-              Action:
-                - 'events:PutEvents'
-              Resource:
-                - !Ref EventBus
+        - EventBridgePutEventsPolicy:
+            EventBusName: !Ref EventBusName
       Events:
         SNSEvent:
           Type: SNS
@@ -501,8 +508,8 @@ Resources:
       Environment:
         Variables:
           S3_MAIL_BUCKET: !Ref S3Mail
-          EVENTBRIDGE_BUS_NAME: !Ref EventBus
-          TEAM: !Sub '${StackDisplayName}Team'
+          EVENTBRIDGE_BUS_NAME: !Ref EventBusArn
+          TEAM: !Sub '${StackDisplayName} Team'
       Policies:
         - SQSSendMessagePolicy:
             QueueName: !GetAtt LambdaDlq.QueueName
@@ -513,7 +520,7 @@ Resources:
               Action:
                 - 'events:PutEvents'
               Resource:
-                - !Ref EventBus
+                - !Ref EventBusArn
         - Version: 2012-10-17
           Statement:
             - Sid: S3

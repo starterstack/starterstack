@@ -279,6 +279,13 @@ Resources:
               Effect: Allow
       LoggingConfig:
         LogGroup: !Ref CloudWatchLogGroup
+      Events:
+        Trigger:
+          Type: CloudWatchLogs
+          Condition: IsWafEnabled
+          Properties:
+            LogGroupName: !Ref CloudFrontWafLogGroup
+            FilterPattern: '{$.httpRequest.uri != "*sentry-tunnel*"}'
     Metadata:
       BuildMethod: makefile
 
