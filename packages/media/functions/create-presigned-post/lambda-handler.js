@@ -1,0 +1,1 @@
+../../../shared/lambda-handler.js
