@@ -1,2 +1,1 @@
-build-TtlEventFunction:
-	./npm-copy.sh
+../../../Makefile

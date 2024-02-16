@@ -1,2 +1,1 @@
-build-StackChangeFunction:
-	./npm-copy.sh
+../../../Makefile

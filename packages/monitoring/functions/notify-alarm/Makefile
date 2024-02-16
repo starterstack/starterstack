@@ -1,2 +1,1 @@
-build-NotifyAlarmFunction:
-	./npm-copy.sh
+../../../Makefile

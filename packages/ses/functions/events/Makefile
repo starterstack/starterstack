@@ -1,2 +1,1 @@
-build-SESEventsFunction:
-	./npm-copy.sh
+../../../Makefile
