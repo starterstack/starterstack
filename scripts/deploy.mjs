@@ -320,7 +320,7 @@ function createDeployProcess(service, remove) {
     ps: spawn(
       'bash',
       [
-        path.join(__dirname, '..', 'scripts', 'sam-deploy.sh'),
+        path.join(__dirname, '..', 'scripts', 'sam.sh'),
         service.stage,
         service.region,
         service['package-lock'].toString(),
@@ -333,6 +333,7 @@ function createDeployProcess(service, remove) {
           FORCE_COLOR: '1',
           NODE_OPTIONS: '--unhandled-rejections=strict',
           ...process.env,
+          INIT_CWD: undefined,
           PATH: `${process.env.PATH}:${path.resolve(
             path.join(__dirname, '..', 'node_modules', '.bin')
           )}`,

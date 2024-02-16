@@ -10,7 +10,9 @@
     "lint": "eslint --no-error-on-unmatched-pattern",
     "docs": "bash ./scripts/docs.sh",
     "test": "bash ./scripts/test.sh",
-    "cz": "cz"
+    "cz": "cz",
+    "deploy": "node ./scripts/deploy.mjs",
+    "lint:cloudformation": "node ./scripts/lint-cloudformation.mjs"
   },
   "repository": {
     "type": "git",

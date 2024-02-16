@@ -2,12 +2,13 @@
 
 set -euo pipefail
 
-function deploy() {
+function sam() {
   local source="${BASH_SOURCE[0]}"
   local stage="${1:?}"
   local region="${2:?}"
   local package_lock
   local remove
+  local lint_only
 
   if [[ "${3:?}" == "true" ]]; then
     package_lock=1
@@ -21,6 +22,12 @@ function deploy() {
     remove=0
   fi
 
+  if [[ "${5:?}" == "true" ]]; then
+    lint_only=1
+  else
+    lint_only=0
+  fi
+
   if [[ ${package_lock:?} -eq 1 ]]; then
     npm install \
       --no-save \
@@ -29,7 +36,7 @@ function deploy() {
       --ignore-scripts
   fi
 
-  if [[ ${remove:?} -eq 1 ]]; then
+  if [[ ${remove:?} -eq 1 && ${lint_only:?} -eq 0 ]]; then
     STAGE="${stage:?}" node \
       "$(dirname "${source:?}")/../node_modules/.bin/sam-expand" \
       delete \
@@ -49,17 +56,20 @@ function deploy() {
       -t .aws-sam/build/template.yaml \
       --region "${region:?}"
 
-    node \
-      "$(dirname "${source:?}")/../node_modules/.bin/sam-expand" \
-      deploy \
-      --parameter-overrides Stage="${stage:?}" \
-      --region "${region:?}"
+    if [[ ${lint_only?} -eq 0 ]]; then
+      node \
+        "$(dirname "${source:?}")/../node_modules/.bin/sam-expand" \
+        deploy \
+        --parameter-overrides Stage="${stage:?}" \
+        --region "${region:?}"
+    fi
   fi
 
 }
 
-deploy \
+sam \
   "${1:?'missing stage'}" \
   "${2:?'missing region'}" \
   "${3:?'missing package lock'}" \
-  "${4:?'missing remove'}"
+  "${4:?'missing remove'}" \
+  "${5:-false}"

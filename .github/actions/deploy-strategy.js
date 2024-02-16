@@ -21,8 +21,12 @@ export default async function deployStrategy({
   core,
   stage,
   remove,
+  lintOnly,
   npmCacheHit
 }) {
+  if (lintOnly) {
+    process.env.IS_OFFLINE = 'true'
+  }
   const awsRegions = [
     ...new Set(['us-east-1', 'eu-west-1', ...Object.values(regions)])
   ]
@@ -58,7 +62,7 @@ export default async function deployStrategy({
     backend: ['ses']
   }
 
-  const deployed = await listDeployed(awsRegions)
+  const deployed = lintOnly ? {} : await listDeployed(awsRegions)
 
   const packages = await fs.readdir('packages')
 
@@ -119,53 +123,55 @@ export default async function deployStrategy({
     const stackStage = config.stage
 
     for (const stackRegion of config.regions) {
-      try {
-        const deployedSha = deployed[stackRegion]?.get(
-          `${stackName}DeployedCommit`
-        )
-
-        if (remove && !deployedSha) {
-          continue
-        }
-
-        if (deployedSha && !remove) {
-          try {
-            // these diffs will exit 1 only if there are changes, hense the catch
-            await Promise.all([
-              execCommand(
-                `git diff ${deployedSha} -s --exit-code -- . ':!src/local-http-mock/*'`,
-                stackDirectory
-              ),
-              execCommand(
-                `git diff ${deployedSha} -s --exit-code -- ./packages/*.*`
-              ),
-              execCommand(
-                `git diff ${deployedSha} -s --exit-code -- ./packages/shared ':!packages/shared/test' ':!packages/shared/package.json'`
-              )
-            ])
-            return
-          } catch {
-            // eslint-disable-next-line no-empty
-          }
-          const deployedHash = deployed[stackRegion]?.get(
-            `${stackName}DeployedHash`
+      if (!lintOnly) {
+        try {
+          const deployedSha = deployed[stackRegion]?.get(
+            `${stackName}DeployedCommit`
           )
 
-          const localHash = await calculateStackHash({
-            root: stackDirectory,
-            packagesRoot: path.join(process.cwd(), 'packages')
-          })
-
-          if (deployedHash && deployedHash === localHash) {
+          if (remove && !deployedSha) {
             continue
           }
-        }
-      } catch (error) {
-        if (github) {
-          console.error(error)
-        }
-        if (remove) {
-          continue
+
+          if (deployedSha && !remove) {
+            try {
+              // these diffs will exit 1 only if there are changes, hense the catch
+              await Promise.all([
+                execCommand(
+                  `git diff ${deployedSha} -s --exit-code -- . ':!src/local-http-mock/*'`,
+                  stackDirectory
+                ),
+                execCommand(
+                  `git diff ${deployedSha} -s --exit-code -- ./packages/*.*`
+                ),
+                execCommand(
+                  `git diff ${deployedSha} -s --exit-code -- ./packages/shared ':!packages/shared/test' ':!packages/shared/package.json'`
+                )
+              ])
+              return
+            } catch {
+              // eslint-disable-next-line no-empty
+            }
+            const deployedHash = deployed[stackRegion]?.get(
+              `${stackName}DeployedHash`
+            )
+
+            const localHash = await calculateStackHash({
+              root: stackDirectory,
+              packagesRoot: path.join(process.cwd(), 'packages')
+            })
+
+            if (deployedHash && deployedHash === localHash) {
+              continue
+            }
+          }
+        } catch (error) {
+          if (github) {
+            console.error(error)
+          }
+          if (remove) {
+            continue
+          }
         }
       }
 
