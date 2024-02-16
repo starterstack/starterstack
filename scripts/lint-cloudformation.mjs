@@ -21,10 +21,6 @@ import ora from 'ora'
 
 const windows = os.platform() === 'win32'
 
-console.log(
-  '\u001B[93mGitHub is the recommended way to deploy, only use this script if you have to\u001B[0m'
-)
-
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 process.once('exit', () => cursor(true))
