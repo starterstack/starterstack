@@ -363,9 +363,9 @@ Resources:
                 - s3:GetObject
                 - s3:GetObjectTagging
               Resource:
-                - !Sub '${S3MediaBucket}/media/*'
-                - !Sub '${S3ProtectedMediaBucket}/media/*'
-                - !Sub '${S3ProtectedMediaBucket}/AWSDynamoDB/*'
+                - !Sub 'arn:${AWS::Partition}:s3:::${S3MediaBucket}/media/*'
+                - !Sub 'arn:${AWS::Partition}:s3:::${S3ProtectedMediaBucket}/media/*'
+                - !Sub 'arn:${AWS::Partition}:s3:::${S3ProtectedMediaBucket}/AWSDynamoDB/*'
               Effect: Allow
         - Version: 2012-10-17
           Statement:
