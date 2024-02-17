@@ -1,6 +1,6 @@
 {
   "name": "starterstack",
-  "version": "0.0.8",
+  "version": "0.0.9",
   "description": "This project was bootstrapped with starterstack, a Serverless monorepo template architecture",
   "scripts": {
     "setup": "node ./scripts/setup.mjs",

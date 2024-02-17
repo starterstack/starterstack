@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.9](https://github.com/starterstack/starterstack/compare/v0.0.8...v0.0.9) (2024-02-17)
+
+
+### Bug Fixes
+
+* **media:** s3 replicate iam ([c0956aa](https://github.com/starterstack/starterstack/commit/c0956aae670696f33442068c7afdbdece3b2355a))
+
 ## [0.0.8](https://github.com/starterstack/starterstack/compare/v0.0.7...v0.0.8) (2024-02-16)
 
 
