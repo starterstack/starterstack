@@ -1,0 +1,417 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform:
+  - AWS::LanguageExtensions
+  - AWS::Serverless-2016-10-31
+
+Description: Test
+
+Globals:
+  Function:
+    Tracing: Active
+    Architectures:
+      - arm64
+    Runtime: nodejs20.x
+    PropagateTags: true
+    Environment:
+      Variables:
+        GIT_COMMIT: !Ref GITCommit
+
+Parameters:
+  Stack:
+    Type: String
+  StageRootUrl:
+    Type: String
+  LogRetentionInDays:
+    Type: String
+  GITCommit:
+    Type: String
+  EventBusName:
+    Type: String
+  DynamoDBStackTableName:
+    Type: String
+  S3ProtectedMediaBucket:
+    Type: String
+  SNSAlarmTopic:
+    Type: String
+
+Metadata:
+  expand:
+    plugins:
+      - '../git.mjs'
+      - '../hash.mjs'
+      - '@starterstack/sam-expand/plugins/parameter-overrides'
+      - '../stack-stage-config.mjs'
+      - '@starterstack/sam-expand/plugins/run-script-hooks'
+      - '../purge-lambda-versions.mjs'
+      - '../generate-cloudwatch-alarms.mjs'
+
+    config:
+      stackStageConfig:
+        suffixStage: true
+        addMappings: true
+      parameterOverrides:
+        - location: ../stack-stage-config.mjs
+          overrides:
+            - name: StageRootUrl
+              exportName: stageRootUrl
+            - name: LogRetentionInDays
+              exportName: logRetentionInDays
+            - name: EventBusName
+              exportName: eventBusName
+            - name: DynamoDBStackTableName
+              exportName: dynamodbStackTableName
+            - name: S3ProtectedMediaBucket
+              exportName: s3ProtectedMedia
+            - name: SNSAlarmTopic
+              exportName: snsAlarmTopic
+        - location: ../git.mjs
+          overrides:
+            - name: GITCommit
+              exportName: commit
+      purgeLambdaVersions:
+        keep: 3
+      script:
+        hooks:
+          post:deploy:
+            - command: ../tag-eventbus-rules.sh
+              args:
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: stackName
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: region
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: stage
+            - command: ../tag-cloudwatch-alarms.sh
+              args:
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: stackName
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: region
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: stage
+      alarms:
+        snsTopicRef: SNSAlarmTopic
+
+Resources:
+  CloudWatchLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}
+      RetentionInDays: !Ref LogRetentionInDays
+      Tags:
+        - Key: 'Name'
+          Value: !Sub '${AWS::StackName} lambda logs'
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+  TestStateMachineLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/vendedlogs/states/${AWS::StackName}-test-state-machine-logs'
+      RetentionInDays: !Ref LogRetentionInDays
+      Tags:
+        - Key: 'Name'
+          Value: !Sub '${AWS::StackName} lambda logs'
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+  EventsDlq:
+    Type: AWS::SQS::Queue
+    Properties:
+      SqsManagedSseEnabled: true
+      Tags:
+        - Key: 'Name'
+          Value: !Sub '${AWS::StackName}-events-dlq'
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+  EventsDlqPolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'sqs:SendMessage'
+            Principal:
+              Service: 'events.amazonaws.com'
+            Resource: !GetAtt EventsDlq.Arn
+            Condition:
+              ArnEquals:
+                'aws:SourceArn': !Sub 'arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/${AWS::StackName}*'
+          - Effect: Allow
+            Action:
+              - 'sqs:SendMessage'
+            Principal:
+              Service: 'sns.amazonaws.com'
+            Resource: !GetAtt EventsDlq.Arn
+            Condition:
+              ArnEquals:
+                'aws:SourceArn': !Sub 'arn:${AWS::Partition}:sns:${AWS::Region}:${AWS::AccountId}:${AWS::StackName}*'
+      Queues:
+        - !Ref EventsDlq
+
+  SanityTestStateMachine:
+    Type: AWS::Serverless::StateMachine
+    Properties:
+      DefinitionUri: workflows/run-tests.asl.json
+      DefinitionSubstitutions:
+        DynamoDBStackTable: !Ref DynamoDBStackTableName
+        S3ProtectedMedia: !Ref S3ProtectedMediaBucket
+        LoginLambdaArn: !GetAtt LoginFunction.Arn
+        LogoutLambdaArn: !GetAtt LogoutFunction.Arn
+        SanityTestsLambdaArn: !GetAtt SanityTestsFunction.Arn
+      Role: !GetAtt TestStateMachineRole.Arn
+      Type: STANDARD
+      Tags:
+        Name: !Sub ${AWS::StackName}-tests-state-machine
+        ManagedBy: !Ref Stack
+      Logging:
+        Level: ERROR
+        IncludeExecutionData: true
+        Destinations:
+          - CloudWatchLogsLogGroup:
+              LogGroupArn: !GetAtt TestStateMachineLogGroup.Arn
+      Tracing:
+        Enabled: true
+
+  TestStateMachineRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Action:
+              - sts:AssumeRole
+            Principal:
+              Service:
+                - states.amazonaws.com
+      Policies:
+        - PolicyName: !Sub '${AWS::StackName}-test-state-machine-log-policy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - xray:PutTraceSegments
+                  - xray:PutTelemetryRecords
+                  - xray:GetSamplingRules
+                  - xray:GetSamplingTargets
+                Resource: '*'
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogDelivery
+                  - logs:GetLogDelivery
+                  - logs:UpdateLogDelivery
+                  - logs:DeleteLogDelivery
+                  - logs:ListLogDeliveries
+                  - logs:PutResourcePolicy
+                  - logs:DescribeResourcePolicies
+                  - logs:DescribeLogGroups
+                Resource: '*'
+        - PolicyName: !Sub '${AWS::StackName}-test-state-machine-execution-policy'
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - lambda:InvokeFunction
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:lambda:${AWS::Region}:${AWS::AccountId}:function:${AWS::StackName}*'
+              - Effect: Allow
+                Action:
+                  - 'dynamodb:PutItem'
+                  - 'dynamodb:DeleteItem'
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTableName}'
+                Condition:
+                  ForAllValues:StringLike:
+                    dynamodb:LeadingKeys:
+                      - 'user#07145bac4604d9de8f836337838a9ceea38b6adff1a10ed03232730758e8b18a9f85ee5166a399c41f6e15f3999ceb2f1be6047a44542039c43575a604b1d726'
+                      - 'user#9354b0952996c9db2daaaff823413175931553e8cc537628a38e9a0866e4a06ed2edf169a63840e1e6e74d773612983cd0d9942e2271a0dda1c8b03378f82d23'
+              - Effect: Allow
+                Action:
+                  - 'dynamodb:PutItem'
+                  - 'dynamodb:GetItem'
+                  - 'dynamodb:DeleteItem'
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTableName}'
+                Condition:
+                  ForAllValues:StringLike:
+                    dynamodb:LeadingKeys:
+                      - 'test#run#*'
+              - Effect: Allow
+                Action:
+                  - 'dynamodb:DeleteItem'
+                  - 'dynamodb:GetItem'
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTableName}'
+                Condition:
+                  ForAllValues:StringLike:
+                    dynamodb:LeadingKeys:
+                      - 'session#*'
+              - Effect: Allow
+                Action:
+                  - 'dynamodb:Query'
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTableName}'
+                Condition:
+                  ForAllValues:StringLike:
+                    dynamodb:LeadingKeys:
+                      - 'session#*'
+              - Effect: Allow
+                Action:
+                  - 's3:DeleteObject'
+                  - 's3:GetObject'
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:s3:::${S3ProtectedMediaBucket}/media/~/user/07145bac4604d9de8f836337838a9ceea38b6adff1a10ed03232730758e8b18a9f85ee5166a399c41f6e15f3999ceb2f1be6047a44542039c43575a604b1d726*'
+                  - !Sub 'arn:${AWS::Partition}:s3:::${S3ProtectedMediaBucket}/media/~/user/9354b0952996c9db2daaaff823413175931553e8cc537628a38e9a0866e4a06ed2edf169a63840e1e6e74d773612983cd0d9942e2271a0dda1c8b03378f82d23*'
+              - Effect: Allow
+                Action:
+                  - 's3:ListBucket'
+                Resource:
+                  - !Sub 'arn:${AWS::Partition}:s3:::${S3ProtectedMediaBucket}'
+      Tags:
+        - Key: 'Name'
+          Value: !Sub '${AWS::StackName}-test-state-machine-role'
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+
+  LoginFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/login/
+      Handler: index.handler
+      Description: 'login with task token'
+      Timeout: 300
+      MemorySize: 128
+      Environment:
+        Variables:
+          BASE_URL: !Ref StageRootUrl
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Sid: StepFunction
+              Effect: Allow
+              Action:
+                - 'states:SendTaskFailure'
+              Resource:
+                - !Sub 'arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMAchine:${AWS::StackName}*'
+        - Version: 2012-10-17
+          Statement:
+            - Sid: CloudWatchLogGroup
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !GetAtt CloudWatchLogGroup.Arn
+              Effect: Allow
+      LoggingConfig:
+        LogGroup: !Ref CloudWatchLogGroup
+    Metadata:
+      BuildMethod: makefile
+
+  LogoutFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/logout/
+      Handler: index.handler
+      Description: 'logout test user'
+      Timeout: 300
+      MemorySize: 128
+      Environment:
+        Variables:
+          BASE_URL: !Ref StageRootUrl
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Sid: CloudWatchLogGroup
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !GetAtt CloudWatchLogGroup.Arn
+              Effect: Allow
+      LoggingConfig:
+        LogGroup: !Ref CloudWatchLogGroup
+    Metadata:
+      BuildMethod: makefile
+
+  LoginEmailFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/capture-token/
+      Handler: index.handler
+      Description: 'capture login token'
+      Timeout: 300
+      MemorySize: 128
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Sid: StepFunction
+              Effect: Allow
+              Action:
+                - 'states:SendTaskFailure'
+                - 'states:SendTaskSuccess'
+              Resource:
+                - !Sub 'arn:${AWS::Partition}:states:${AWS::Region}:${AWS::AccountId}:stateMachine:SanityTestStateMachine-*'
+        - Version: 2012-10-17
+          Statement:
+            - Sid: CloudWatchLogGroup
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !GetAtt CloudWatchLogGroup.Arn
+              Effect: Allow
+      LoggingConfig:
+        LogGroup: !Ref CloudWatchLogGroup
+      Events:
+        Trigger:
+          Type: EventBridgeRule
+          Properties:
+            EventBusName: !Ref EventBusName
+            Pattern:
+              source:
+                - email
+              detail-type:
+                - 'login/signup'
+              detail:
+                taskToken:
+                  - exists: true
+            DeadLetterConfig:
+              Arn: !GetAtt EventsDlq.Arn
+            RetryPolicy:
+              MaximumEventAgeInSeconds: 300
+              MaximumRetryAttempts: 1
+      EventInvokeConfig:
+        MaximumEventAgeInSeconds: 300
+        MaximumRetryAttempts: 0
+    Metadata:
+      BuildMethod: makefile
+
+  SanityTestsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/logout/
+      Handler: index.handler
+      Description: 'sanity tests'
+      Timeout: 300
+      MemorySize: 128
+      Environment:
+        Variables:
+          BASE_URL: !Ref StageRootUrl
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Sid: CloudWatchLogGroup
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !GetAtt CloudWatchLogGroup.Arn
+              Effect: Allow
+      LoggingConfig:
+        LogGroup: !Ref CloudWatchLogGroup
+    Metadata:
+      BuildMethod: makefile

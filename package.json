@@ -96,6 +96,7 @@
     "@aws-sdk/client-s3": "3.490.0",
     "@aws-sdk/client-ses": "3.511.0",
     "@aws-sdk/client-sesv2": "3.511.0",
+    "@aws-sdk/client-sfn": "3.515.0",
     "@aws-sdk/client-ssm": "3.490.0",
     "@aws-sdk/client-sts": "3.490.0",
     "@aws-sdk/lib-dynamodb": "3.490.0",
