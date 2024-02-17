@@ -1,0 +1,509 @@
+{
+  "Comment": "function tests",
+  "StartAt": "create test users",
+  "States": {
+    "create test users": {
+      "Type": "Parallel",
+      "Next": "login/signup test users",
+      "Branches": [
+        {
+          "StartAt": "create login user",
+          "States": {
+            "create login user": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::dynamodb:putItem",
+              "Parameters": {
+                "TableName": "${DynamoDBStackTable}",
+                "Item": {
+                  "pk": {
+                    "S": "user#07145bac4604d9de8f836337838a9ceea38b6adff1a10ed03232730758e8b18a9f85ee5166a399c41f6e15f3999ceb2f1be6047a44542039c43575a604b1d726"
+                  },
+                  "sk": {
+                    "S": "user#07145bac4604d9de8f836337838a9ceea38b6adff1a10ed03232730758e8b18a9f85ee5166a399c41f6e15f3999ceb2f1be6047a44542039c43575a604b1d726"
+                  },
+                  "email": {
+                    "S": "test+login@example.com"
+                  },
+                  "type": {
+                    "S": "user"
+                  },
+                  "role": {
+                    "NS": ["1"]
+                  }
+                }
+              },
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "pre delete signup user",
+          "States": {
+            "pre delete signup user": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::dynamodb:deleteItem",
+              "Parameters": {
+                "TableName": "${DynamoDBStackTable}",
+                "Key": {
+                  "pk": {
+                    "S": "user#9354b0952996c9db2daaaff823413175931553e8cc537628a38e9a0866e4a06ed2edf169a63840e1e6e74d773612983cd0d9942e2271a0dda1c8b03378f82d23"
+                  },
+                  "sk": {
+                    "S": "user#9354b0952996c9db2daaaff823413175931553e8cc537628a38e9a0866e4a06ed2edf169a63840e1e6e74d773612983cd0d9942e2271a0dda1c8b03378f82d23"
+                  }
+                }
+              },
+              "End": true
+            }
+          }
+        }
+      ]
+    },
+    "login/signup test users": {
+      "Type": "Parallel",
+      "Branches": [
+        {
+          "StartAt": "signup",
+          "States": {
+            "signup": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+              "Parameters": {
+                "FunctionName": "${LoginLambdaArn}",
+                "Payload": {
+                  "taskToken.$": "$$.Task.Token",
+                  "email": "test+signup@example.com",
+                  "context.$": "$$"
+                }
+              },
+              "TimeoutSeconds": 30,
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "login",
+          "States": {
+            "login": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::lambda:invoke.waitForTaskToken",
+              "Parameters": {
+                "FunctionName": "${LoginLambdaArn}",
+                "Payload": {
+                  "taskToken.$": "$$.Task.Token",
+                  "email": "test+login@example.com",
+                  "context.$": "$$"
+                }
+              },
+              "TimeoutSeconds": 30,
+              "End": true
+            }
+          }
+        }
+      ],
+      "Next": "add session refs"
+    },
+    "add session refs": {
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "delete test artifacts"
+        }
+      ],
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "INLINE"
+        },
+        "StartAt": "get session ref",
+        "States": {
+          "get session ref": {
+            "Type": "Task",
+            "Resource": "arn:aws:states:::dynamodb:getItem",
+            "Parameters": {
+              "TableName": "${DynamoDBStackTable}",
+              "Key": {
+                "pk": {
+                  "S.$": "States.Format('session#{}', $.ref)"
+                },
+                "sk": {
+                  "S.$": "States.Format('session#{}', $.ref)"
+                }
+              }
+            },
+            "ResultPath": "$.ref",
+            "ResultSelector": {
+              "id.$": "States.ArrayGetItem(States.StringSplit($.Item.gsi2pk.S, '#'), 1)",
+              "ttl.$": "$.Item.ttl.N"
+            },
+            "End": true
+          }
+        }
+      },
+      "Next": "run sanity tests",
+      "Type": "Map"
+    },
+    "run sanity tests": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::lambda:invoke",
+      "Parameters": {
+        "FunctionName": "${SanityTestsLambdaArn}",
+        "Payload": {
+          "tokens.$": "$",
+          "context.$": "$$"
+        }
+      },
+      "TimeoutSeconds": 240,
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "delete test artifacts"
+        }
+      ],
+      "Next": "logout all"
+    },
+    "logout all": {
+      "Type": "Map",
+      "Catch": [
+        {
+          "ErrorEquals": ["States.ALL"],
+          "Next": "delete test artifacts"
+        }
+      ],
+      "ItemProcessor": {
+        "ProcessorConfig": {
+          "Mode": "INLINE"
+        },
+        "StartAt": "logout",
+        "States": {
+          "logout": {
+            "End": true,
+            "Parameters": {
+              "FunctionName": "${LogoutLambdaArn}",
+              "Payload": {
+                "context.$": "$$",
+                "token.$": "$.token",
+                "ttl.$": "$.ttl"
+              }
+            },
+            "Resource": "arn:aws:states:::lambda:invoke",
+            "TimeoutSeconds": 30,
+            "Type": "Task"
+          }
+        }
+      },
+      "Next": "create passed",
+      "ItemsPath": "$.Payload.tokens"
+    },
+    "create passed": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::dynamodb:putItem",
+      "Parameters": {
+        "TableName": "${DynamoDBStackTable}",
+        "Item": {
+          "pk": {
+            "S.$": "States.Format('test#run#{}', $$.Execution.Id)"
+          },
+          "sk": {
+            "S.$": "$$.Execution.Id"
+          },
+          "ttl": {
+            "N.$": "States.Format('{}', $[0].Payload.ttl)"
+          },
+          "status": {
+            "S": "passed"
+          },
+          "type": {
+            "S": "test-run"
+          }
+        }
+      },
+      "Next": "delete test artifacts"
+    },
+    "delete test artifacts": {
+      "Type": "Parallel",
+      "Branches": [
+        {
+          "StartAt": "delete login user",
+          "States": {
+            "delete login user": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::dynamodb:deleteItem",
+              "Parameters": {
+                "TableName": "${DynamoDBStackTable}",
+                "Key": {
+                  "pk": {
+                    "S": "user#07145bac4604d9de8f836337838a9ceea38b6adff1a10ed03232730758e8b18a9f85ee5166a399c41f6e15f3999ceb2f1be6047a44542039c43575a604b1d726"
+                  },
+                  "sk": {
+                    "S": "user#07145bac4604d9de8f836337838a9ceea38b6adff1a10ed03232730758e8b18a9f85ee5166a399c41f6e15f3999ceb2f1be6047a44542039c43575a604b1d726"
+                  }
+                }
+              },
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "delete signup user",
+          "States": {
+            "delete signup user": {
+              "Type": "Task",
+              "Resource": "arn:aws:states:::dynamodb:deleteItem",
+              "Parameters": {
+                "TableName": "${DynamoDBStackTable}",
+                "Key": {
+                  "pk": {
+                    "S": "user#9354b0952996c9db2daaaff823413175931553e8cc537628a38e9a0866e4a06ed2edf169a63840e1e6e74d773612983cd0d9942e2271a0dda1c8b03378f82d23"
+                  },
+                  "sk": {
+                    "S": "user#9354b0952996c9db2daaaff823413175931553e8cc537628a38e9a0866e4a06ed2edf169a63840e1e6e74d773612983cd0d9942e2271a0dda1c8b03378f82d23"
+                  }
+                }
+              },
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "query login user sessions",
+          "States": {
+            "query login user sessions": {
+              "Type": "Task",
+              "Parameters": {
+                "TableName": "${DynamoDBStackTable}",
+                "IndexName": "gsi2",
+                "KeyConditionExpression": "#gsi2pk = :pk",
+                "ExpressionAttributeNames": {
+                  "#pk": "pk",
+                  "#gsi2pk": "gsi2pk",
+                  "#sk": "sk"
+                },
+                "ExpressionAttributeValues": {
+                  ":pk": {
+                    "S": "session#07145bac4604d9de8f836337838a9ceea38b6adff1a10ed03232730758e8b18a9f85ee5166a399c41f6e15f3999ceb2f1be6047a44542039c43575a604b1d726"
+                  }
+                },
+                "ProjectionExpression": "#pk,#sk"
+              },
+              "Resource": "arn:aws:states:::aws-sdk:dynamodb:query",
+              "Next": "delete login user sessions"
+            },
+            "delete login user sessions": {
+              "Type": "Map",
+              "ItemProcessor": {
+                "ProcessorConfig": {
+                  "Mode": "INLINE"
+                },
+                "StartAt": "delete login user session",
+                "States": {
+                  "delete login user session": {
+                    "Type": "Task",
+                    "Resource": "arn:aws:states:::dynamodb:deleteItem",
+                    "Parameters": {
+                      "Key": {
+                        "pk.$": "$.pk",
+                        "sk.$": "$.sk"
+                      },
+                      "TableName": "${DynamoDBStackTable}"
+                    },
+                    "End": true
+                  }
+                }
+              },
+              "ItemsPath": "$.Items",
+              "End": true
+            }
+          }
+        },
+        {
+          "StartAt": "query signup user sessions",
+          "States": {
+            "query signup user sessions": {
+              "Type": "Task",
+              "Parameters": {
+                "TableName": "${DynamoDBStackTable}",
+                "IndexName": "gsi2",
+                "KeyConditionExpression": "#gsi2pk = :pk",
+                "ExpressionAttributeNames": {
+                  "#pk": "pk",
+                  "#gsi2pk": "gsi2pk",
+                  "#sk": "sk"
+                },
+                "ExpressionAttributeValues": {
+                  ":pk": {
+                    "S": "session#9354b0952996c9db2daaaff823413175931553e8cc537628a38e9a0866e4a06ed2edf169a63840e1e6e74d773612983cd0d9942e2271a0dda1c8b03378f82d23"
+                  }
+                },
+                "ProjectionExpression": "#pk,#sk"
+              },
+              "Resource": "arn:aws:states:::aws-sdk:dynamodb:query",
+              "Next": "delete signup user sessions"
+            },
+            "delete signup user sessions": {
+              "Type": "Map",
+              "ItemProcessor": {
+                "ProcessorConfig": {
+                  "Mode": "INLINE"
+                },
+                "StartAt": "delete signup user session",
+                "States": {
+                  "delete signup user session": {
+                    "Type": "Task",
+                    "Resource": "arn:aws:states:::dynamodb:deleteItem",
+                    "Parameters": {
+                      "Key": {
+                        "pk.$": "$.pk",
+                        "sk.$": "$.sk"
+                      },
+                      "TableName": "${DynamoDBStackTable}"
+                    },
+                    "End": true
+                  }
+                }
+              },
+              "End": true,
+              "ItemsPath": "$.Items"
+            }
+          }
+        },
+        {
+          "StartAt": "list login user media",
+          "States": {
+            "list login user media": {
+              "Type": "Task",
+              "Next": "login user media exists?",
+              "Parameters": {
+                "Bucket": "${S3ProtectedMedia}",
+                "Prefix": "media/~/user/07145bac4604d9de8f836337838a9ceea38b6adff1a10ed03232730758e8b18a9f85ee5166a399c41f6e15f3999ceb2f1be6047a44542039c43575a604b1d726"
+              },
+              "Resource": "arn:aws:states:::aws-sdk:s3:listObjectsV2"
+            },
+            "login user media exists?": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.Contents",
+                  "IsPresent": true,
+                  "Next": "delete all login user media"
+                }
+              ],
+              "Default": "no login user media"
+            },
+            "no login user media": {
+              "Type": "Pass",
+              "End": true
+            },
+            "delete all login user media": {
+              "Type": "Map",
+              "ItemProcessor": {
+                "ProcessorConfig": {
+                  "Mode": "INLINE"
+                },
+                "StartAt": "delete login user media",
+                "States": {
+                  "delete login user media": {
+                    "Type": "Task",
+                    "Parameters": {
+                      "Bucket": "${S3ProtectedMedia}",
+                      "Key.$": "$.Key"
+                    },
+                    "Resource": "arn:aws:states:::aws-sdk:s3:deleteObject",
+                    "End": true
+                  }
+                }
+              },
+              "End": true,
+              "ItemsPath": "$.Contents"
+            }
+          }
+        },
+        {
+          "StartAt": "list signup user media",
+          "States": {
+            "list signup user media": {
+              "Type": "Task",
+              "Next": "signup user media exists?",
+              "Parameters": {
+                "Bucket": "${S3ProtectedMedia}",
+                "Prefix": "media/~/user/9354b0952996c9db2daaaff823413175931553e8cc537628a38e9a0866e4a06ed2edf169a63840e1e6e74d773612983cd0d9942e2271a0dda1c8b03378f82d23"
+              },
+              "Resource": "arn:aws:states:::aws-sdk:s3:listObjectsV2"
+            },
+            "signup user media exists?": {
+              "Type": "Choice",
+              "Choices": [
+                {
+                  "Variable": "$.Contents",
+                  "IsPresent": true,
+                  "Next": "delete all signup user media"
+                }
+              ],
+              "Default": "no signup user media"
+            },
+            "no signup user media": {
+              "Type": "Pass",
+              "End": true
+            },
+            "delete all signup user media": {
+              "Type": "Map",
+              "ItemProcessor": {
+                "ProcessorConfig": {
+                  "Mode": "INLINE"
+                },
+                "StartAt": "delete signup user media",
+                "States": {
+                  "delete signup user media": {
+                    "Type": "Task",
+                    "Parameters": {
+                      "Bucket": "${S3ProtectedMedia}",
+                      "Key.$": "$.Key"
+                    },
+                    "Resource": "arn:aws:states:::aws-sdk:s3:deleteObject",
+                    "End": true
+                  }
+                }
+              },
+              "End": true,
+              "ItemsPath": "$.Contents"
+            }
+          }
+        }
+      ],
+      "Next": "get passed"
+    },
+    "get passed": {
+      "Type": "Task",
+      "Resource": "arn:aws:states:::dynamodb:getItem",
+      "Parameters": {
+        "TableName": "${DynamoDBStackTable}",
+        "Key": {
+          "pk": {
+            "S.$": "States.Format('test#run#{}', $$.Execution.Id)"
+          },
+          "sk": {
+            "S.$": "$$.Execution.Id"
+          }
+        }
+      },
+      "Next": "passed?"
+    },
+    "passed?": {
+      "Type": "Choice",
+      "Choices": [
+        {
+          "Variable": "$.Item.pk",
+          "IsPresent": true,
+          "Next": "pass"
+        }
+      ],
+      "Default": "fail"
+    },
+    "pass": {
+      "Type": "Pass",
+      "End": true
+    },
+    "fail": {
+      "Type": "Fail"
+    }
+  }
+}
