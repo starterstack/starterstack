@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.0.10](https://github.com/starterstack/starterstack/compare/v0.0.9...v0.0.10) (2024-02-19)
+
+
+### Bug Fixes
+
+* add dynamodb stack audit ([1a19de1](https://github.com/starterstack/starterstack/commit/1a19de1974d7950567d9880a28918136a6fc5c3b))
+* add test stack ([#86](https://github.com/starterstack/starterstack/issues/86)) ([e147265](https://github.com/starterstack/starterstack/commit/e1472651931669040928c649c5195b695b586644))
+* **dynamodb stack audit:** remove lambda environment variables ([8debe06](https://github.com/starterstack/starterstack/commit/8debe066337a6627462cc65bb59cc25a40de4c38))
+* **notification:** remove ttl event ([08f3a27](https://github.com/starterstack/starterstack/commit/08f3a2770695b891b898e70a565e53fb3e7916b2))
+* **test:** add dlq to capture token lambda ([cd918b9](https://github.com/starterstack/starterstack/commit/cd918b9fccbaf2afb205590f822fe73e11f9043b))
+* **test:** sanit test lambda typo (codeuri) ([216831b](https://github.com/starterstack/starterstack/commit/216831b6b4cbd457715c74873bf174878415fb43))
+
 ## [0.0.9](https://github.com/starterstack/starterstack/compare/v0.0.8...v0.0.9) (2024-02-17)
 
 
