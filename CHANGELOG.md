@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.11](https://github.com/starterstack/starterstack/compare/v0.0.10...v0.0.11) (2024-02-19)
+
+
+### Bug Fixes
+
+* **dynamodb audit:** lint errors (unused input) ([3051ca1](https://github.com/starterstack/starterstack/commit/3051ca154ef7acaa63e288db12e58bc8e7a9389e))
+
 ## [0.0.10](https://github.com/starterstack/starterstack/compare/v0.0.9...v0.0.10) (2024-02-19)
 
 
