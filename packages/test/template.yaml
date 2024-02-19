@@ -412,7 +412,7 @@ Resources:
   SanityTestsFunction:
     Type: AWS::Serverless::Function
     Properties:
-      CodeUri: functions/logout/
+      CodeUri: functions/sanity-tests/
       Handler: index.handler
       Description: 'sanity tests'
       Timeout: 300
