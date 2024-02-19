@@ -59,7 +59,7 @@ export default async function deployStrategy({
       ? ['cdn', 'eventbus', 'dynamodb', 'cloudfront-us-east-1']
       : ['cdn', 'eventbus'],
     //backend: ['rest', 'websocket', 'graphql', 'ses']
-    backend: ['ses']
+    backend: ['websocket', 'ses']
   }
 
   const deployed = lintOnly ? {} : await listDeployed(awsRegions)
