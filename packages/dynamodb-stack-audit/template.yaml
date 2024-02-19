@@ -21,8 +21,6 @@ Parameters:
     Type: String
   Stage:
     Type: String
-  StageRoot:
-    Type: String
   LogRetentionInDays:
     Type: String
   GITCommit:
@@ -58,8 +56,6 @@ Metadata:
               exportName: snsAlarmTopic
             - name: Stage
               exportName: stage
-            - name: StageRoot
-              exportName: stageOrStackRoot
             - name: LogRetentionInDays
               exportName: logRetentionInDays
             - name: EventBusArn
