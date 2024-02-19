@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.0.12](https://github.com/starterstack/starterstack/compare/v0.0.11...v0.0.12) (2024-02-19)
+
+
+### Bug Fixes
+
+* add websocket ([b8dc88b](https://github.com/starterstack/starterstack/commit/b8dc88ba3141a77dfa3fd0f3c03dc7fd0657bd94))
+* **deploy strategy:** add websocket ([650f841](https://github.com/starterstack/starterstack/commit/650f841c3705a21c39318e65de5c001f38778a73))
+* **websocket:** connections role ([92179fd](https://github.com/starterstack/starterstack/commit/92179fd9b379e507479d7807d0b6f821c7998e6a))
+
 ## [0.0.11](https://github.com/starterstack/starterstack/compare/v0.0.10...v0.0.11) (2024-02-19)
 
 
