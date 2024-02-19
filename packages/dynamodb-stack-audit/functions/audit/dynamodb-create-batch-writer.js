@@ -1,0 +1,1 @@
+../../../shared/dynamodb-create-batch-writer.js
