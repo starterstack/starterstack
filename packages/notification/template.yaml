@@ -37,15 +37,11 @@ Parameters:
     Type: String
   EventBusName:
     Type: String
-  EventBusArn:
-    Type: String
   SESTemplateHelloResponseEn:
     Type: String
   SESTemplateLoginSignupEn:
     Type: String
   SESDefaultConfigurationSet:
-    Type: String
-  DynamoDBStackTableStreamArn:
     Type: String
   SNSAlarmTopic:
     Type: String
@@ -84,10 +80,6 @@ Metadata:
               exportName: logRetentionInDays
             - name: EventBusName
               exportName: eventBusName
-            - name: EventBusArn
-              exportName: eventBusArn
-            - name: DynamoDBStackTableStreamArn
-              exportName: dynamodbStackTableStreamArn
             - name: SESTemplateLoginSignupEn
               exportName: sesTemplateLoginSignupEn
             - name: SESTemplateHelloResponseEn
@@ -180,132 +172,6 @@ Resources:
       Tags:
         - Key: 'Name'
           Value: !Sub ${AWS::StackName}-lambda-dlq
-        - Key: 'ManagedBy'
-          Value: !Ref Stack
-  PipeDynamoDBToEventBridgeRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Action:
-              - sts:AssumeRole
-            Principal:
-              Service:
-                - pipes.amazonaws.com
-      Policies:
-        - PolicyName: !Sub '${AWS::StackName}-pipe-dynamodb-to-eventbridge-dlq-policy'
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - sqs:SendMessage
-                Resource: !GetAtt PipesDlq.Arn
-        - PolicyName: !Sub '${AWS::StackName}-pipe-dynamodb-to-eventbridge-source-policy'
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - dynamodb:DescribeStream
-                  - dynamodb:GetRecords
-                  - dynamodb:GetShardIterator
-                  - dynamodb:ListStreams
-                Resource: !Ref DynamoDBStackTableStreamArn
-        - PolicyName: !Sub '${AWS::StackName}-pipe-dynamodb-to-eventbridge-target-policy'
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - events:PutEvents
-                Resource:
-                  - !Ref EventBusArn
-      Tags:
-        - Key: 'Name'
-          Value: !Sub '${AWS::StackName}-pipe-dynamodb-to-eventbridge-role'
-        - Key: 'ManagedBy'
-          Value: !Ref Stack
-  PipeDynamoDBToTtlEventRole:
-    Type: AWS::IAM::Role
-    Properties:
-      AssumeRolePolicyDocument:
-        Version: '2012-10-17'
-        Statement:
-          - Effect: Allow
-            Action:
-              - sts:AssumeRole
-            Principal:
-              Service:
-                - pipes.amazonaws.com
-      Policies:
-        - PolicyName: !Sub '${AWS::StackName}-pipe-dynamodb-to-ttl-event-dlq-policy'
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - sqs:SendMessage
-                Resource: !GetAtt PipesDlq.Arn
-        - PolicyName: !Sub '${AWS::StackName}-pipe-dynamodb-to-ttl-event-source-policy'
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - dynamodb:DescribeStream
-                  - dynamodb:GetRecords
-                  - dynamodb:GetShardIterator
-                  - dynamodb:ListStreams
-                Resource: !Ref DynamoDBStackTableStreamArn
-        - PolicyName: !Sub '${AWS::StackName}-pipe-dynamodb-to-ttl-event-target-policy'
-          PolicyDocument:
-            Version: '2012-10-17'
-            Statement:
-              - Effect: Allow
-                Action:
-                  - lambda:InvokeFunction
-                Resource: !GetAtt TtlEventFunction.Arn
-      Tags:
-        - Key: 'Name'
-          Value: !Sub '${AWS::StackName}-pipe-dynamodb-to-ttl-event-role'
-        - Key: 'ManagedBy'
-          Value: !Ref Stack
-  PipeTtlEvent:
-    Type: AWS::Pipes::Pipe
-    Properties:
-      RoleArn: !GetAtt PipeDynamoDBToTtlEventRole.Arn
-      Source: !Ref DynamoDBStackTableStreamArn
-      Description: 'Pipe to connect stack table stream ttl-event changes to ttl-event lambda'
-      SourceParameters:
-        DynamoDBStreamParameters:
-          BatchSize: 10
-          DeadLetterConfig:
-            Arn: !GetAtt PipesDlq.Arn
-          OnPartialBatchItemFailure: AUTOMATIC_BISECT
-          ParallelizationFactor: 4
-          StartingPosition: LATEST
-          MaximumBatchingWindowInSeconds: 1
-        FilterCriteria:
-          Filters:
-            - Pattern: '{ "eventName": [ "REMOVE" ], "userIdentity": { "type": [ "Service" ], "principalId": [ "dynamodb.amazonaws.com" ] }, "dynamodb": { "OldImage": { "ttlEvent": { "M": { "source": { "S": [ { "exists": true } ] }, "detailType": { "S": [ { "exists": true } ] } } } } } }'
-      Target: !GetAtt TtlEventFunction.Arn
-      TargetParameters:
-        LambdaFunctionParameters:
-          InvocationType: 'FIRE_AND_FORGET'
-
-      Tags:
-        Name: !Sub ${AWS::StackName}-pipe-ttl-event
-        ManagedBy: !Ref Stage
-  PipesDlq:
-    Type: AWS::SQS::Queue
-    Properties:
-      SqsManagedSseEnabled: true
-      Tags:
-        - Key: 'Name'
-          Value: !Sub ${AWS::StackName}-pipes-dlq
         - Key: 'ManagedBy'
           Value: !Ref Stack
 
@@ -439,45 +305,6 @@ Resources:
             Destination: !GetAtt LambdaDlq.Arn
         MaximumEventAgeInSeconds: 900
         MaximumRetryAttempts: 2
-    Metadata:
-      BuildMethod: makefile
-
-  TtlEventFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: functions/ttl-event/
-      Handler: index.handler
-      Description: 'ttl event'
-      Timeout: 6
-      MemorySize: 128
-      Environment:
-        Variables:
-          EVENTBRIDGE_BUS_NAME: !Ref EventBusName
-      Policies:
-        - SQSSendMessagePolicy:
-            QueueName: !GetAtt LambdaDlq.QueueName
-        - EventBridgePutEventsPolicy:
-            EventBusName: !Ref EventBusName
-        - Version: 2012-10-17
-          Statement:
-            - Sid: CloudWatchLogGroup
-              Action:
-                - logs:CreateLogStream
-                - logs:PutLogEvents
-              Resource: !GetAtt CloudWatchLogGroup.Arn
-              Effect: Allow
-      LoggingConfig:
-        LogGroup: !Ref CloudWatchLogGroup
-      DeadLetterQueue:
-        TargetArn: !GetAtt LambdaDlq.Arn
-        Type: SQS
-      EventInvokeConfig:
-        DestinationConfig:
-          OnFailure:
-            Type: SQS
-            Destination: !GetAtt LambdaDlq.Arn
-        MaximumEventAgeInSeconds: 300
-        MaximumRetryAttempts: 1
     Metadata:
       BuildMethod: makefile
 

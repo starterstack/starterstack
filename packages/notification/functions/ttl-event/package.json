@@ -1,8 +1,0 @@
-{
-  "name": "ttl-event",
-  "type": "module",
-  "dependencies": {
-    "aws-xray-sdk-core": "3.5.2"
-  },
-  "private": true
-}
