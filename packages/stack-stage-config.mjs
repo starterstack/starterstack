@@ -648,6 +648,24 @@ export default async function getSettings({
     get s3ProtectedMediaLogs() {
       return getCDNOutput('S3ProtectedMediaLogsBucket')
     },
+    get apiGatewayRestApi() {
+      return getCDNOutput('ApiGatewayRest')
+    },
+    get apiGatewayRestApiResourceId() {
+      return getCDNOutput('ApiGatewayRestResourceId')
+    },
+    get apiGatewayRestApiAuthorizer() {
+      return getCDNOutput('ApiGatewayRestApiAnonymousAuthorizer')
+    },
+    get apiGatewayRestApiAnonymousAuthorizer() {
+      return getCDNOutput('ApiGatewayRestApiAnonymousAuthorizer')
+    },
+    get apiGatewayWebSocketId() {
+      return getCDNOutput('ApiGatewayWebSocket')
+    },
+    get websocketAuthFunction() {
+      return getCDNOutput('WebSocketAuthFunction')
+    },
     get cloudFrontWafACL() {
       return getCloudFormationOutput({
         region: 'us-east-1',

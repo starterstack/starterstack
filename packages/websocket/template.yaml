@@ -1,0 +1,180 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform:
+  - AWS::LanguageExtensions
+  - AWS::Serverless-2016-10-31
+
+Description: WebSocket
+
+Globals:
+  Function:
+    Tracing: Active
+    Architectures:
+      - arm64
+    Runtime: nodejs20.x
+    PropagateTags: true
+    Environment:
+      Variables:
+        GIT_COMMIT: !Ref GITCommit
+
+Parameters:
+  Stack:
+    Type: String
+  Stage:
+    Type: String
+  LogRetentionInDays:
+    Type: String
+  GITCommit:
+    Type: String
+  DynamoDBStackTableName:
+    Type: String
+  ApiGatewayWebSocketId:
+    Type: String
+  WebSocketAuthFunction:
+    Type: String
+  SNSAlarmTopic:
+    Type: String
+
+Metadata:
+  expand:
+    plugins:
+      - '../git.mjs'
+      - '../hash.mjs'
+      - '@starterstack/sam-expand/plugins/parameter-overrides'
+      - '../stack-stage-config.mjs'
+      - './websocket.mjs'
+      - '@starterstack/sam-expand/plugins/run-script-hooks'
+      - '../purge-lambda-versions.mjs'
+      - '../generate-cloudwatch-alarms.mjs'
+
+    config:
+      stackStageConfig:
+        suffixStage: true
+        addMappings: true
+      parameterOverrides:
+        - location: ../stack-stage-config.mjs
+          overrides:
+            - name: SNSAlarmTopic
+              exportName: snsAlarmTopic
+            - name: Stage
+              exportName: stage
+            - name: LogRetentionInDays
+              exportName: logRetentionInDays
+            - name: DynamoDBStackTableName
+              exportName: dynamodbStackTableName
+            - name: ApiGatewayWebSocketId
+              exportName: apiGatewayWebSocketId
+            - name: WebSocketAuthFunction
+              exportName: websocketAuthFunction
+        - location: ../git.mjs
+          overrides:
+            - name: GITCommit
+              exportName: commit
+      purgeLambdaVersions:
+        keep: 3
+      websocket:
+        connectionAuthorizer:
+          arn: !Ref WebSocketAuthFunction
+          identitySource: 'route.request.header.cookie'
+        routes:
+          - logicalId: 'ConnectionsFunction'
+            apiId: !Ref ApiGatewayWebSocketId
+            routes:
+              - $connect
+              - $disconnect
+              - connection_init
+              - ping
+      script:
+        hooks:
+          post:deploy:
+            - command: ../tag-eventbus-rules.sh
+              args:
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: stackName
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: region
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: stage
+            - command: ../tag-cloudwatch-alarms.sh
+              args:
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: stackName
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: region
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: stage
+      alarms:
+        snsTopicRef: SNSAlarmTopic
+
+Resources:
+  CloudWatchLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}
+      RetentionInDays: !Ref LogRetentionInDays
+      Tags:
+        - Key: 'Name'
+          Value: !Sub '${AWS::StackName} lambda logs'
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+
+  ConnectionsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/connections/
+      Handler: index.handler
+      Description: 'websocket connections'
+      Timeout: 6
+      MemorySize: 128
+      Environment:
+        Variables:
+          DYNAMODB_TABLE: !Ref DynamoDBStackTableName
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Sid: CloudWatchLogGroup
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !GetAtt CloudWatchLogGroup.Arn
+              Effect: Allow
+        - Version: 2012-10-17
+          Statement:
+            - Sid: ApiGateway
+              Action:
+                - execute-api:ManageConnections
+              Resource:
+                - !Sub 'arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}${ApiGatewayWebSocketId}/${Stage}/POST/@connections/*'
+                - !Sub 'arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}${ApiGatewayWebSocketId}/${Stage}/DELETE/@connections/*'
+              Effect: Allow
+            - Sid: DynamoDBItem
+              Action:
+                - dynamodb:PutItem
+                - dynamodb:DeleteItem
+                - dynamodb:Query
+              Resource:
+                - !Sub arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTableName}
+              Condition:
+                ForAllValues:StringLike:
+                  dynamodb:LeadingKeys:
+                    - 'graphql-ws-connection#*'
+              Effect: Allow
+            - Sid: DynamoDBBatchWrite
+              Action:
+                - dynamodb:BatchWriteItem
+              Resource:
+                - !Sub arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTableName}
+              Effect: Allow
+              Condition:
+                ForAllValues:StringLike:
+                  dynamodb:LeadingKeys:
+                    - 'graphql-ws-subscription#id#*'
+      LoggingConfig:
+        LogGroup: !Ref CloudWatchLogGroup
+    Metadata:
+      BuildMethod: makefile

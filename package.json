@@ -87,6 +87,7 @@
     "@actions/github": "6.0.0",
     "@aws-sdk/client-acm": "3.507.0",
     "@aws-sdk/client-api-gateway": "3.509.0",
+    "@aws-sdk/client-apigatewaymanagementapi": "3.515.0",
     "@aws-sdk/client-cloudformation": "3.490.0",
     "@aws-sdk/client-cloudfront-keyvaluestore": "3.504.0",
     "@aws-sdk/client-dynamodb": "3.490.0",
