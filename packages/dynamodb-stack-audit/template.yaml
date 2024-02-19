@@ -14,8 +14,6 @@ Globals:
     PropagateTags: true
     Environment:
       Variables:
-        STACK_NAME: !Ref Stack
-        STACK_ORIGIN: !Ref StageRoot
         GIT_COMMIT: !Ref GITCommit
 
 Parameters:
