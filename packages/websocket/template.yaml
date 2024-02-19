@@ -149,8 +149,8 @@ Resources:
               Action:
                 - execute-api:ManageConnections
               Resource:
-                - !Sub 'arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}${ApiGatewayWebSocketId}/${Stage}/POST/@connections/*'
-                - !Sub 'arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}${ApiGatewayWebSocketId}/${Stage}/DELETE/@connections/*'
+                - !Sub 'arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayWebSocketId}/${Stage}/POST/@connections/*'
+                - !Sub 'arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayWebSocketId}/${Stage}/DELETE/@connections/*'
               Effect: Allow
             - Sid: DynamoDBItem
               Action:
