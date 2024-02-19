@@ -99,6 +99,15 @@ Metadata:
         snsTopicRef: SNSAlarmTopic
 
 Resources:
+  LambdaDlq:
+    Type: AWS::SQS::Queue
+    Properties:
+      SqsManagedSseEnabled: true
+      Tags:
+        - Key: 'Name'
+          Value: !Sub ${AWS::StackName}-lambda-dlq
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
   CloudWatchLogGroup:
     Type: AWS::Logs::LogGroup
     Properties:
@@ -339,7 +348,7 @@ Resources:
     Metadata:
       BuildMethod: makefile
 
-  LoginEmailFunction:
+  CaptureTokenFunction:
     Type: AWS::Serverless::Function
     Properties:
       CodeUri: functions/capture-token/
@@ -348,6 +357,8 @@ Resources:
       Timeout: 300
       MemorySize: 128
       Policies:
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt LambdaDlq.QueueName
         - Version: 2012-10-17
           Statement:
             - Sid: StepFunction
@@ -385,7 +396,14 @@ Resources:
             RetryPolicy:
               MaximumEventAgeInSeconds: 300
               MaximumRetryAttempts: 1
+      DeadLetterQueue:
+        TargetArn: !GetAtt LambdaDlq.Arn
+        Type: SQS
       EventInvokeConfig:
+        DestinationConfig:
+          OnFailure:
+            Type: SQS
+            Destination: !GetAtt LambdaDlq.Arn
         MaximumEventAgeInSeconds: 300
         MaximumRetryAttempts: 0
     Metadata:
