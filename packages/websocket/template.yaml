@@ -41,7 +41,6 @@ Metadata:
       - '../hash.mjs'
       - '@starterstack/sam-expand/plugins/parameter-overrides'
       - '../stack-stage-config.mjs'
-      - './websocket.mjs'
       - '@starterstack/sam-expand/plugins/run-script-hooks'
       - '../purge-lambda-versions.mjs'
       - '../generate-cloudwatch-alarms.mjs'
@@ -71,18 +70,6 @@ Metadata:
               exportName: commit
       purgeLambdaVersions:
         keep: 3
-      websocket:
-        connectionAuthorizer:
-          arn: !Ref WebSocketAuthFunction
-          identitySource: 'route.request.header.cookie'
-        routes:
-          - logicalId: 'ConnectionsFunction'
-            apiId: !Ref ApiGatewayWebSocketId
-            routes:
-              - $connect
-              - $disconnect
-              - connection_init
-              - ping
       script:
         hooks:
           post:deploy:
@@ -178,3 +165,57 @@ Resources:
         LogGroup: !Ref CloudWatchLogGroup
     Metadata:
       BuildMethod: makefile
+
+    ConnectionsFunctionPermissionWebSockets:
+      Type: AWS::Lambda::Permission
+      Properties:
+        FunctionName: !GetAtt ConnectionsFunction.Arn
+        Action: lambda:InvokeFunction
+        Principal: apigateway.amazonaws.com
+
+    ConnectionsFunctionIntegrationWebSockets:
+      Type: AWS::ApiGatewayV2::Integration
+      Properties:
+        ApiId: !Ref ApiGatewayWebSocketId
+        IntegrationType: AWS_PROXY
+        IntegrationUri: !Sub 'arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ConnectionsFunction.Arn}/invocations'
+
+    ConnectionsFunctionAuthWebSockets:
+      Type: AWS::ApiGatewayV2::Authorizer
+      Properties:
+        ApiId: !Ref ApiGatewayWebSocketId
+        Name: ConnectionsFunctionWebSocketAuth
+        AuthorizerType: REQUEST
+        AuthorizerUri: !Sub 'arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${WebSocketAuthFunction}/invocations'
+        IdentitySource:
+          - route.request.header.cookie
+
+    ConnectionsFunctionConnectRoute:
+      Type: AWS::ApiGatewayV2::Route
+      Properties:
+        ApiId: !Ref ApiGatewayWebSocketId
+        RouteKey: $connect
+        AuthorizationType: CUSTOM
+        AuthorizerId: !Ref ConnectionsFunctionAuthWebSockets
+        Target: !Sub integrations/${ConnectionsFunctionIntegrationWebSockets}
+
+    ConnectionsFunctionDisconnectRoute:
+      Type: AWS::ApiGatewayV2::Route
+      Properties:
+        ApiId: !Ref ApiGatewayWebSocketId
+        RouteKey: $disconnect
+        Target: !Sub integrations/${ConnectionsFunctionIntegrationWebSockets}
+
+    ConnectionsFunctionConnectionInitRoute:
+      Type: AWS::ApiGatewayV2::Route
+      Properties:
+        ApiId: !Ref ApiGatewayWebSocketId
+        RouteKey: connection_init
+        Target: !Sub integrations/${ConnectionsFunctionIntegrationWebSockets}
+
+    ConnectionsFunctionPingRoute:
+      Type: AWS::ApiGatewayV2::Route
+      Properties:
+        ApiId: !Ref ApiGatewayWebSocketId
+        RouteKey: ping
+        Target: !Sub integrations/${ConnectionsFunctionIntegrationWebSockets}
