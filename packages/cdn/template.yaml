@@ -37,8 +37,6 @@ Parameters:
     Type: String
   PriceClass:
     Type: String
-  CaptureUserLanguageAndDeviceValue:
-    Type: String
   CloudFrontWafACL:
     Type: String
   AcmCertificateArn:
@@ -58,6 +56,14 @@ Parameters:
   CloudFrontViewerResponseCode:
     Type: String
   SNSAlarmTopic:
+    Type: String
+  StaticCachePolicy:
+    Type: String
+  QueryCachePolicy:
+    Type: String
+  BasicOriginRequestPolicy:
+    Type: String
+  WebSocketOriginRequestPolicy:
     Type: String
 
 Metadata:
@@ -108,12 +114,18 @@ Metadata:
               exportName: apiGatewayRestLogFormat
             - name: DynamoDBStackTableName
               exportName: dynamodbStackTableName
+            - name: StaticCachePolicy
+              exportName: staticCachePolicy
+            - name: QueryCachePolicy
+              exportName: queryCachePolicy
+            - name: BasicOriginRequestPolicy
+              exportName: basicOriginRequestPolicy
+            - name: WebSocketOriginRequestPolicy
+              exportName: webSocketOriginRequestPolicy
         - location: ../settings.json
           overrides:
             - name: PriceClass
               exportName: priceClass
-            - name: CaptureUserLanguageAndDeviceValue
-              exportName: captureUserLanguageAndDevice
         - location: ./cloudfront-functions.mjs
           overrides:
             - name: CloudFrontViewerRequestCode
@@ -216,9 +228,6 @@ Conditions:
       - AWSAccounts
       - !Ref 'AWS::AccountId'
       - wafEnabled
-    - true
-  CaptureUserLanguageAndDevice: !Equals
-    - !Ref CaptureUserLanguageAndDeviceValue
     - true
 
 Resources:
@@ -851,7 +860,7 @@ Resources:
             PathPattern: '/media/*'
           - AllowedMethods: ['GET', 'HEAD']
             CachePolicyId: '4135ea2d-6df8-44a3-9df3-4b5a84be39ad' # disabled
-            OriginRequestPolicyId: !Ref WebsocketOriginRequestPolicy
+            OriginRequestPolicyId: !Ref WebSocketOriginRequestPolicy
             TargetOriginId: ApiGatewayWebSocketOrigin
             ViewerProtocolPolicy: https-only
             ResponseHeadersPolicyId: !Ref CloudFrontResponseHeaderPolicy
@@ -1188,121 +1197,6 @@ Resources:
       Tags:
         Name: !Sub '${AWS::StackName} websocket ${Stage} stage'
         ManagedBy: !Ref Stack
-
-  StaticCachePolicy:
-    Type: AWS::CloudFront::CachePolicy
-    Properties:
-      CachePolicyConfig:
-        Comment: !Sub 'Created by SAM by ${AWS::StackName}'
-        DefaultTTL: 0
-        Name: !Sub '${AWS::StackName}Static'
-        MinTTL: 0
-        MaxTTL: 31536000
-        ParametersInCacheKeyAndForwardedToOrigin:
-          CookiesConfig:
-            CookieBehavior: none
-          QueryStringsConfig:
-            QueryStringBehavior: none
-          EnableAcceptEncodingBrotli: true
-          EnableAcceptEncodingGzip: true
-          HeadersConfig:
-            HeaderBehavior: none
-
-  QueryCachePolicy:
-    Type: AWS::CloudFront::CachePolicy
-    Properties:
-      CachePolicyConfig:
-        Comment: !Sub 'Created by SAM by ${AWS::StackName}'
-        DefaultTTL: 0
-        Name: !Sub '${AWS::StackName}Query'
-        MinTTL: 0
-        MaxTTL: 31536000
-        ParametersInCacheKeyAndForwardedToOrigin:
-          CookiesConfig:
-            CookieBehavior: 'whitelist'
-            Cookies:
-              - token
-          QueryStringsConfig:
-            QueryStringBehavior: whitelist
-            QueryStrings:
-              - token
-          EnableAcceptEncodingBrotli: true
-          EnableAcceptEncodingGzip: true
-          HeadersConfig:
-            HeaderBehavior: 'whitelist'
-            Headers:
-              - range
-              - x-api
-
-  BasicOriginRequestPolicy:
-    Type: AWS::CloudFront::OriginRequestPolicy
-    Properties:
-      OriginRequestPolicyConfig:
-        Comment: !Sub 'Created by SAM by ${AWS::StackName}'
-        Name: !Sub '${AWS::StackName}BasicOriginRequestPolicy'
-        CookiesConfig:
-          CookieBehavior: 'whitelist'
-          Cookies:
-            - token
-        QueryStringsConfig:
-          QueryStringBehavior: 'all'
-        HeadersConfig:
-          HeaderBehavior: 'whitelist'
-          Headers:
-            Fn::If:
-              - CaptureUserLanguageAndDevice
-              - - content-type
-                - accept
-                - user-agent
-                - range
-                - CloudFront-Viewer-Country-Name
-                - CloudFront-Is-Tablet-Viewer
-                - CloudFront-Is-Mobile-Viewer
-                - CloudFront-Is-Desktop-Viewer
-              - - content-type
-                - accept
-                - user-agent
-                - range
-                - CloudFront-Is-Tablet-Viewer
-                - CloudFront-Is-Mobile-Viewer
-                - CloudFront-Is-Desktop-Viewer
-
-  WebsocketOriginRequestPolicy:
-    Type: AWS::CloudFront::OriginRequestPolicy
-    Properties:
-      OriginRequestPolicyConfig:
-        Comment: !Sub 'Created by SAM by ${AWS::StackName}'
-        Name: !Sub '${AWS::StackName}WebSocketOriginRequestPolicy'
-        CookiesConfig:
-          CookieBehavior: whitelist
-          Cookies:
-            - token
-        QueryStringsConfig:
-          QueryStringBehavior: none
-        HeadersConfig:
-          HeaderBehavior: whitelist
-          Headers:
-            Fn::If:
-              - CaptureUserLanguageAndDevice
-              - - user-agent
-                - Sec-WebSocket-Key
-                - Sec-WebSocket-Version
-                - Sec-WebSocket-Protocol
-                - Sec-WebSocket-Accept
-                - CloudFront-Viewer-Country-Name
-                - CloudFront-Is-Tablet-Viewer
-                - CloudFront-Is-Mobile-Viewer
-                - CloudFront-Is-Desktop-Viewer
-                - x-url
-              - - user-agent
-                - Sec-WebSocket-Key
-                - Sec-WebSocket-Version
-                - Sec-WebSocket-Protocol
-                - Sec-WebSocket-Accept
-                - CloudFront-Is-Tablet-Viewer
-                - CloudFront-Is-Mobile-Viewer
-                - CloudFront-Is-Desktop-Viewer
-                - x-url
 
   S3ReplicateFunction:
     Condition: ShouldReplicate

@@ -109,8 +109,9 @@ export const lifecycle = async function stackStageConfig({
     if (!process.env.CI) {
       const stage = argvReader('Stage', { parameter: true })
       const offline = process.env.IS_OFFLINE ? ' IS_OFFLINE=true' : ''
+      const region = argvReader('region') ?? 'us-east-1'
       console.log(
-        `\u001B[0;33m[*] Lint SAM template: STAGE=${stage}${offline} npx sam-expand validate -t .aws-sam/build/template.yaml --lint\u001B[0;33m`
+        `\u001B[0;33m[*] Lint SAM template: STAGE=${stage}${offline} npx sam-expand validate -t .aws-sam/build/template.yaml --region ${region} --lint\u001B[0;33m`
       )
     }
     return
@@ -434,6 +435,18 @@ export default async function getSettings({
    * @param {string} outputKey
    * @returns {Promise<string | undefined>}
    */
+  const getRegionOutput = (outputKey) => {
+    return getCloudFormationOutput({
+      region: config.stackRegion,
+      stackName: `${settings.stackName}-region`,
+      outputKey
+    })
+  }
+
+  /**
+   * @param {string} outputKey
+   * @returns {Promise<string | undefined>}
+   */
   const getCDNOutput = (outputKey) => {
     return getCloudFormationOutput({
       region: config.stackRegion,
@@ -700,6 +713,18 @@ export default async function getSettings({
     },
     get dynamodbStackTableStreamArn() {
       return getDynamoDBOutput('DynamoDBStackTableStreamArn')
+    },
+    get staticCachePolicy() {
+      return getRegionOutput('StaticCachePolicy')
+    },
+    get queryCachePolicy() {
+      return getRegionOutput('QueryCachePolicy')
+    },
+    get basicOriginRequestPolicy() {
+      return getRegionOutput('BasicOriginRequestPolicy')
+    },
+    get webSocketOriginRequestPolicy() {
+      return getRegionOutput('WebSocketOriginRequestPolicy')
     }
   }
 }

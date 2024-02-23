@@ -14,6 +14,8 @@ Parameters:
     Type: String
   AccountPerStage:
     Type: String
+  CaptureUserLanguageAndDeviceValue:
+    Type: String
 Metadata:
   expand:
     plugins:
@@ -35,6 +37,10 @@ Metadata:
               exportName: accountPerStage
             - name: LogRetentionInDays
               exportName: logRetentionInDays
+        - location: ../settings.json
+          overrides:
+            - name: CaptureUserLanguageAndDeviceValue
+              exportName: captureUserLanguageAndDevice
 
 Conditions:
   IsStackRegion: !Or
@@ -44,6 +50,9 @@ Conditions:
     - !Equals
       - !Sub ${AWS::Region}
       - !Ref AccountRegion
+  CaptureUserLanguageAndDevice: !Equals
+    - !Ref CaptureUserLanguageAndDeviceValue
+    - true
 
 Resources:
   LogResourcePolicy:
@@ -81,4 +90,147 @@ Resources:
           Value: !Sub '${AWS::StackName} api gateway welcome log group'
         - Key: 'ManagedBy'
           Value: !Ref Stack
+
+  StaticCachePolicy:
+    Type: AWS::CloudFront::CachePolicy
+    Condition: IsStackRegion
+    Properties:
+      CachePolicyConfig:
+        Comment: !Sub 'Created by SAM by ${AWS::StackName}'
+        DefaultTTL: 0
+        Name: !Sub '${AWS::StackName}Static'
+        MinTTL: 0
+        MaxTTL: 31536000
+        ParametersInCacheKeyAndForwardedToOrigin:
+          CookiesConfig:
+            CookieBehavior: none
+          QueryStringsConfig:
+            QueryStringBehavior: none
+          EnableAcceptEncodingBrotli: true
+          EnableAcceptEncodingGzip: true
+          HeadersConfig:
+            HeaderBehavior: none
+
+  QueryCachePolicy:
+    Type: AWS::CloudFront::CachePolicy
+    Condition: IsStackRegion
+    Properties:
+      CachePolicyConfig:
+        Comment: !Sub 'Created by SAM by ${AWS::StackName}'
+        DefaultTTL: 0
+        Name: !Sub '${AWS::StackName}Query'
+        MinTTL: 0
+        MaxTTL: 31536000
+        ParametersInCacheKeyAndForwardedToOrigin:
+          CookiesConfig:
+            CookieBehavior: 'whitelist'
+            Cookies:
+              - token
+          QueryStringsConfig:
+            QueryStringBehavior: whitelist
+            QueryStrings:
+              - token
+          EnableAcceptEncodingBrotli: true
+          EnableAcceptEncodingGzip: true
+          HeadersConfig:
+            HeaderBehavior: 'whitelist'
+            Headers:
+              - range
+              - x-api
+
+  BasicOriginRequestPolicy:
+    Type: AWS::CloudFront::OriginRequestPolicy
+    Condition: IsStackRegion
+    Properties:
+      OriginRequestPolicyConfig:
+        Comment: !Sub 'Created by SAM by ${AWS::StackName}'
+        Name: !Sub '${AWS::StackName}BasicOriginRequestPolicy'
+        CookiesConfig:
+          CookieBehavior: 'whitelist'
+          Cookies:
+            - token
+        QueryStringsConfig:
+          QueryStringBehavior: 'all'
+        HeadersConfig:
+          HeaderBehavior: 'whitelist'
+          Headers:
+            Fn::If:
+              - CaptureUserLanguageAndDevice
+              - - content-type
+                - accept
+                - user-agent
+                - range
+                - CloudFront-Viewer-Country-Name
+                - CloudFront-Is-Tablet-Viewer
+                - CloudFront-Is-Mobile-Viewer
+                - CloudFront-Is-Desktop-Viewer
+              - - content-type
+                - accept
+                - user-agent
+                - range
+                - CloudFront-Is-Tablet-Viewer
+                - CloudFront-Is-Mobile-Viewer
+                - CloudFront-Is-Desktop-Viewer
+
+  WebSocketOriginRequestPolicy:
+    Type: AWS::CloudFront::OriginRequestPolicy
+    Condition: IsStackRegion
+    Properties:
+      OriginRequestPolicyConfig:
+        Comment: !Sub 'Created by SAM by ${AWS::StackName}'
+        Name: !Sub '${AWS::StackName}WebSocketOriginRequestPolicy'
+        CookiesConfig:
+          CookieBehavior: whitelist
+          Cookies:
+            - token
+        QueryStringsConfig:
+          QueryStringBehavior: none
+        HeadersConfig:
+          HeaderBehavior: whitelist
+          Headers:
+            Fn::If:
+              - CaptureUserLanguageAndDevice
+              - - user-agent
+                - Sec-WebSocket-Key
+                - Sec-WebSocket-Version
+                - Sec-WebSocket-Protocol
+                - Sec-WebSocket-Accept
+                - CloudFront-Viewer-Country-Name
+                - CloudFront-Is-Tablet-Viewer
+                - CloudFront-Is-Mobile-Viewer
+                - CloudFront-Is-Desktop-Viewer
+                - x-url
+              - - user-agent
+                - Sec-WebSocket-Key
+                - Sec-WebSocket-Version
+                - Sec-WebSocket-Protocol
+                - Sec-WebSocket-Accept
+                - CloudFront-Is-Tablet-Viewer
+                - CloudFront-Is-Mobile-Viewer
+                - CloudFront-Is-Desktop-Viewer
+                - x-url
 Outputs:
+  StaticCachePolicy:
+    Condition: IsStackRegion
+    Description: CloudFront static cache policy for static resources
+    Value: !Ref StaticCachePolicy
+    Export:
+      Name: !Sub '${AWS::StackName}StaticCachePolicy'
+  QueryCachePolicy:
+    Condition: IsStackRegion
+    Description: CloudFront query cache policy for api
+    Value: !Ref QueryCachePolicy
+    Export:
+      Name: !Sub '${AWS::StackName}QueryCachePolicy'
+  BasicOriginRequestPolicy:
+    Condition: IsStackRegion
+    Description: CloudFront basic origin request policy
+    Value: !Ref BasicOriginRequestPolicy
+    Export:
+      Name: !Sub '${AWS::StackName}BasicOriginRequestPolicy'
+  WebSocketOriginRequestPolicy:
+    Condition: IsStackRegion
+    Description: CloudFront websocket origin request policy
+    Value: !Ref WebSocketOriginRequestPolicy
+    Export:
+      Name: !Sub '${AWS::StackName}WebSocketOriginRequestPolicy'
