@@ -725,6 +725,9 @@ export default async function getSettings({
     },
     get webSocketOriginRequestPolicy() {
       return getRegionOutput('WebSocketOriginRequestPolicy')
+    },
+    get cloudFrontResponseHeaderPolicy() {
+      return getRegionOutput('CloudFrontResponseHeaderPolicy')
     }
   }
 }
