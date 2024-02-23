@@ -216,6 +216,7 @@ Resources:
               - iam:TagRole
               - iam:UntagRole
               - iam:GetRolePolicy
+              - iam:UpdateRoleDescription
             Resource:
               - !Sub arn:${AWS::Partition}:iam::${AWS::AccountId}:role/${Stack}*
           - Effect: Allow
