@@ -311,7 +311,7 @@ Resources:
             Action:
               - 'sts:TagSession'
 
-      Description: !Sub 'Created by Serverless Framework by ${AWS::StackName} to assume ci read only role'
+      Description: !Sub 'Created by SAM by ${AWS::StackName} to assume ci read only role'
       MaxSessionDuration: 3600
       Tags:
         - Key: 'Name'

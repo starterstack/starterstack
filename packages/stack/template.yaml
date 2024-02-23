@@ -97,7 +97,7 @@ Resources:
     Properties:
       Name: !Ref Root
       HostedZoneConfig:
-        Comment: !Sub 'Created by Serverless Framework by ${AWS::StackName}'
+        Comment: !Sub 'Created by SAM by ${AWS::StackName}'
       HostedZoneTags:
         - Key: 'Name'
           Value: !Ref Root
