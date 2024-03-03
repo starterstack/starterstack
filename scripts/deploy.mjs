@@ -117,9 +117,13 @@ await deployStrategy({
 loadingDeployments.stop()
 
 if (
-  ['ordered', 'parallel-stage', 'parallel-backend', 'parallel-remaining'].every(
-    (deployType) => !output[deployType]
-  )
+  [
+    'ordered',
+    'parallel-stage',
+    'parallel-backend',
+    'parallel-frontend',
+    'parallel-remaining'
+  ].every((deployType) => !output[deployType])
 ) {
   console.log('\u001B[32meverything up-to-date\u001B[0m')
   process.exit(0)
@@ -129,6 +133,7 @@ const strategy = [
   'ordered',
   'parallel-stage',
   'parallel-backend',
+  'parallel-frontend',
   'parallel-remaining'
 ]
 

@@ -72,6 +72,18 @@ jobs:
     secrets:
       aws-ci-role: ${{ secrets[format('AWS_CI_ROLE_{0}', (github.event.inputs.account || 'feature')) ] }}
 
+  remove-parallel-frontend:
+    needs: [check-github-env-exists, env, remove-parallel-remaining]
+    if: ${{ always() && !failure() && !cancelled() && needs.env.outputs.parallel-frontend == 'true' }}
+    uses: 'starterstack/starterstack/.github/workflows/sls.yml@main'
+    with:
+      sha: ${{ needs.env.outputs.sha }}
+      node-version: ${{ needs.env.outputs.node-version }}
+      strategy: ${{ needs.env.outputs.parallel-frontend-strategy }}
+      remove: true
+    secrets:
+      aws-ci-role: ${{ secrets[format('AWS_CI_ROLE_{0}', (github.event.inputs.account || 'feature')) ] }}
+
   remove-parallel-backend:
     needs: [check-github-env-exists, env, remove-parallel-remaining]
     if: ${{ always() && !failure() && !cancelled() && needs.env.outputs.parallel-backend == 'true' }}

@@ -36,6 +36,8 @@ on:
         value: ${{ jobs.env.outputs.parallel-stage-strategy }}
       parallel-backend-strategy:
         value: ${{ jobs.env.outputs.parallel-backend-strategy }}
+      parallel-frontend-strategy:
+        value: ${{ jobs.env.outputs.parallel-frontend-strategy }}
       parallel-remaining-strategy:
         value: ${{ jobs.env.outputs.parallel-remaining-strategy }}
       ordered:
@@ -44,6 +46,8 @@ on:
         value: ${{ jobs.env.outputs.parallel-stage }}
       parallel-backend:
         value: ${{ jobs.env.outputs.parallel-backend }}
+      parallel-frontend:
+        value: ${{ jobs.env.outputs.parallel-frontend }}
       parallel-remaining:
         value: ${{ jobs.env.outputs.parallel-remaining }}
       db-changed:
@@ -79,6 +83,7 @@ jobs:
       ordered-strategy: ${{ steps.strategy.outputs.ordered-strategy }}
       parallel-stage-strategy: ${{ steps.strategy.outputs.parallel-stage-strategy }}
       parallel-backend-strategy: ${{ steps.strategy.outputs.parallel-backend-strategy }}
+      parallel-frontend-strategy: ${{ steps.strategy.outputs.parallel-frontend-strategy }}
       parallel-remaining-strategy: ${{ steps.strategy.outputs.parallel-remaining-strategy }}
       ordered: '${{ steps.strategy.outputs.ordered }}'
       parallel-stage: '${{ steps.strategy.outputs.parallel-stage }}'

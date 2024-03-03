@@ -60,6 +60,7 @@ const strategy = [
   'ordered',
   'parallel-stage',
   'parallel-backend',
+  'parallel-frontend',
   'parallel-remaining'
 ]
 

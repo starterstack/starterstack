@@ -48,7 +48,8 @@ export default async function deployStrategy({
       ? ['deployment', 'iam', 'monitoring', 'stack', 'region']
       : ['deployment', 'iam', 'monitoring', 'stack', 'region', 'dynamodb'],
     stage: remove ? ['cdn', 'eventbus', 'dynamodb'] : ['stage', 'eventbus'],
-    backend: ['rest', 'graphql', 'media', 'ses']
+    backend: ['rest', 'graphql', 'media', 'ses'],
+    frontend: ['web']
   }
 
   const deployed = lintOnly ? {} : await listDeployed(awsRegions)
@@ -60,6 +61,7 @@ export default async function deployStrategy({
       !file.includes('.') &&
       !strategy.order.includes(file) &&
       !strategy.backend.includes(file) &&
+      !strategy.frontend.includes(file) &&
       !strategy.stage.includes(file)
   )
 
@@ -67,6 +69,7 @@ export default async function deployStrategy({
     Promise.all(strategy.order.flatMap((x) => calculateStackChanges(x))),
     Promise.all(strategy.stage.flatMap((x) => calculateStackChanges(x))),
     Promise.all(strategy.backend.flatMap((x) => calculateStackChanges(x))),
+    Promise.all(strategy.frontend.flatMap((x) => calculateStackChanges(x))),
     Promise.all(strategy.remaining.flatMap((x) => calculateStackChanges(x)))
   ])
 
@@ -192,6 +195,13 @@ export default async function deployStrategy({
         include: []
       }
     },
+    'parallel-frontend': {
+      'max-parallel': 7,
+      'fail-fast': false,
+      matrix: {
+        include: []
+      }
+    },
     'parallel-stage': {
       'max-parallel': 7,
       'fail-fast': false,
@@ -214,7 +224,8 @@ export default async function deployStrategy({
     ordered: calculateChanges[0],
     'parallel-stage': calculateChanges[1],
     'parallel-backend': calculateChanges[2],
-    'parallel-remaining': calculateChanges[3]
+    'parallel-frontend': calculateChanges[3],
+    'parallel-remaining': calculateChanges[4]
   })) {
     for (const value of changes.flat().filter(Boolean)) {
       if (remove && value.stage === 'global') {
