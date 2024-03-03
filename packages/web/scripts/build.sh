@@ -15,7 +15,12 @@ function build() {
   rm -rf build
   rm -rf .built
 
-  npm ci --ignore-scripts
+  npm install \
+    --no-save \
+    --audit false \
+    --fund false \
+    --loglevel=error \
+    --ignore-scripts
 
   INLINE_RUNTIME_CHUNK=false \
     STACK_REGION="${1:?}" \
