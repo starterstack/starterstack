@@ -11,8 +11,6 @@ Parameters:
     Type: String
   ProductionAccountId:
     Type: String
-  ProductionRegion:
-    Type: String
 Metadata:
   expand:
     plugins:
@@ -32,8 +30,6 @@ Metadata:
               exportName: productionStage
             - name: ProductionAccountId
               exportName: productionAccountId
-            - name: ProductionRegion
-              exportName: productionRegion
 
 Conditions:
   IsBackupAccount: !Equals
