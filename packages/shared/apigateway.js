@@ -23,6 +23,7 @@ const clients = {}
  }} options
  @returns ApiGatewayManagementApiClient
 */
+/* this: void */
 export function createApiGatewayManagementApi({
   connectionId,
   domainName,

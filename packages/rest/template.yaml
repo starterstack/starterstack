@@ -1,0 +1,664 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform:
+  - AWS::LanguageExtensions
+  - AWS::Serverless-2016-10-31
+
+Description: Rest
+
+Globals:
+  Api:
+    OpenApiVersion: 3.0.1
+  Function:
+    Tracing: Active
+    Architectures:
+      - arm64
+    Runtime: nodejs20.x
+    PropagateTags: true
+    Environment:
+      Variables:
+        STAGE: !Ref Stage
+        STACK_NAME: !Ref Stack
+        STACK_ORIGIN: !Ref StageRoot
+        GIT_COMMIT: !Ref GITCommit
+
+Parameters:
+  Stack:
+    Type: String
+  Stage:
+    Type: String
+  StackDisplayName:
+    Type: String
+  StageRoot:
+    Type: String
+  EventBusName:
+    Type: String
+  StageRootUrl:
+    Type: String
+  LogRetentionInDays:
+    Type: String
+  ApiGatewayRestLogFormat:
+    Type: String
+  DynamoDBStackTableName:
+    Type: String
+  HttpAnonymousAuthFunction:
+    Type: String
+  HttpAuthFunction:
+    Type: String
+  SentryDSN:
+    Type: String
+  SentryEnvironment:
+    Type: String
+  ApiGatewayRestApiWafAcl:
+    Type: String
+  MFATitle:
+    Type: String
+  GITCommit:
+    Type: String
+  SNSAlarmTopic:
+    Type: String
+
+Metadata:
+  expand:
+    plugins:
+      - '../git.mjs'
+      - '../hash.mjs'
+      - '@starterstack/sam-expand/plugins/parameter-overrides'
+      - '../stack-stage-config.mjs'
+      - '@starterstack/sam-expand/plugins/run-script-hooks'
+      - '../purge-lambda-versions.mjs'
+      - '../generate-cloudwatch-alarms.mjs'
+
+    config:
+      stackStageConfig:
+        suffixStage: true
+        addMappings: true
+      parameterOverrides:
+        - location: ../stack-stage-config.mjs
+          overrides:
+            - name: SNSAlarmTopic
+              exportName: snsAlarmTopic
+            - name: Stage
+              exportName: stage
+            - name: StageRoot
+              exportName: stageOrStackRoot
+            - name: StageRootUrl
+              exportName: stageRootUrl
+            - name: DynamoDBStackTableName
+              exportName: dynamodbStackTableName
+            - name: SentryDSN
+              exportName: sentryDSN
+            - name: SentryEnvironment
+              exportName: sentryEnvironment
+            - name: LogRetentionInDays
+              exportName: logRetentionInDays
+            - name: ApiGatewayRestApiWafAcl
+              exportName: apiGatewayRestApiWafAcl
+              defaultValue: 'none'
+            - name: EventBusName
+              exportName: eventBusName
+            - name: HttpAnonymousAuthFunction
+              exportName: httpAnonymousAuthFunction
+            - name: HttpAuthFunction
+              exportName: httpAuthFunction
+            - name: ApiGatewayRestLogFormat
+              exportName: apiGatewayRestLogFormat
+            - name: MFATitle
+              exportName: mfaTitle
+        - location: ../git.mjs
+          overrides:
+            - name: GITCommit
+              exportName: commit
+        - location: ../settings.json
+          overrides:
+            - name: StackDisplayName
+              exportName: stackDisplayName
+      purgeLambdaVersions:
+        keep: 3
+      script:
+        hooks:
+          post:deploy:
+            - command: ../tag-cloudwatch-alarms.sh
+              args:
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: stackName
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: region
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: stage
+      alarms:
+        snsTopicRef: SNSAlarmTopic
+
+Conditions:
+  IsWafEnabled: !Equals
+    - !FindInMap
+      - AWSAccounts
+      - !Ref 'AWS::AccountId'
+      - wafEnabled
+    - true
+
+Resources:
+  ApiGatewayApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref Stage
+      AccessLogSetting:
+        DestinationArn: !GetAtt ApiGatewayCloudWatchLogGroup.Arn
+        Format: !Ref ApiGatewayRestLogFormat
+      Auth:
+        AddApiKeyRequiredToCorsPreflight: false
+        AddDefaultAuthorizerToCorsPreflight: false
+        Authorizers:
+          LambdaAuthorizer:
+            FunctionArn: !Ref HttpAuthFunction
+            FunctionPayloadType: REQUEST
+            Identity:
+              ReauthorizeEvery: 900
+              Headers:
+                - cookie
+          LambdaAnonymousAuthorizer:
+            FunctionArn: !Ref HttpAnonymousAuthFunction
+            FunctionPayloadType: REQUEST
+            Identity:
+              ReauthorizeEvery: 900
+              Headers:
+                - cookie
+        DefaultAuthorizer: LambdaAuthorizer
+      BinaryMediaTypes:
+        - 'application/octet-stream'
+        - 'audio/*'
+        - 'video/*'
+        - 'application/pdf'
+        - 'font/*'
+      Description: !Sub '${AWS::StackName} api gateway'
+      EndpointConfiguration:
+        Type: REGIONAL
+      MethodSettings:
+        - MetricsEnabled: true
+          HttpMethod: '*'
+          ResourcePath: '/*'
+          ThrottlingRateLimit: 200
+          ThrottlingBurstLimit: 100
+        - MetricsEnabled: true
+          HttpMethod: GET
+          ResourcePath: /api/rest/ping
+          ThrottlingRateLimit: 20
+          ThrottlingBurstLimit: 10
+        - MetricsEnabled: true
+          HttpMethod: HEAD
+          ResourcePath: /api/rest/ping
+          ThrottlingRateLimit: 20
+          ThrottlingBurstLimit: 10
+        - MetricsEnabled: true
+          HttpMethod: POST
+          ResourcePath: /api/rest/login-by-email
+          ThrottlingRateLimit: 400
+          ThrottlingBurstLimit: 800
+        - MetricsEnabled: true
+          HttpMethod: POST
+          ResourcePath: /api/rest/logout
+          ThrottlingRateLimit: 200
+          ThrottlingBurstLimit: 400
+        - MetricsEnabled: true
+          HttpMethod: GET
+          ResourcePath: /api/rest/session
+          ThrottlingRateLimit: 400
+          ThrottlingBurstLimit: 800
+        - MetricsEnabled: true
+          HttpMethod: POST
+          ResourcePath: /api/rest/session
+          ThrottlingRateLimit: 400
+          ThrottlingBurstLimit: 800
+        - MetricsEnabled: true
+          HttpMethod: GET
+          ResourcePath: /api/hello-python
+          ThrottlingRateLimit: 200
+          ThrottlingBurstLimit: 400
+        - MetricsEnabled: true
+          HttpMethod: GET
+          ResourcePath: /api/hello-ruby
+          ThrottlingRateLimit: 200
+          ThrottlingBurstLimit: 400
+      PropagateTags: true
+      Tags:
+        Name: !Sub '${AWS::StackName} api gateway'
+      TracingEnabled: true
+
+  ApiGatewayApiWAF:
+    Type: AWS::WAFv2::WebACLAssociation
+    Condition: IsWafEnabled
+    Properties:
+      ResourceArn: !Sub 'arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${ApiGatewayApi}/stages/${Stage}'
+      WebACLArn: !Ref ApiGatewayRestApiWafAcl
+
+  ApiGatewayCloudWatchLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/apigateway/rest-api/${AWS::StackName}'
+      RetentionInDays: !Ref LogRetentionInDays
+      Tags:
+        - Key: 'Name'
+          Value: !Sub '${AWS::StackName} rest api log group'
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+  CloudWatchLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}
+      RetentionInDays: !Ref LogRetentionInDays
+      Tags:
+        - Key: 'Name'
+          Value: !Sub '${AWS::StackName} lambda logs'
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+  EventsDlq:
+    Type: AWS::SQS::Queue
+    Properties:
+      SqsManagedSseEnabled: true
+      Tags:
+        - Key: 'Name'
+          Value: !Sub '${AWS::StackName}-events-dlq'
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+  EventsDlqPolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'sqs:SendMessage'
+            Principal:
+              Service: 'events.amazonaws.com'
+            Resource: !GetAtt EventsDlq.Arn
+            Condition:
+              ArnEquals:
+                'aws:SourceArn': !Sub 'arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/${AWS::StackName}*'
+          - Effect: Allow
+            Action:
+              - 'sqs:SendMessage'
+            Principal:
+              Service: 'sns.amazonaws.com'
+            Resource: !GetAtt EventsDlq.Arn
+            Condition:
+              ArnEquals:
+                'aws:SourceArn': !Sub 'arn:${AWS::Partition}:sns:${AWS::Region}:${AWS::AccountId}:${AWS::StackName}*'
+      Queues:
+        - !Ref EventsDlq
+  LambdaDlq:
+    Type: AWS::SQS::Queue
+    Properties:
+      SqsManagedSseEnabled: true
+      Tags:
+        - Key: 'Name'
+          Value: !Sub ${AWS::StackName}-lambda-dlq
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+
+  PingFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/ping/
+      Handler: index.handler
+      Description: ping
+      Timeout: 6
+      MemorySize: 128
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Sid: CloudWatchLogGroup
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !GetAtt CloudWatchLogGroup.Arn
+              Effect: Allow
+
+      LoggingConfig:
+        LogGroup: !Ref CloudWatchLogGroup
+
+      Events:
+        ApiEventGet:
+          Type: Api
+          Properties:
+            Path: /api/rest/ping
+            Auth:
+              Authorizer: LambdaAnonymousAuthorizer
+            Method: GET
+            RestApiId: !Ref ApiGatewayApi
+        ApiEventHead:
+          Type: Api
+          Properties:
+            Path: /api/rest/ping
+            Auth:
+              Authorizer: LambdaAnonymousAuthorizer
+            Method: HEAD
+            RestApiId: !Ref ApiGatewayApi
+    Metadata:
+      BuildMethod: makefile
+
+  LoginByEmailFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/login-by-email/
+      Handler: index.handler
+      Description: login by email
+      Timeout: 6
+      MemorySize: 128
+      Environment:
+        Variables:
+          SSM_API_JWT_SECRET: !Sub /${Stack}/${Stage}/API_JWT_SECRET
+          BASE_URL: !Ref StageRootUrl
+          EVENTBRIDGE_BUS_NAME: !Ref EventBusName
+          TEAM: !Sub '${StackDisplayName} Team'
+          DYNAMODB_STACK_TABLE: !Ref DynamoDBStackTableName
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Sid: CloudWatchLogGroup
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !GetAtt CloudWatchLogGroup.Arn
+              Effect: Allow
+        - EventBridgePutEventsPolicy:
+            EventBusName: !Ref EventBusName
+        - SSMParameterReadPolicy:
+            ParameterName: !Sub ${Stack}/${Stage}/API_JWT_SECRET
+        - Version: 2012-10-17
+          Statement:
+            - Sid: DynamoDB
+              Action:
+                - dynamodb:Query
+              Resource:
+                - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTableName}'
+              Effect: Allow
+              Condition:
+                ForAllValues:StringLike:
+                  dynamodb:LeadingKeys:
+                    - user#*#attempts
+
+      LoggingConfig:
+        LogGroup: !Ref CloudWatchLogGroup
+
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /api/rest/login-by-email
+            Auth:
+              Authorizer: LambdaAnonymousAuthorizer
+            Method: POST
+            RestApiId: !Ref ApiGatewayApi
+    Metadata:
+      BuildMethod: makefile
+
+  SessionFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/session/
+      Handler: index.handler
+      Description: user session
+      Timeout: 6
+      MemorySize: 128
+      Environment:
+        Variables:
+          SSM_API_JWT_SECRET: !Sub /${Stack}/${Stage}/API_JWT_SECRET
+          SSM_API_MFA_SECRET: !Sub /${Stack}/${Stage}/API_MFA_SECRET
+          DYNAMODB_STACK_TABLE: !Ref DynamoDBStackTableName
+          MFA_TITLE: !Ref MFATitle
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Sid: CloudWatchLogGroup
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !GetAtt CloudWatchLogGroup.Arn
+              Effect: Allow
+        - SSMParameterReadPolicy:
+            ParameterName: !Sub ${Stack}/${Stage}/API_JWT_SECRET
+        - SSMParameterReadPolicy:
+            ParameterName: !Sub ${Stack}/${Stage}/API_MFA_SECRET
+        - Version: 2012-10-17
+          Statement:
+            - Sid: DynamoDBGet
+              Action:
+                - dynamodb:GetItem
+              Resource:
+                - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTableName}'
+              Effect: Allow
+              Condition:
+                ForAllValues:StringLike:
+                  dynamodb:LeadingKeys:
+                    - user#*
+        - Version: 2012-10-17
+          Statement:
+            - Sid: DynamoDBQuery
+              Action:
+                - dynamodb:Query
+              Resource:
+                - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTableName}'
+              Effect: Allow
+              Condition:
+                ForAllValues:StringLike:
+                  dynamodb:LeadingKeys:
+                    - user#*#attempts
+        - Version: 2012-10-17
+          Statement:
+            - Sid: DynamoDBPut
+              Action:
+                - dynamodb:PutItem
+              Resource:
+                - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTableName}'
+              Effect: Allow
+              Condition:
+                ForAllValues:StringLike:
+                  dynamodb:LeadingKeys:
+                    - session#*
+                    - user#*#attempts
+        - Version: 2012-10-17
+          Statement:
+            - Sid: DynamoDBUpdate
+              Action:
+                - dynamodb:UpdateItem
+              Resource:
+                - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTableName}'
+              Effect: Allow
+              Condition:
+                ForAllValues:StringLike:
+                  dynamodb:LeadingKeys:
+                    - user#*
+        - Version: 2012-10-17
+          Statement:
+            - Sid: DynamoDBDelete
+              Action:
+                - dynamodb:DeleteItem
+              Resource:
+                - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTableName}'
+              Effect: Allow
+              Condition:
+                ForAllValues:StringLike:
+                  dynamodb:LeadingKeys:
+                    - user#*#attempts
+
+      LoggingConfig:
+        LogGroup: !Ref CloudWatchLogGroup
+
+      Events:
+        ApiEventGet:
+          Type: Api
+          Properties:
+            Path: /api/rest/session
+            Auth:
+              Authorizer: LambdaAnonymousAuthorizer
+            Method: GET
+            RestApiId: !Ref ApiGatewayApi
+        ApiEventPost:
+          Type: Api
+          Properties:
+            Path: /api/rest/session
+            Auth:
+              Authorizer: LambdaAnonymousAuthorizer
+            Method: POST
+            RestApiId: !Ref ApiGatewayApi
+    Metadata:
+      BuildMethod: makefile
+
+  HelloPythonFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/python/
+      Handler: hello.handler
+      Description: hello python
+      Timeout: 6
+      MemorySize: 128
+      Runtime: python3.12
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Sid: CloudWatchLogGroup
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !GetAtt CloudWatchLogGroup.Arn
+              Effect: Allow
+      LoggingConfig:
+        LogGroup: !Ref CloudWatchLogGroup
+
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /api/rest/hello-python
+            Auth:
+              Authorizer: LambdaAnonymousAuthorizer
+            Method: GET
+            RestApiId: !Ref ApiGatewayApi
+
+  HelloRubyFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/ruby/
+      Handler: hello.handler
+      Description: hello ruby
+      Timeout: 6
+      MemorySize: 128
+      Runtime: ruby3.2
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Sid: CloudWatchLogGroup
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !GetAtt CloudWatchLogGroup.Arn
+              Effect: Allow
+      LoggingConfig:
+        LogGroup: !Ref CloudWatchLogGroup
+
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /api/rest/hello-ruby
+            Auth:
+              Authorizer: LambdaAnonymousAuthorizer
+            Method: GET
+            RestApiId: !Ref ApiGatewayApi
+
+  LogoutFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/logout/
+      Handler: index.handler
+      Description: logout session
+      Timeout: 6
+      MemorySize: 128
+      Environment:
+        Variables:
+          DYNAMODB_STACK_TABLE: !Ref DynamoDBStackTableName
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Sid: CloudWatchLogGroup
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !GetAtt CloudWatchLogGroup.Arn
+              Effect: Allow
+        - Version: 2012-10-17
+          Statement:
+            - Sid: DynamoDB
+              Action:
+                - dynamodb:DeleteItem
+              Resource:
+                - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTableName}'
+              Effect: Allow
+              Condition:
+                ForAllValues:StringLike:
+                  dynamodb:LeadingKeys:
+                    - session#*
+
+      LoggingConfig:
+        LogGroup: !Ref CloudWatchLogGroup
+
+      Events:
+        ApiEvent:
+          Type: Api
+          Properties:
+            Path: /api/rest/logout
+            Auth:
+              Authorizer: LambdaAuthorizer
+            Method: POST
+            RestApiId: !Ref ApiGatewayApi
+    Metadata:
+      BuildMethod: makefile
+
+  SentryFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/sentry/
+      Handler: index.handler
+      Description: 'send cloudwatch logs to sentry'
+      Timeout: 6
+      MemorySize: 128
+      Environment:
+        Variables:
+          SENTRY_DSN: !Ref SentryDSN
+          SENTRY_ENVIRONMENT: !Ref SentryEnvironment
+          SENTRY_TUNNEL: !Sub ${StageRootUrl}/api/rest/sentry-tunnel
+          STAGE: !Ref Stage
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Sid: CloudWatchLogGroup
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !GetAtt CloudWatchLogGroup.Arn
+              Effect: Allow
+      LoggingConfig:
+        LogGroup: !Ref CloudWatchLogGroup
+      Events:
+        LambdaErrorTrigger:
+          Type: CloudWatchLogs
+          Properties:
+            LogGroupName: !Ref CloudWatchLogGroup
+            FilterPattern: !Sub '{$.level = "error" && $.x-correlation-lambda != "*SentryFunction*"}'
+        ApiGatewayErrorTrigger:
+          Type: CloudWatchLogs
+          Properties:
+            LogGroupName: !Ref ApiGatewayCloudWatchLogGroup
+            FilterPattern: '{$.status > 399 && $.status != 403 && $.resourcePath != "*sentry-tunnel*" }'
+
+    Metadata:
+      BuildMethod: makefile
+
+Outputs:
+  ApiGateway:
+    Description: api gateway id
+    Value: !Ref ApiGatewayApi
+    Export:
+      Name: !Sub '${AWS::StackName}ApiGatewayApi'

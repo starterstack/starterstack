@@ -22,7 +22,7 @@ const cloudFrontKeyValueStoreClient = new CloudFrontKeyValueStoreClient({
 
 const apigateway = trace(new APIGatewayClient({ apiVersion: '2015-07-09' }))
 
-const { KvsARN, REST_API_ID, STAGE } = process.env
+const { KvsARN, REST_API_IDS, STAGE } = process.env
 
 export const handler = lambdaHandler(async function update(
   event,
@@ -59,15 +59,22 @@ export const handler = lambdaHandler(async function update(
       )
     }
     if (event?.action !== 'refreshSecretOnly') {
-      await apigateway.send(
-        new FlushStageAuthorizersCacheCommand({
-          restApiId: REST_API_ID,
-          stageName: STAGE
-        }),
-        {
-          abortSignal
-        }
-      )
+      const ids = REST_API_IDS.split(',')
+      if (ids.length > 0) {
+        await Promise.all(
+          ids.map((restApiId) =>
+            apigateway.send(
+              new FlushStageAuthorizersCacheCommand({
+                restApiId,
+                stageName: STAGE
+              }),
+              {
+                abortSignal
+              }
+            )
+          )
+        )
+      }
     }
   } catch (error) {
     log.error({ event }, error)

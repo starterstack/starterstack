@@ -6,9 +6,8 @@ export default async function assertions(tokens) {
   const baseUrl = process.env.BASE_URL.replace(/^https/, 'wss')
 
   await Promise.all(
-    tokens.map(async function echo(token) {
+    tokens.map(async function tokenAssertions(token) {
       await assertUnsupportedProtocol(token)
-      await assertEcho(token)
       await assertGraphQL(token)
     })
   )
@@ -39,26 +38,6 @@ export default async function assertions(tokens) {
       ws.on('error', () => resolve(false))
     })
     assert.ok(!open)
-  }
-
-  async function assertEcho(token) {
-    const ws = new WebSocket(`${baseUrl}/api/ws/graphql`, {
-      headers: {
-        cookie: `token=${token.token}`,
-        'User-Agent': 'node'
-      }
-    })
-    const open = await new Promise((resolve) => {
-      ws.on('open', () => resolve(true))
-      ws.on('error', () => resolve(false))
-    })
-    assert.ok(open)
-    const onMessage = new Promise((resolve) => ws.on('message', resolve))
-    const echo = JSON.stringify({ type: 'echo', message: 'ping' })
-    ws.send(echo)
-
-    const message = await onMessage
-    assert.equal(message.toString(), echo)
   }
 
   async function assertGraphQL(token) {

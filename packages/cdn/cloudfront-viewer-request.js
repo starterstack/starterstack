@@ -97,10 +97,9 @@ async function handler(event) {
         request.headers['content-type'] = { value: 'application/json' }
       }
     }
-    request.uri =
-      '/' + stage + '/api-' + request.uri.split('/').slice(2).join('/')
+    request.uri = '/' + stage + request.uri
   } else if (!request.uri.includes('.')) {
-    request.uri = '/' + stage + '/ssr' + request.uri
+    request.uri = '/' + stage + request.uri
   }
 
   if (
@@ -140,7 +139,7 @@ function constantTimeEquals(a, b) {
 function parseJWT(token) {
   const segments = token.split('.')
   if (segments.length !== 3) throw new Error('malformed jwt')
-  const signature = segments.at(-1)
+  const signature = segments.slice(-1)[0]
   const payload = JSON.parse(Buffer.from(segments[1], 'base64url'))
   if (payload.v === undefined) {
     throw new TypeError('invalid jwt')

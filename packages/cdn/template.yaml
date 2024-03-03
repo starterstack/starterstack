@@ -31,10 +31,6 @@ Parameters:
     Type: String
   AccountPerStage:
     Type: String
-  SentryDSN:
-    Type: String
-  SentryEnvironment:
-    Type: String
   PriceClass:
     Type: String
   CloudFrontWafACL:
@@ -45,11 +41,7 @@ Parameters:
     Type: String
   GITCommit:
     Type: String
-  DynamoDBStackTableName:
-    Type: String
   ZoneId:
-    Type: String
-  ApiGatewayRestLogFormat:
     Type: String
   CloudFrontViewerRequestCode:
     Type: String
@@ -67,6 +59,20 @@ Parameters:
     Type: String
   CloudFrontResponseHeaderPolicy:
     Type: String
+  S3StaticBucket:
+    Type: String
+  S3MediaBucket:
+    Type: String
+  S3ProtectedMediaBucket:
+    Type: String
+  ApiGatewayRest:
+    Type: String
+  ApiGatewayGraphQL:
+    Type: String
+  ApiGatewayWeb:
+    Type: String
+  ApiGatewayWebSocket:
+    Type: String
 
 Metadata:
   expand:
@@ -76,8 +82,6 @@ Metadata:
       - '../stack-stage-config.mjs'
       - '@starterstack/sam-expand/plugins/parameter-overrides'
       - '@starterstack/sam-expand/plugins/run-script-hooks'
-      - './apigateway-deployment.mjs'
-      - './sentry-events.mjs'
       - '../purge-lambda-versions.mjs'
       - '../generate-cloudwatch-alarms.mjs'
     config:
@@ -97,10 +101,6 @@ Metadata:
               exportName: ssmS3LogBucket
             - name: BackupRegion
               exportName: backupRegion
-            - name: SentryDSN
-              exportName: sentryDSN
-            - name: SentryEnvironment
-              exportName: sentryEnvironment
             - name: AcmCertificateArn
               exportName: acmCertificateArn
             - name: CloudFrontWafACL
@@ -112,10 +112,6 @@ Metadata:
               exportName: zoneId
             - name: SNSAlarmTopic
               exportName: snsAlarmTopic
-            - name: ApiGatewayRestLogFormat
-              exportName: apiGatewayRestLogFormat
-            - name: DynamoDBStackTableName
-              exportName: dynamodbStackTableName
             - name: StaticCachePolicy
               exportName: staticCachePolicy
             - name: QueryCachePolicy
@@ -126,6 +122,20 @@ Metadata:
               exportName: webSocketOriginRequestPolicy
             - name: CloudFrontResponseHeaderPolicy
               exportName: cloudFrontResponseHeaderPolicy
+            - name: S3StaticBucket
+              exportName: s3Static
+            - name: S3MediaBucket
+              exportName: s3Media
+            - name: S3ProtectedMediaBucket
+              exportName: s3ProtectedMedia
+            - name: ApiGatewayRest
+              exportName: apiGatewayRest
+            - name: ApiGatewayWeb
+              exportName: apiGatewayWeb
+            - name: ApiGatewayGraphQL
+              exportName: apiGatewayGraphQL
+            - name: ApiGatewayWebSocket
+              exportName: apiGatewayWebSocket
         - location: ../settings.json
           overrides:
             - name: PriceClass
@@ -155,36 +165,12 @@ Metadata:
               args:
                 - file:
                     location: ../stack-stage-config.mjs
-                    exportName: s3Media
-            - command: ../empty-s3-bucket.sh
-              args:
-                - file:
-                    location: ../stack-stage-config.mjs
-                    exportName: s3ProtectedMedia
-            - command: ../empty-s3-bucket.sh
-              args:
-                - file:
-                    location: ../stack-stage-config.mjs
-                    exportName: s3Static
-            - command: ../empty-s3-bucket.sh
-              args:
-                - file:
-                    location: ../stack-stage-config.mjs
                     exportName: s3CloudFrontLogs
             - command: ../empty-s3-bucket.sh
               args:
                 - file:
                     location: ../stack-stage-config.mjs
                     exportName: s3ProtectedMediaLogs
-          pre:deploy:
-            - command: ./scripts/patch-api-gateway-account.sh
-              args:
-                - file:
-                    location: ../stack-stage-config.mjs
-                    exportName: region
-                - file:
-                    location: ../stack-stage-config.mjs
-                    exportName: apiGatewayCloudwatchRole
           post:deploy:
             - command: ../tag-cloudwatch-alarms.sh
               args:
@@ -351,348 +337,99 @@ Resources:
               Bool:
                 'aws:SecureTransport': false
 
-  S3Static:
-    Type: AWS::S3::Bucket
-    Properties:
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: true
-        BlockPublicPolicy: true
-        IgnorePublicAcls: true
-        RestrictPublicBuckets: true
-      LifecycleConfiguration:
-        Rules:
-          - Id: TransitionToIntelligentTiering
-            Status: Enabled
-            Transitions:
-              - StorageClass: INTELLIGENT_TIERING
-                TransitionInDays: 0
-          - Id: NonCurrentRetention
-            Status: Enabled
-            NoncurrentVersionExpiration:
-              NewerNoncurrentVersions: 3
-              NoncurrentDays: 7
-          - Id: DeleteNonCurrent
-            ExpiredObjectDeleteMarker: true
-            Status: Enabled
-      AccelerateConfiguration:
-        AccelerationStatus: Enabled
-      VersioningConfiguration:
-        Status: Enabled
-      Tags:
-        - Key: 'Name'
-          Value: !Sub ${AWS::StackName}-static
-        - Key: 'ManagedBy'
-          Value: !Ref Stack
-
-  S3StaticPolicy:
-    Type: AWS::S3::BucketPolicy
-    Properties:
-      Bucket: !Ref S3Static
-      PolicyDocument:
-        Version: '2012-10-17'
-        Id: PolicyForCloudFrontPrivateContent
-        Statement:
-          - Effect: Deny
-            Action: 's3:*'
-            Resource:
-              - !Sub '${S3Static.Arn}'
-              - !Sub '${S3Static.Arn}/*'
-            Principal: '*'
-            Condition:
-              Bool:
-                'aws:SecureTransport': false
-          - Effect: Allow
-            Action:
-              - 's3:GetObject'
-            Resource:
-              - !Sub '${S3Static.Arn}/*'
-            Condition:
-              Bool:
-                'aws:SecureTransport': true
-              StringEquals:
-                'AWS:SourceArn': !Sub 'arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${CloudFront}'
-            Principal:
-              Service: 'cloudfront.amazonaws.com'
-
-  S3Media:
-    Type: AWS::S3::Bucket
-    Properties:
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: true
-        BlockPublicPolicy: true
-        IgnorePublicAcls: true
-        RestrictPublicBuckets: true
-      LifecycleConfiguration:
-        Rules:
-          - Id: TransitionToIntelligentTiering
-            Status: Enabled
-            Prefix: media
-            Transitions:
-              - StorageClass: INTELLIGENT_TIERING
-                TransitionInDays: 0
-          - Id: ExpireTemp
-            Status: Enabled
-            ExpirationInDays: 1
-            Prefix: temp
-          - Id: NonCurrentRetentionMedia
-            Status: Enabled
-            Prefix: media
-            NoncurrentVersionExpiration:
-              NewerNoncurrentVersions: 3
-              NoncurrentDays: 7
-          - Id: NonCurrentRetentionTemp
-            Status: Enabled
-            Prefix: temp
-            NoncurrentVersionExpiration:
-              NoncurrentDays: 1
-          - Id: DeleteNonCurrent
-            ExpiredObjectDeleteMarker: true
-            Status: Enabled
-      AccelerateConfiguration:
-        AccelerationStatus: Enabled
-      CorsConfiguration:
-        CorsRules:
-          - AllowedMethods:
-              - POST
-            AllowedOrigins:
-              - !Ref StageRootUrl
-            MaxAge: 600
-      BucketEncryption:
-        ServerSideEncryptionConfiguration:
-          - BucketKeyEnabled: true
-            ServerSideEncryptionByDefault:
-              SSEAlgorithm: 'AES256'
-      VersioningConfiguration:
-        Status: Enabled
-      NotificationConfiguration:
-        EventBridgeConfiguration:
-          EventBridgeEnabled: true
-      MetricsConfigurations:
-        - Id: !Sub ${AWS::StackName}-media-temp-filter
-          Prefix: temp
-      Tags:
-        - Key: 'Name'
-          Value: !Sub ${AWS::StackName}-media
-        - Key: 'ManagedBy'
-          Value: !Ref Stack
-
-  S3MediaPolicy:
-    Type: AWS::S3::BucketPolicy
-    Properties:
-      Bucket: !Ref S3Media
-      PolicyDocument:
-        Version: '2012-10-17'
-        Id: PolicyForCloudFrontPrivateContent
-        Statement:
-          - Effect: Deny
-            Action: 's3:*'
-            Resource:
-              - !Sub '${S3Media.Arn}'
-              - !Sub '${S3Media.Arn}/*'
-            Principal: '*'
-            Condition:
-              Bool:
-                'aws:SecureTransport': false
-          - Effect: Allow
-            Action:
-              - 's3:GetObject'
-            Resource: !Sub '${S3Media.Arn}/*'
-            Condition:
-              Bool:
-                'aws:SecureTransport': true
-              StringEquals:
-                'AWS:SourceArn': !Sub 'arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${CloudFront}'
-            Principal:
-              Service: 'cloudfront.amazonaws.com'
-
-  S3ProtectedMedia:
-    Type: AWS::S3::Bucket
-    Properties:
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: true
-        BlockPublicPolicy: true
-        IgnorePublicAcls: true
-        RestrictPublicBuckets: true
-      LifecycleConfiguration:
-        Rules:
-          - Id: TransitionToIntelligentTiering
-            Status: Enabled
-            Prefix: media
-            Transitions:
-              - StorageClass: INTELLIGENT_TIERING
-                TransitionInDays: 0
-          - Id: ExpireTemp
-            Status: Enabled
-            ExpirationInDays: 1
-            Prefix: temp
-          - Id: ExpirePdf
-            Status: Enabled
-            ExpirationInDays: 1
-            Prefix: pdf
-          - Id: ExpireDynamoDBBackups
-            Status: Enabled
-            ExpirationInDays: 31
-            Prefix: AWSDynamoDB
-          - Id: NonCurrentRetentionMedia
-            Status: Enabled
-            Prefix: media
-            NoncurrentVersionExpiration:
-              NewerNoncurrentVersions: 3
-              NoncurrentDays: 7
-          - Id: NonCurrentRetentionTemp
-            Status: Enabled
-            Prefix: temp
-            NoncurrentVersionExpiration:
-              NoncurrentDays: 1
-          - Id: NonCurrentRetentionPdf
-            Status: Enabled
-            Prefix: pdf
-            NoncurrentVersionExpiration:
-              NoncurrentDays: 1
-          - Id: NonCurrentRetentionBulk
-            Status: Enabled
-            Prefix: bulk-invite
-            NoncurrentVersionExpiration:
-              NoncurrentDays: 1
-          - Id: NonCurrentRetentionDBBackups
-            Status: Enabled
-            Prefix: AWSDynamoDB
-            NoncurrentVersionExpiration:
-              NoncurrentDays: 1
-          - Id: AbortIncompleteMultipartUpload
-            Status: Enabled
-            AbortIncompleteMultipartUpload:
-              DaysAfterInitiation: 1
-            Prefix: temp
-          - Id: DeleteNonCurrent
-            ExpiredObjectDeleteMarker: true
-            Status: Enabled
-      AccelerateConfiguration:
-        AccelerationStatus: Enabled
-      CorsConfiguration:
-        CorsRules:
-          - AllowedMethods:
-              - POST
-            AllowedOrigins:
-              - !Ref StageRootUrl
-            MaxAge: 600
-      BucketEncryption:
-        ServerSideEncryptionConfiguration:
-          - BucketKeyEnabled: true
-            ServerSideEncryptionByDefault:
-              SSEAlgorithm: 'AES256'
-      VersioningConfiguration:
-        Status: Enabled
-      NotificationConfiguration:
-        EventBridgeConfiguration:
-          EventBridgeEnabled: true
-      MetricsConfigurations:
-        - Id: !Sub ${AWS::StackName}-protected-media-temp-filter
-          Prefix: temp
-      LoggingConfiguration:
-        DestinationBucketName: !Ref S3ProtectedMediaLogs
-      Tags:
-        - Key: 'Name'
-          Value: !Sub ${AWS::StackName}-protected-media
-        - Key: 'ManagedBy'
-          Value: !Ref Stack
-
-  S3ProtectedMediaPolicy:
-    Type: AWS::S3::BucketPolicy
-    Properties:
-      Bucket: !Ref S3ProtectedMedia
-      PolicyDocument:
-        Version: '2012-10-17'
-        Id: PolicyForCloudFrontPrivateContent
-        Statement:
-          - Effect: Deny
-            Action: 's3:*'
-            Resource:
-              - !Sub '${S3ProtectedMedia.Arn}'
-              - !Sub '${S3ProtectedMedia.Arn}/*'
-            Principal: '*'
-            Condition:
-              Bool:
-                'aws:SecureTransport': false
-          - Effect: Allow
-            Action:
-              - 's3:GetObject'
-            Resource: !Sub '${S3ProtectedMedia.Arn}/*'
-            Condition:
-              Bool:
-                'aws:SecureTransport': true
-              StringEquals:
-                'AWS:SourceArn': !Sub 'arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${CloudFront}'
-            Principal:
-              Service: 'cloudfront.amazonaws.com'
-
-  S3ProtectedMediaLogs:
-    Type: AWS::S3::Bucket
-    Properties:
-      PublicAccessBlockConfiguration:
-        BlockPublicAcls: true
-        BlockPublicPolicy: true
-        IgnorePublicAcls: true
-        RestrictPublicBuckets: true
-      LifecycleConfiguration:
-        Rules:
-          - Id: TransitionToIntelligentTiering
-            Status: Enabled
-            Transitions:
-              - StorageClass: INTELLIGENT_TIERING
-                TransitionInDays: 0
-          - Id: ExpireLogs
-            Status: Enabled
-            ExpirationInDays: 7
-      BucketEncryption:
-        ServerSideEncryptionConfiguration:
-          - BucketKeyEnabled: true
-            ServerSideEncryptionByDefault:
-              SSEAlgorithm: 'AES256'
-      Tags:
-        - Key: 'Name'
-          Value: !Sub ${AWS::StackName}-protected-media-logs
-        - Key: 'ManagedBy'
-          Value: !Ref Stack
-
-  S3ProtectedMediaLogsPolicy:
-    Type: AWS::S3::BucketPolicy
-    Properties:
-      Bucket: !Ref S3ProtectedMediaLogs
-      PolicyDocument:
-        Version: '2012-10-17'
-        Id: PolicyForAccessLoggingForProtectedMedia
-        Statement:
-          - Effect: Deny
-            Action: 's3:*'
-            Resource:
-              - !Sub '${S3ProtectedMediaLogs.Arn}'
-              - !Sub '${S3ProtectedMediaLogs.Arn}/*'
-            Principal: '*'
-            Condition:
-              Bool:
-                'aws:SecureTransport': false
-          - Effect: Allow
-            Action:
-              - 's3:PutObject'
-              - 's3:PutObjectACL'
-            Resource:
-              - !Sub '${S3ProtectedMediaLogs.Arn}/*'
-            Condition:
-              Bool:
-                'aws:SecureTransport': true
-              ArnLike:
-                'aws:SourceArn': !GetAtt S3ProtectedMedia.Arn
-              StringEquals:
-                'aws:SourceAccount': !Sub '${AWS::AccountId}'
-            Principal:
-              Service: 'logging.s3.amazonaws.com'
-
   CloudFrontKeyValueStore:
     Type: AWS::CloudFront::KeyValueStore
     Properties:
       Comment: !Sub '${AWS::StackName} key value store'
       Name: !Sub '${Stack}-${Stage}-Store'
+
+  S3StaticPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref S3StaticBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Id: PolicyForCloudFrontPrivateContent
+        Statement:
+          - Effect: Deny
+            Action: 's3:*'
+            Resource:
+              - !Sub 'arn:${AWS::Partition}:s3:::${S3StaticBucket}'
+              - !Sub 'arn:${AWS::Partition}:s3:::${S3StaticBucket}/*'
+            Principal: '*'
+            Condition:
+              Bool:
+                'aws:SecureTransport': false
+          - Effect: Allow
+            Action:
+              - 's3:GetObject'
+            Resource:
+              - !Sub 'arn:${AWS::Partition}:s3:::${S3StaticBucket}/*'
+            Condition:
+              Bool:
+                'aws:SecureTransport': true
+              StringEquals:
+                'AWS:SourceArn': !Sub 'arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${CloudFront}'
+            Principal:
+              Service: 'cloudfront.amazonaws.com'
+
+  S3MediaPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref S3MediaBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Id: PolicyForCloudFrontPrivateContent
+        Statement:
+          - Effect: Deny
+            Action: 's3:*'
+            Resource:
+              - !Sub 'arn:${AWS::Partition}:s3:::${S3MediaBucket}'
+              - !Sub 'arn:${AWS::Partition}:s3:::${S3MediaBucket}/*'
+            Principal: '*'
+            Condition:
+              Bool:
+                'aws:SecureTransport': false
+          - Effect: Allow
+            Action:
+              - 's3:GetObject'
+            Resource: !Sub 'arn:${AWS::Partition}:s3:::${S3MediaBucket}/*'
+            Condition:
+              Bool:
+                'aws:SecureTransport': true
+              StringEquals:
+                'AWS:SourceArn': !Sub 'arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${CloudFront}'
+            Principal:
+              Service: 'cloudfront.amazonaws.com'
+
+  S3ProtectedMediaPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref S3ProtectedMediaBucket
+      PolicyDocument:
+        Version: '2012-10-17'
+        Id: PolicyForCloudFrontPrivateContent
+        Statement:
+          - Effect: Deny
+            Action: 's3:*'
+            Resource:
+              - !Sub 'arn:${AWS::Partition}:s3:::${S3ProtectedMediaBucket}'
+              - !Sub 'arn:${AWS::Partition}:s3:::${S3ProtectedMediaBucket}/*'
+            Principal: '*'
+            Condition:
+              Bool:
+                'aws:SecureTransport': false
+          - Effect: Allow
+            Action:
+              - 's3:GetObject'
+            Resource: !Sub 'arn:${AWS::Partition}:s3:::${S3ProtectedMediaBucket}/*'
+            Condition:
+              Bool:
+                'aws:SecureTransport': true
+              StringEquals:
+                'AWS:SourceArn': !Sub 'arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${CloudFront}'
+            Principal:
+              Service: 'cloudfront.amazonaws.com'
 
   CloudFront:
     Type: AWS::CloudFront::Distribution
@@ -711,9 +448,16 @@ Resources:
           - !Ref AWS::NoValue
         Origins:
           - Id: S3StaticOrigin
-            DomainName: !GetAtt S3Static.RegionalDomainName
+            DomainName: !Sub ${S3StaticBucket}.s3.${AWS::Region}.amazonaws.com
             OriginAccessControlId: !GetAtt CloudFrontOriginAccessControl.Id
             S3OriginConfig: {}
+            OriginShield:
+              Enabled: true
+              OriginShieldRegion: !Sub '${AWS::Region}'
+          - Id: ApiGatewayWebOrigin
+            DomainName: !Sub '${ApiGatewayWeb}.execute-api.${AWS::Region}.amazonaws.com'
+            CustomOriginConfig:
+              OriginProtocolPolicy: match-viewer
             OriginShield:
               Enabled: true
               OriginShieldRegion: !Sub '${AWS::Region}'
@@ -724,26 +468,29 @@ Resources:
             OriginShield:
               Enabled: true
               OriginShieldRegion: !Sub '${AWS::Region}'
+          - Id: ApiGatewayGraphQLOrigin
+            DomainName: !Sub '${ApiGatewayGraphQL}.execute-api.${AWS::Region}.amazonaws.com'
+            CustomOriginConfig:
+              OriginProtocolPolicy: match-viewer
+            OriginShield:
+              Enabled: true
+              OriginShieldRegion: !Sub '${AWS::Region}'
           - Id: S3ProtectedMediaOrigin
-            DomainName: !GetAtt S3ProtectedMedia.RegionalDomainName
+            DomainName: !Sub ${S3ProtectedMediaBucket}.s3.${AWS::Region}.amazonaws.com
             OriginAccessControlId: !GetAtt CloudFrontOriginAccessControl.Id
             S3OriginConfig: {}
             OriginShield:
               Enabled: true
               OriginShieldRegion: !Sub '${AWS::Region}'
           - Id: S3MediaOrigin
-            DomainName: !GetAtt S3Media.RegionalDomainName
+            DomainName: !Sub ${S3MediaBucket}.s3.${AWS::Region}.amazonaws.com
             OriginAccessControlId: !GetAtt CloudFrontOriginAccessControl.Id
             S3OriginConfig: {}
             OriginShield:
               Enabled: true
               OriginShieldRegion: !Sub '${AWS::Region}'
           - Id: ApiGatewayWebSocketOrigin
-            DomainName:
-              !Select [
-                1,
-                !Split ['//', !GetAtt ApiGatewayWebSocket.ApiEndpoint]
-              ]
+            DomainName: !Sub '${ApiGatewayWebSocket}.execute-api.${AWS::Region}.amazonaws.com'
             CustomOriginConfig:
               OriginProtocolPolicy: match-viewer
         DefaultCacheBehavior:
@@ -751,7 +498,7 @@ Resources:
           CachedMethods: ['GET', 'HEAD']
           CachePolicyId: !Ref StaticCachePolicy
           OriginRequestPolicyId: !Ref BasicOriginRequestPolicy
-          TargetOriginId: ApiGatewayRestOrigin
+          TargetOriginId: ApiGatewayWebOrigin
           ViewerProtocolPolicy: redirect-to-https
           ResponseHeadersPolicyId: !Ref CloudFrontResponseHeaderPolicy
           SmoothStreaming: false
@@ -821,7 +568,23 @@ Resources:
                 FunctionARN: !GetAtt CloudFrontViewerResponse.FunctionARN
               - EventType: viewer-request
                 FunctionARN: !GetAtt CloudFrontViewerRequest.FunctionARN
-            PathPattern: '/api/*'
+            PathPattern: '/api/rest/*'
+          - AllowedMethods:
+              ['GET', 'HEAD', 'PUT', 'PATCH', 'POST', 'DELETE', 'OPTIONS']
+            CachedMethods: ['GET', 'HEAD']
+            CachePolicyId: !Ref QueryCachePolicy
+            OriginRequestPolicyId: !Ref BasicOriginRequestPolicy
+            TargetOriginId: ApiGatewayGraphQLOrigin
+            ViewerProtocolPolicy: redirect-to-https
+            ResponseHeadersPolicyId: !Ref CloudFrontResponseHeaderPolicy
+            SmoothStreaming: false
+            Compress: true
+            FunctionAssociations:
+              - EventType: viewer-response
+                FunctionARN: !GetAtt CloudFrontViewerResponse.FunctionARN
+              - EventType: viewer-request
+                FunctionARN: !GetAtt CloudFrontViewerRequest.FunctionARN
+            PathPattern: '/api/graphql'
           - AllowedMethods: ['GET', 'HEAD']
             CachedMethods: ['GET', 'HEAD']
             CachePolicyId: !Ref QueryCachePolicy
@@ -903,234 +666,6 @@ Resources:
           AliasTarget:
             HostedZoneId: Z2FDTNDATAQYW2 # CloudFront alias
             DNSName: !GetAtt CloudFront.DomainName
-
-  ApiGatewayRest:
-    Type: AWS::ApiGateway::RestApi
-    Properties:
-      Name: !Sub '${AWS::StackName}-rest-api'
-      Description: !Sub 'Created by SAM by ${AWS::StackName}'
-      BinaryMediaTypes:
-        - 'application/octet-stream'
-        - 'audio/*'
-        - 'video/*'
-        - 'application/pdf'
-        - 'font/*'
-      EndpointConfiguration:
-        Types:
-          - REGIONAL
-      Tags:
-        - Key: 'Name'
-          Value: !Sub '${AWS::StackName}-rest-api'
-        - Key: 'ManagedBy'
-          Value: !Ref Stack
-
-  ApiGatewayRestMethod:
-    Type: AWS::ApiGateway::Method
-    Properties:
-      RestApiId: !Ref ApiGatewayRest
-      ResourceId: !GetAtt ApiGatewayRest.RootResourceId
-      HttpMethod: HEAD
-      AuthorizationType: AWS_IAM
-      Integration:
-        Type: MOCK
-
-  ApiGatewayRestDeployment:
-    Type: AWS::ApiGateway::Deployment
-    DependsOn: ApiGatewayRestMethod
-    Properties:
-      RestApiId: !Ref ApiGatewayRest
-
-  ApiGatewayRestLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub '/aws/apigateway/rest-api/${AWS::StackName}'
-      RetentionInDays: !Ref LogRetentionInDays
-      Tags:
-        - Key: 'Name'
-          Value: !Sub '${AWS::StackName} rest api log group'
-        - Key: 'ManagedBy'
-          Value: !Ref Stack
-
-  ApiGatewayRestApiWafAcl:
-    Type: AWS::WAFv2::WebACL
-    Condition: IsWafEnabled
-    Properties:
-      DefaultAction:
-        Allow: {}
-      Scope: REGIONAL
-      VisibilityConfig:
-        SampledRequestsEnabled: true
-        CloudWatchMetricsEnabled: true
-        MetricName: !Sub '${AWS::StackName}-waf-acl-rest-api'
-      Rules:
-        - Name: RateLimit
-          Priority: 0
-          Action:
-            Block:
-              CustomResponse:
-                ResponseCode: 429
-          VisibilityConfig:
-            SampledRequestsEnabled: true
-            CloudWatchMetricsEnabled: true
-            MetricName: !Sub '${AWS::StackName}-waf-acl-rest-api-rate-limit'
-          Statement:
-            RateBasedStatement:
-              AggregateKeyType: IP
-              Limit: 1000
-        - Name: AWS-AWSManagedRulesCommonRuleSet
-          Priority: 1
-          OverrideAction:
-            None: {}
-          VisibilityConfig:
-            SampledRequestsEnabled: true
-            CloudWatchMetricsEnabled: true
-            MetricName: !Sub '${AWS::StackName}-waf-acl-rest-api-common'
-          Statement:
-            ManagedRuleGroupStatement:
-              VendorName: AWS
-              Name: AWSManagedRulesCommonRuleSet
-              ExcludedRules:
-                - Name: 'SizeRestrictions_BODY'
-        - Name: block-too-large-body-requests
-          Priority: 2
-          Statement:
-            AndStatement:
-              Statements:
-                - LabelMatchStatement:
-                    Scope: LABEL
-                    Key: awswaf:managed:aws:core-rule-set:SizeRestrictions_Body
-                - NotStatement:
-                    Statement:
-                      ByteMatchStatement:
-                        SearchString: !Sub '/${Stage}/api-rest/sentry-tunnel'
-                        FieldToMatch:
-                          UriPath: {}
-                        TextTransformations:
-                          - Priority: 0
-                            Type: NONE
-                        PositionalConstraint: STARTS_WITH
-          Action:
-            Block: {}
-          VisibilityConfig:
-            SampledRequestsEnabled: true
-            CloudWatchMetricsEnabled: true
-            MetricName: !Sub '${AWS::StackName}-block-too-large-body-requests'
-        - Name: AWS-ManagedRulesKnownBadInputsRuleSet
-          Priority: 3
-          OverrideAction:
-            None: {}
-          VisibilityConfig:
-            SampledRequestsEnabled: true
-            CloudWatchMetricsEnabled: true
-            MetricName: !Sub '${AWS::StackName}-waf-acl-rest-api-bad-inputs'
-          Statement:
-            ManagedRuleGroupStatement:
-              VendorName: AWS
-              Name: AWSManagedRulesKnownBadInputsRuleSet
-        - Name: AWS-ManagedRulesAmazonIpReputationList
-          Priority: 4
-          OverrideAction:
-            None: {}
-          VisibilityConfig:
-            SampledRequestsEnabled: true
-            CloudWatchMetricsEnabled: true
-            MetricName: !Sub '${AWS::StackName}-waf-acl-rest-api-ip-reputation'
-          Statement:
-            ManagedRuleGroupStatement:
-              VendorName: AWS
-              Name: AWSManagedRulesAmazonIpReputationList
-  ApiGatewayRestApiWafAssocation:
-    Type: AWS::WAFv2::WebACLAssociation
-    Condition: IsWafEnabled
-    DependsOn: ApiGatewayRestStage
-    Properties:
-      ResourceArn: !Sub 'arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${ApiGatewayRest}/stages/${Stage}'
-      WebACLArn: !GetAtt ApiGatewayRestApiWafAcl.Arn
-  ApiGatewayRestApiWafLogGroup:
-    Type: AWS::Logs::LogGroup
-    Condition: IsWafEnabled
-    Properties:
-      LogGroupName: !Sub 'aws-waf-logs-rest-api/${AWS::StackName}'
-      RetentionInDays: !Ref LogRetentionInDays
-      Tags:
-        - Key: 'Name'
-          Value: !Sub '${AWS::StackName} waf acl log group for rest api'
-        - Key: 'ManagedBy'
-          Value: !Ref Stack
-  ApiGatewayRestApiWafLogging:
-    Type: AWS::WAFv2::LoggingConfiguration
-    Condition: IsWafEnabled
-    Properties:
-      LogDestinationConfigs:
-        - !Select [0, !Split [':*', !GetAtt ApiGatewayRestApiWafLogGroup.Arn]]
-      LoggingFilter:
-        DefaultBehavior: DROP
-        Filters:
-          - Behavior: KEEP
-            Conditions:
-              - ActionCondition:
-                  Action: BLOCK
-            Requirement: MEETS_ANY
-      ResourceArn: !GetAtt ApiGatewayRestApiWafAcl.Arn
-  ApiGatewayRestStage:
-    Type: AWS::ApiGateway::Stage
-    Properties:
-      RestApiId: !Ref ApiGatewayRest
-      DeploymentId: !Ref ApiGatewayRestDeployment
-      StageName: !Ref Stage
-      AccessLogSetting:
-        DestinationArn: !GetAtt ApiGatewayRestLogGroup.Arn
-        Format: !Ref ApiGatewayRestLogFormat
-      TracingEnabled: true
-      MethodSettings:
-        - MetricsEnabled: true
-          HttpMethod: '*'
-          ResourcePath: '/*'
-          ThrottlingRateLimit: 2000
-          ThrottlingBurstLimit: 1000
-      Tags:
-        - Key: 'Name'
-          Value: !Sub '${AWS::StackName} rest api default stage'
-        - Key: 'ManagedBy'
-          Value: !Ref Stack
-
-  ApiGatewayWebSocket:
-    Type: AWS::ApiGatewayV2::Api
-    Properties:
-      Name: !Sub '${AWS::StackName}-websocket'
-      Description: !Sub 'Created by SAM by ${AWS::StackName}'
-      ProtocolType: WEBSOCKET
-      RouteSelectionExpression: $request.body.type
-      Tags:
-        Name: !Sub '${AWS::StackName} websocket'
-        ManagedBy: !Ref Stack
-
-  ApiGatewayWebSocketLogGroup:
-    Type: AWS::Logs::LogGroup
-    Properties:
-      LogGroupName: !Sub '/aws/apigateway/${ApiGatewayWebSocket}/${Stage}'
-      RetentionInDays: !Ref LogRetentionInDays
-      Tags:
-        - Key: 'Name'
-          Value: !Sub '${AWS::StackName} websocket api log group'
-        - Key: 'ManagedBy'
-          Value: !Ref Stack
-
-  ApiGatewayWebSocketStage:
-    Type: AWS::ApiGatewayV2::Stage
-    Properties:
-      ApiId: !Ref ApiGatewayWebSocket
-      StageName: !Ref Stage
-      AutoDeploy: true
-      DefaultRouteSettings:
-        DetailedMetricsEnabled: true
-        DataTraceEnabled: false
-        LoggingLevel: 'ERROR'
-        ThrottlingBurstLimit: 500
-        ThrottlingRateLimit: 1000
-      Tags:
-        Name: !Sub '${AWS::StackName} websocket ${Stage} stage'
-        ManagedBy: !Ref Stack
 
   S3ReplicateFunction:
     Condition: ShouldReplicate
@@ -1218,7 +753,7 @@ Resources:
       MemorySize: 128
       Environment:
         Variables:
-          REST_API_ID: !Ref ApiGatewayRest
+          REST_API_IDS: !Sub '${ApiGatewayRest},${ApiGatewayWeb},${ApiGatewayGraphQL}'
           KvsARN: !GetAtt CloudFrontKeyValueStore.Arn
           SSM_API_JWT_SECRET: !Sub /${Stack}/${Stage}/API_JWT_SECRET
           STAGE: !Ref Stage
@@ -1288,263 +823,13 @@ Resources:
     Metadata:
       BuildMethod: makefile
 
-  SentryFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: functions/sentry/
-      Handler: index.handler
-      Description: 'send waf cloudwatch logs to sentry'
-      Timeout: 6
-      MemorySize: 128
-      Environment:
-        Variables:
-          SENTRY_DSN: !Ref SentryDSN
-          SENTRY_ENVIRONMENT: !Ref SentryEnvironment
-          SENTRY_TUNNEL: !Sub ${StageRootUrl}/api/rest/sentry-tunnel
-          STAGE: !Ref Stage
-      Policies:
-        - Version: 2012-10-17
-          Statement:
-            - Sid: CloudWatchLogGroup
-              Action:
-                - logs:CreateLogStream
-                - logs:PutLogEvents
-              Resource: !GetAtt CloudWatchLogGroup.Arn
-              Effect: Allow
-      LoggingConfig:
-        LogGroup: !Ref CloudWatchLogGroup
-    Metadata:
-      BuildMethod: makefile
-
-  WebSocketAuthFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: functions/request-auth/
-      Handler: index.webSocketAuth
-      Description: 'websocket authorizer'
-      Timeout: 6
-      MemorySize: 128
-      Environment:
-        Variables:
-          SSM_API_JWT_SECRET: !Sub /${Stack}/${Stage}/API_JWT_SECRET
-          DYNAMODB_TABLE: !Ref DynamoDBStackTableName
-      Policies:
-        - SSMParameterReadPolicy:
-            ParameterName: !Sub ${Stack}/${Stage}/API_JWT_SECRET
-        - Version: 2012-10-17
-          Statement:
-            - Sid: CloudWatchLogGroup
-              Action:
-                - logs:CreateLogStream
-                - logs:PutLogEvents
-              Resource: !GetAtt CloudWatchLogGroup.Arn
-              Effect: Allow
-        - Version: 2012-10-17
-          Statement:
-            - Sid: DynamoDB
-              Action:
-                - dynamodb:GetItem
-              Resource:
-                - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTableName}'
-              Effect: Allow
-              Condition:
-                ForAllValues:StringLike:
-                  dynamodb:LeadingKeys:
-                    - 'session#*'
-      LoggingConfig:
-        LogGroup: !Ref CloudWatchLogGroup
-    Metadata:
-      BuildMethod: makefile
-
-  WebSocketAnonymousAuthFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: functions/request-auth/
-      Handler: index.webSocketAnonymousAuth
-      Description: 'websocket anonmymous authorizer'
-      Timeout: 6
-      MemorySize: 128
-      Environment:
-        Variables:
-          SSM_API_JWT_SECRET: !Sub /${Stack}/${Stage}/API_JWT_SECRET
-          DYNAMODB_TABLE: !Ref DynamoDBStackTableName
-      Policies:
-        - SSMParameterReadPolicy:
-            ParameterName: !Sub ${Stack}/${Stage}/API_JWT_SECRET
-        - Version: 2012-10-17
-          Statement:
-            - Sid: CloudWatchLogGroup
-              Action:
-                - logs:CreateLogStream
-                - logs:PutLogEvents
-              Resource: !GetAtt CloudWatchLogGroup.Arn
-              Effect: Allow
-        - Version: 2012-10-17
-          Statement:
-            - Sid: DynamoDB
-              Action:
-                - dynamodb:GetItem
-              Resource:
-                - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTableName}'
-              Effect: Allow
-              Condition:
-                ForAllValues:StringLike:
-                  dynamodb:LeadingKeys:
-                    - 'session#*'
-      LoggingConfig:
-        LogGroup: !Ref CloudWatchLogGroup
-    Metadata:
-      BuildMethod: makefile
-
-  HttpAuthFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: functions/request-auth/
-      Handler: index.httpAuth
-      Description: 'http authorizer'
-      Timeout: 6
-      MemorySize: 128
-      Environment:
-        Variables:
-          SSM_API_JWT_SECRET: !Sub /${Stack}/${Stage}/API_JWT_SECRET
-          DYNAMODB_TABLE: !Ref DynamoDBStackTableName
-      Policies:
-        - Version: 2012-10-17
-          Statement:
-            - Sid: ApiGateway
-              Action:
-                - apigateway:GET
-              Resource:
-                - !Sub arn:${AWS::Partition}:apigateway:*::/restapis*
-                - !Sub arn:${AWS::Partition}:apigateway:*::/apikeys*
-                - !Sub arn:${AWS::Partition}:apigateway:*::/usageplans*
-              Effect: Allow
-        - Version: 2012-10-17
-          Statement:
-            - Sid: DynamoDB
-              Action:
-                - dynamodb:GetItem
-              Resource:
-                - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTableName}'
-              Effect: Allow
-              Condition:
-                ForAllValues:StringLike:
-                  dynamodb:LeadingKeys:
-                    - 'session#*'
-        - SSMParameterReadPolicy:
-            ParameterName: !Sub ${Stack}/${Stage}/API_JWT_SECRET
-        - Version: 2012-10-17
-          Statement:
-            - Sid: CloudWatchLogGroup
-              Action:
-                - logs:CreateLogStream
-                - logs:PutLogEvents
-              Resource: !GetAtt CloudWatchLogGroup.Arn
-              Effect: Allow
-        - Version: 2012-10-17
-          Statement:
-            - Sid: DynamoDB
-              Action:
-                - dynamodb:GetItem
-              Resource:
-                - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTableName}'
-              Effect: Allow
-              Condition:
-                ForAllValues:StringLike:
-                  dynamodb:LeadingKeys:
-                    - 'session#*'
-      LoggingConfig:
-        LogGroup: !Ref CloudWatchLogGroup
-    Metadata:
-      BuildMethod: makefile
-
-  HttpAnonymousAuthFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: functions/request-auth/
-      Handler: index.httpAnonymousAuth
-      Description: 'http anonmymous authorizer'
-      Timeout: 6
-      MemorySize: 128
-      Environment:
-        Variables:
-          SSM_API_JWT_SECRET: !Sub /${Stack}/${Stage}/API_JWT_SECRET
-          DYNAMODB_TABLE: !Ref DynamoDBStackTableName
-      Policies:
-        - Version: 2012-10-17
-          Statement:
-            - Sid: ApiGateway
-              Action:
-                - apigateway:GET
-              Resource:
-                - !Sub arn:${AWS::Partition}:apigateway:*::/restapis*
-                - !Sub arn:${AWS::Partition}:apigateway:*::/apikeys*
-                - !Sub arn:${AWS::Partition}:apigateway:*::/usageplans*
-              Effect: Allow
-        - SSMParameterReadPolicy:
-            ParameterName: !Sub ${Stack}/${Stage}/API_JWT_SECRET
-        - Version: 2012-10-17
-          Statement:
-            - Sid: CloudWatchLogGroup
-              Action:
-                - logs:CreateLogStream
-                - logs:PutLogEvents
-              Resource: !GetAtt CloudWatchLogGroup.Arn
-              Effect: Allow
-        - Version: 2012-10-17
-          Statement:
-            - Sid: DynamoDB
-              Action:
-                - dynamodb:GetItem
-              Resource:
-                - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTableName}'
-              Effect: Allow
-              Condition:
-                ForAllValues:StringLike:
-                  dynamodb:LeadingKeys:
-                    - 'session#*'
-      LoggingConfig:
-        LogGroup: !Ref CloudWatchLogGroup
-    Metadata:
-      BuildMethod: makefile
-
-  ApiGatewayRestApiAuthorizer:
-    Type: AWS::ApiGateway::Authorizer
-    Properties:
-      RestApiId: !Ref ApiGatewayRest
-      Name: !Sub '${AWS::StackName}-apigw-restapi-authorizer'
-      Type: 'REQUEST'
-      AuthorizerResultTtlInSeconds: 900
-      AuthorizerUri: !Sub 'arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${HttpAuthFunction.Arn}/invocations'
-      IdentitySource: 'method.request.header.cookie'
-
-  ApiGatewayRestApiAuthorizerPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !GetAtt HttpAuthFunction.Arn
-      Action: 'lambda:InvokeFunction'
-      Principal: 'apigateway.amazonaws.com'
-      SourceArn: !Sub 'arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayRest}/authorizers/${ApiGatewayRestApiAuthorizer}'
-
-  ApiGatewayRestApiAnonymousAuthorizer:
-    Type: AWS::ApiGateway::Authorizer
-    Properties:
-      RestApiId: !Ref ApiGatewayRest
-      Name: !Sub '${AWS::StackName}-apigw-restapi-anonymous-authorizer'
-      Type: 'REQUEST'
-      AuthorizerResultTtlInSeconds: 900
-      AuthorizerUri: !Sub 'arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${HttpAuthFunction.Arn}/invocations'
-      IdentitySource: 'method.request.header.cookie'
-
-  ApiGatewayRestApiAnonymousAuthorizerPermission:
-    Type: AWS::Lambda::Permission
-    Properties:
-      FunctionName: !GetAtt HttpAnonymousAuthFunction.Arn
-      Action: 'lambda:InvokeFunction'
-      Principal: 'apigateway.amazonaws.com'
-      SourceArn: !Sub 'arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayRest}/authorizers/${ApiGatewayRestApiAnonymousAuthorizer}'
-
 Outputs:
+  ApiJwtSecretChangedFunction:
+    Description: lambda to propagate key changes
+    Value: !GetAtt ApiJwtSecretChangedFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}ApiJwtSecretChangedFunction'
+
   DistributionId:
     Description: CloudFront distribution id
     Value: !Ref CloudFront
@@ -1555,70 +840,3 @@ Outputs:
     Value: !Ref S3CloudFrontLogs
     Export:
       Name: !Sub '${AWS::StackName}S3CloudFrontLogsBucket'
-  S3StaticBucket:
-    Description: S3 Bucket for static content
-    Value: !Ref S3Static
-    Export:
-      Name: !Sub '${AWS::StackName}S3StaticBucket'
-  S3MediaBucket:
-    Description: S3 Bucket for media content
-    Value: !Ref S3Media
-    Export:
-      Name: !Sub '${AWS::StackName}S3MediaBucket'
-  S3ProtectedMediaBucket:
-    Description: S3 Bucket for protected media content
-    Value: !Ref S3ProtectedMedia
-    Export:
-      Name: !Sub '${AWS::StackName}S3ProtectedMediaBucket'
-  S3ProtectedMediaLogsBucket:
-    Description: S3 Bucket for protected media content access logs
-    Value: !Ref S3ProtectedMediaLogs
-    Export:
-      Name: !Sub '${AWS::StackName}S3ProtectedMediaLogsBucket'
-  ApiGatewayRest:
-    Description: Api Gateway rest api
-    Value: !Ref ApiGatewayRest
-    Export:
-      Name: !Sub '${AWS::StackName}ApigwRest'
-
-  ApiGatewayRestResourceId:
-    Description: Api gateway rest api root resource id
-    Value: !GetAtt ApiGatewayRest.RootResourceId
-    Export:
-      Name: !Sub '${AWS::StackName}ApigwRestRootResourceId'
-
-  ApiGatewayRestApiAuthorizer:
-    Description: api gateway restapi authorizer
-    Value: !Ref ApiGatewayRestApiAuthorizer
-    Export:
-      Name: !Sub '${AWS::StackName}ApigwRestApiAuthorizer'
-
-  ApiGatewayRestApiAnonymousAuthorizer:
-    Description: api gateway restapi authorizer allowing anonymous access
-    Value: !Ref ApiGatewayRestApiAnonymousAuthorizer
-    Export:
-      Name: !Sub '${AWS::StackName}ApigwRestApiAnonymousAuthorizer'
-
-  ApiGatewayWebSocket:
-    Description: Api gateway websocket
-    Value: !Ref ApiGatewayWebSocket
-    Export:
-      Name: !Sub '${AWS::StackName}ApigwWebSocket'
-
-  WebSocketAuthFunction:
-    Description: lambda websocket authorizer
-    Value: !GetAtt WebSocketAuthFunction.Arn
-    Export:
-      Name: !Sub '${AWS::StackName}WebSocketAuthFunction'
-
-  ApiJwtSecretChangedFunction:
-    Description: lambda to propagate key changes
-    Value: !GetAtt ApiJwtSecretChangedFunction.Arn
-    Export:
-      Name: !Sub '${AWS::StackName}ApiJwtSecretChangedFunction'
-
-  WebSocketAnonymousAuthFunction:
-    Description: lambda websocket authorizer allowing anonymous access
-    Value: !GetAtt WebSocketAnonymousAuthFunction.Arn
-    Export:
-      Name: !Sub '${AWS::StackName}WebSocketAnonymousAuthFunction'

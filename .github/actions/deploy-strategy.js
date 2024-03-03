@@ -46,20 +46,9 @@ export default async function deployStrategy({
       }[stage] ?? [],
     order: remove
       ? ['deployment', 'iam', 'monitoring', 'stack', 'region']
-      : [
-          'deployment',
-          'iam',
-          'monitoring',
-          'stack',
-          'region',
-          'dynamodb',
-          'cloudfront-us-east-1'
-        ],
-    stage: remove
-      ? ['cdn', 'eventbus', 'dynamodb', 'cloudfront-us-east-1']
-      : ['cdn', 'eventbus'],
-    //backend: ['rest', 'websocket', 'graphql', 'ses']
-    backend: ['websocket', 'ses']
+      : ['deployment', 'iam', 'monitoring', 'stack', 'region', 'dynamodb'],
+    stage: remove ? ['cdn', 'eventbus', 'dynamodb'] : ['stage', 'eventbus'],
+    backend: ['rest', 'graphql', 'media', 'ses']
   }
 
   const deployed = lintOnly ? {} : await listDeployed(awsRegions)

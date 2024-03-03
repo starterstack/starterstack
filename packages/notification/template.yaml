@@ -21,15 +21,7 @@ Globals:
 Parameters:
   Stack:
     Type: String
-  Stage:
-    Type: String
   StageRoot:
-    Type: String
-  StageRootUrl:
-    Type: String
-  SentryDSN:
-    Type: String
-  SentryEnvironment:
     Type: String
   LogRetentionInDays:
     Type: String
@@ -66,16 +58,8 @@ Metadata:
           overrides:
             - name: SNSAlarmTopic
               exportName: snsAlarmTopic
-            - name: Stage
-              exportName: stage
             - name: StageRoot
               exportName: stageOrStackRoot
-            - name: StageRootUrl
-              exportName: stageRootUrl
-            - name: SentryDSN
-              exportName: sentryDSN
-            - name: SentryEnvironment
-              exportName: sentryEnvironment
             - name: LogRetentionInDays
               exportName: logRetentionInDays
             - name: EventBusName
@@ -305,35 +289,5 @@ Resources:
             Destination: !GetAtt LambdaDlq.Arn
         MaximumEventAgeInSeconds: 900
         MaximumRetryAttempts: 2
-    Metadata:
-      BuildMethod: makefile
-
-  SentryFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: functions/sentry/
-      Handler: index.handler
-      Description: 'send cloudwatch logs to sentry'
-      Timeout: 6
-      MemorySize: 128
-      Environment:
-        Variables:
-          SENTRY_DSN: !Ref SentryDSN
-          SENTRY_ENVIRONMENT: !Ref SentryEnvironment
-          SENTRY_TUNNEL: !Sub ${StageRootUrl}/api/rest/sentry-tunnel
-          STAGE: !Ref Stage
-      Policies:
-        - Version: 2012-10-17
-          Statement:
-            - Sid: CloudWatchLogGroup
-              Action:
-                - logs:CreateLogStream
-                - logs:PutLogEvents
-              Resource: !GetAtt CloudWatchLogGroup.Arn
-              Effect: Allow
-      LoggingConfig:
-        LogGroup: !Ref CloudWatchLogGroup
-      # TODO add triggers when the log groups exist
-
     Metadata:
       BuildMethod: makefile

@@ -1,0 +1,15 @@
+Resources:
+  eventsDlq: ${file(./resources/events-dlq.yml)}
+  eventsDlqPolicy: ${file(./resources/events-dlq-policy.yml)}
+  lambdaDlq: ${file(./resources/lambda-dlq.yml)}
+Outputs:
+  deployedHash:
+    Description: computed sha1 of stack
+    Value: ${file(../hash.js):sha1}
+    Export:
+      Name: !Sub '${AWS::StackName}DeployedHash'
+  deployedCommit:
+    Description: git commit sha deployed
+    Value: ${file(../git.js):shaCommit}
+    Export:
+      Name: !Sub '${AWS::StackName}DeployedCommit'

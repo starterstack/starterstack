@@ -1,0 +1,13 @@
+GEM
+  remote: https://rubygems.org/
+  specs:
+
+PLATFORMS
+  universal-darwin-22
+  x64-mingw32
+  x86_64-linux
+
+DEPENDENCIES
+
+BUNDLED WITH
+   2.2.33

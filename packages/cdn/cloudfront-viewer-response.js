@@ -29,11 +29,14 @@ async function handler(event) {
     }
   }
 
-  for (const key of Object.keys(headers).filter(
-    (key) => key.startsWith('x-amz-meta-') || key === 'x-amz-storage-class'
-  )) {
-    delete headers[key]
-  }
+
+   Object.keys(headers)
+    .filter(
+      (key) => key.startsWith('x-amz-meta-') || key === 'x-amz-storage-class'
+    )
+    .forEach((key) => {
+      delete headers[key]
+    })
 
   return response
 }

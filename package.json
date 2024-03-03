@@ -7,7 +7,6 @@
     "patch-files": "bash ./scripts/patch-files.sh",
     "postinstall": "husky install && npm run patch-files",
     "prepare": "husky install && npm run patch-files",
-    "lint": "eslint --no-error-on-unmatched-pattern",
     "docs": "bash ./scripts/docs.sh",
     "test": "bash ./scripts/test.sh",
     "cz": "cz",
@@ -61,11 +60,12 @@
     "!.github",
     ".github/actions/dist",
     "packages/cdn/cloudfront-viewer-request.js",
-    "packages/cdn/cloudfront-viewer-response.js"
+    "packages/cdn/cloudfront-viewer-response.js",
+    "packages/web/functions/ssr/fetch-data.mjs"
   ],
   "lint-staged": {
     "*.{ts,js,mjs,mts,cjs,mts}": [
-      "npm run lint -- --fix --no-error-on-unmatched-pattern",
+      "eslint --fix --no-error-on-unmatched-pattern",
       "prettier --write --no-error-on-unmatched-pattern"
     ],
     ".github/actions/*.js": "bash ./scripts/build-actions.sh",

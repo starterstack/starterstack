@@ -102,8 +102,10 @@ export default function wrapHandler(handler) {
       correlationIds
     )
 
+    /* eslint-disable no-undef */
     // @ts-ignore
     globalThis[Symbol.for('correlationIds')] = correlationIds
+    /* eslint-enable no-undef */
 
     /** @type {Log} */
     const log = createLogger(correlationIds)
@@ -337,15 +339,12 @@ function createLogger(correlationIds) {
         typeof messageOrData === 'object' && !isError(messageOrData)
           ? {
               ...messageOrData,
-              .../** @type {object} */
-              (
-                message &&
-                  (isError(message)
-                    ? {
-                        ...serializeError(message)
-                      }
-                    : { msg: message })
-              )
+              ...(message &&
+                (isError(message)
+                  ? {
+                      ...serializeError(message)
+                    }
+                  : { msg: message }))
             }
           : {
               ...(isError(messageOrData)

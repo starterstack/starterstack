@@ -1,0 +1,40 @@
+.App {
+  text-align: center;
+}
+
+.App button {
+  padding: 10px;
+  background: none;
+  border: solid 1px white;
+  color: white;
+  cursor: pointer;
+}
+
+.App form {
+  display: inline-block;
+}
+
+.App input {
+  padding: 10px;
+  margin-right: 5px;
+}
+
+.App-logo {
+  height: 192px;
+  pointer-events: none;
+}
+
+.App-header {
+  background-color: #282c34;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: calc(10px + 2vmin);
+  color: white;
+}
+
+.App-link {
+  color: #61dafb;
+}
