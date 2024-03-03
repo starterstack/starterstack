@@ -22,11 +22,10 @@
     "noMonoPackage": {
       "ignoredResources": [
         "-pr-[\\d]+",
-        "graphql-(pr-)?[^-]*-Http(Post|Get)",
         "-(pr-)?[^-]*-Sentry",
         "-(pr-)?[^-]*-S3Replicate",
         "stage-(pr-)?[^-]*-(Http|WebSocket)(Anonymous)?Auth",
-        "graphql-(pr-)?[^-]*-(Broadcast|Connections|Default|Echo)"
+        "graphql-(pr-)?[^-]*-(GraphQLHttp|Subscriptions|Broadcast|Connections)"
       ]
     },
     "lightBundle": {
