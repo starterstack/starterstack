@@ -1,5 +1,27 @@
 # Changelog
 
+## [0.0.13](https://github.com/starterstack/starterstack/compare/v0.0.12...v0.0.13) (2024-03-03)
+
+
+### Bug Fixes
+
+* **backup:** remove unused production region ([9c5007d](https://github.com/starterstack/starterstack/commit/9c5007d79dd92f0f398f031eb7a253b52fd4aea3))
+* **cdn:** add usage keys to auth ([c0cdee9](https://github.com/starterstack/starterstack/commit/c0cdee90b40486e6d353431382396eb433db800c))
+* **cloudfront header response policy:** move from cdn to region ([29f6b0f](https://github.com/starterstack/starterstack/commit/29f6b0f0f8e2e8cfaa48dd8c9f894da35002995e))
+* **cloudfront policies:** move from cdn to region ([fb819ab](https://github.com/starterstack/starterstack/commit/fb819abf31b2f3c5cc8736c6b3fdd3612782a6fe))
+* **cloudfront resources:** correct region ([77aae1c](https://github.com/starterstack/starterstack/commit/77aae1c1fc9bcd07b2a0aba698b37d9178e8969b))
+* **descriptions:** rename Serverless Framework to SAM ([483923f](https://github.com/starterstack/starterstack/commit/483923fafa6bda00616e783c3f10fdb94be84c6b))
+* **github actions:** add web to new frontend strategy ([12fd182](https://github.com/starterstack/starterstack/commit/12fd1826a25453255c82cd4e1c8c71496e8b6b45))
+* **github actions:** deploy order ([5e44d95](https://github.com/starterstack/starterstack/commit/5e44d95e33f553820120c65b1f32c316f2311ba8))
+* **iam:** add role description update permission ([d7796f4](https://github.com/starterstack/starterstack/commit/d7796f42470dd508b0fc7c09d55b920cffebc4dc))
+* npm install and ci don't work together for web ([b58d992](https://github.com/starterstack/starterstack/commit/b58d9927db1a0cd2ea14881aa30db7288d3a6b08))
+* npm install and ci don't work together for web ([7753223](https://github.com/starterstack/starterstack/commit/775322387752bf5ba0c3ef74ea2af7c043c5f1a6))
+* refactor multiple gateways ([#103](https://github.com/starterstack/starterstack/issues/103)) ([59270ef](https://github.com/starterstack/starterstack/commit/59270efdcce197737127f60bb3e5094861ada24b))
+* registry in lock files ([635c3c0](https://github.com/starterstack/starterstack/commit/635c3c0bf0d2a4fe053358c2017bb9eebe9d8c1f))
+* remove ruby ([1fac25a](https://github.com/starterstack/starterstack/commit/1fac25a3d9ed16f622f9c3f5543e18a9f8892bef))
+* **sls-env:** add frontend ([6307925](https://github.com/starterstack/starterstack/commit/63079255dcbc7f80233fdbcef283a6ebecd7dfe0))
+* **websocket:** replace plugin with inline cf ([37ac094](https://github.com/starterstack/starterstack/commit/37ac09471dd832e776255d5ca9f408a31b458ea7))
+
 ## [0.0.12](https://github.com/starterstack/starterstack/compare/v0.0.11...v0.0.12) (2024-02-19)
 
 
