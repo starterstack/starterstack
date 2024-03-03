@@ -88,6 +88,7 @@ jobs:
       ordered: '${{ steps.strategy.outputs.ordered }}'
       parallel-stage: '${{ steps.strategy.outputs.parallel-stage }}'
       parallel-backend: '${{ steps.strategy.outputs.parallel-backend }}'
+      parallel-frontend: '${{ steps.strategy.outputs.parallel-frontend }}'
       parallel-remaining: '${{ steps.strategy.outputs.parallel-remaining }}'
       db-changed: '${{ steps.strategy.outputs.db-changed }}'
       node-version: '${{ steps.node-version.outputs.result }}'
