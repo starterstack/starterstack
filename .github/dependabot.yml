@@ -33,8 +33,151 @@ updates:
       - dependency-name: '@aws-sdk/*'
       - dependency-name: 'aws-xray-sdk-core'
       - dependency-name: '@types/*'
+  - package-ecosystem: pip
+    directory: 'docs'
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    ignore:
+      - dependency-name: '@aws-sdk/*'
+      - dependency-name: 'aws-xray-sdk-core'
+      - dependency-name: '@types/*'
+  - package-ecosystem: npm
+    directory: 'packages/cdn/functions/api-jwt-secret-changed'
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    ignore:
+      - dependency-name: '@aws-sdk/*'
+      - dependency-name: 'aws-xray-sdk-core'
+      - dependency-name: '@types/*'
+  - package-ecosystem: npm
+    directory: 'packages/cdn/functions/request-auth'
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    ignore:
+      - dependency-name: '@aws-sdk/*'
+      - dependency-name: 'aws-xray-sdk-core'
+      - dependency-name: '@types/*'
+  - package-ecosystem: npm
+    directory: 'packages/cdn/functions/s3-replicate'
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    ignore:
+      - dependency-name: '@aws-sdk/*'
+      - dependency-name: 'aws-xray-sdk-core'
+      - dependency-name: '@types/*'
+  - package-ecosystem: npm
+    directory: 'packages/dynamodb-stack-audit/functions/audit'
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    ignore:
+      - dependency-name: '@aws-sdk/*'
+      - dependency-name: 'aws-xray-sdk-core'
+      - dependency-name: '@types/*'
   - package-ecosystem: npm
     directory: 'packages/dynamodb/functions/migration'
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    ignore:
+      - dependency-name: '@aws-sdk/*'
+      - dependency-name: 'aws-xray-sdk-core'
+      - dependency-name: '@types/*'
+  - package-ecosystem: npm
+    directory: 'packages/graphql/functions/connections'
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    ignore:
+      - dependency-name: '@aws-sdk/*'
+      - dependency-name: 'aws-xray-sdk-core'
+      - dependency-name: '@types/*'
+  - package-ecosystem: npm
+    directory: 'packages/graphql/functions/graphql'
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    ignore:
+      - dependency-name: '@aws-sdk/*'
+      - dependency-name: 'aws-xray-sdk-core'
+      - dependency-name: '@types/*'
+  - package-ecosystem: npm
+    directory: 'packages/media/functions/create-pdf'
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    ignore:
+      - dependency-name: '@aws-sdk/*'
+      - dependency-name: 'aws-xray-sdk-core'
+      - dependency-name: '@types/*'
+  - package-ecosystem: npm
+    directory: 'packages/media/functions/create-presigned-post'
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    ignore:
+      - dependency-name: '@aws-sdk/*'
+      - dependency-name: 'aws-xray-sdk-core'
+      - dependency-name: '@types/*'
+  - package-ecosystem: npm
+    directory: 'packages/media/functions/dynamodb-s3-export-assertion'
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    ignore:
+      - dependency-name: '@aws-sdk/*'
+      - dependency-name: 'aws-xray-sdk-core'
+      - dependency-name: '@types/*'
+  - package-ecosystem: npm
+    directory: 'packages/media/functions/dynamodb-s3-export'
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    ignore:
+      - dependency-name: '@aws-sdk/*'
+      - dependency-name: 'aws-xray-sdk-core'
+      - dependency-name: '@types/*'
+  - package-ecosystem: npm
+    directory: 'packages/media/functions/s3-trigger'
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    ignore:
+      - dependency-name: '@aws-sdk/*'
+      - dependency-name: 'aws-xray-sdk-core'
+      - dependency-name: '@types/*'
+  - package-ecosystem: npm
+    directory: 'packages/media/functions/upload-progress'
     schedule:
       interval: daily
     open-pull-requests-limit: 10
@@ -57,6 +200,248 @@ updates:
       - dependency-name: '@types/*'
   - package-ecosystem: npm
     directory: 'packages/monitoring/functions/stack-change'
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    ignore:
+      - dependency-name: '@aws-sdk/*'
+      - dependency-name: 'aws-xray-sdk-core'
+      - dependency-name: '@types/*'
+  - package-ecosystem: npm
+    directory: 'packages/notification/functions/hello'
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    ignore:
+      - dependency-name: '@aws-sdk/*'
+      - dependency-name: 'aws-xray-sdk-core'
+      - dependency-name: '@types/*'
+  - package-ecosystem: npm
+    directory: 'packages/notification/functions/login-email'
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    ignore:
+      - dependency-name: '@aws-sdk/*'
+      - dependency-name: 'aws-xray-sdk-core'
+      - dependency-name: '@types/*'
+  - package-ecosystem: npm
+    directory: 'packages/notification/functions/sentry'
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    ignore:
+      - dependency-name: '@aws-sdk/*'
+      - dependency-name: 'aws-xray-sdk-core'
+      - dependency-name: '@types/*'
+  - package-ecosystem: npm
+    directory: 'packages/rest/functions/login-by-email'
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    ignore:
+      - dependency-name: '@aws-sdk/*'
+      - dependency-name: 'aws-xray-sdk-core'
+      - dependency-name: '@types/*'
+  - package-ecosystem: npm
+    directory: 'packages/rest/functions/logout'
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    ignore:
+      - dependency-name: '@aws-sdk/*'
+      - dependency-name: 'aws-xray-sdk-core'
+      - dependency-name: '@types/*'
+  - package-ecosystem: pip
+    directory: 'packages/rest/functions/python'
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    ignore:
+      - dependency-name: '@aws-sdk/*'
+      - dependency-name: 'aws-xray-sdk-core'
+      - dependency-name: '@types/*'
+  - package-ecosystem: npm
+    directory: 'packages/rest/functions/sentry-tunnel'
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    ignore:
+      - dependency-name: '@aws-sdk/*'
+      - dependency-name: 'aws-xray-sdk-core'
+      - dependency-name: '@types/*'
+  - package-ecosystem: npm
+    directory: 'packages/rest/functions/session'
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    ignore:
+      - dependency-name: '@aws-sdk/*'
+      - dependency-name: 'aws-xray-sdk-core'
+      - dependency-name: '@types/*'
+  - package-ecosystem: npm
+    directory: 'packages/ses/functions/events'
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    ignore:
+      - dependency-name: '@aws-sdk/*'
+      - dependency-name: 'aws-xray-sdk-core'
+      - dependency-name: '@types/*'
+  - package-ecosystem: npm
+    directory: 'packages/ses/functions/ses-receive'
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    ignore:
+      - dependency-name: '@aws-sdk/*'
+      - dependency-name: 'aws-xray-sdk-core'
+      - dependency-name: '@types/*'
+  - package-ecosystem: npm
+    directory: 'packages/ses/functions/verify-ses'
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    ignore:
+      - dependency-name: '@aws-sdk/*'
+      - dependency-name: 'aws-xray-sdk-core'
+      - dependency-name: '@types/*'
+  - package-ecosystem: npm
+    directory: 'packages/shared/functions/sentry'
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    ignore:
+      - dependency-name: '@aws-sdk/*'
+      - dependency-name: 'aws-xray-sdk-core'
+      - dependency-name: '@types/*'
+  - package-ecosystem: npm
+    directory: 'packages/stage/functions/api-jwt-secret-changed'
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    ignore:
+      - dependency-name: '@aws-sdk/*'
+      - dependency-name: 'aws-xray-sdk-core'
+      - dependency-name: '@types/*'
+  - package-ecosystem: npm
+    directory: 'packages/stage/functions/request-auth'
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    ignore:
+      - dependency-name: '@aws-sdk/*'
+      - dependency-name: 'aws-xray-sdk-core'
+      - dependency-name: '@types/*'
+  - package-ecosystem: npm
+    directory: 'packages/stage/functions/s3-replicate'
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    ignore:
+      - dependency-name: '@aws-sdk/*'
+      - dependency-name: 'aws-xray-sdk-core'
+      - dependency-name: '@types/*'
+  - package-ecosystem: npm
+    directory: 'packages/test/functions/capture-token'
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    ignore:
+      - dependency-name: '@aws-sdk/*'
+      - dependency-name: 'aws-xray-sdk-core'
+      - dependency-name: '@types/*'
+  - package-ecosystem: npm
+    directory: 'packages/test/functions/login'
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    ignore:
+      - dependency-name: '@aws-sdk/*'
+      - dependency-name: 'aws-xray-sdk-core'
+      - dependency-name: '@types/*'
+  - package-ecosystem: npm
+    directory: 'packages/test/functions/logout'
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    ignore:
+      - dependency-name: '@aws-sdk/*'
+      - dependency-name: 'aws-xray-sdk-core'
+      - dependency-name: '@types/*'
+  - package-ecosystem: npm
+    directory: 'packages/test/functions/sanity-tests'
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    ignore:
+      - dependency-name: '@aws-sdk/*'
+      - dependency-name: 'aws-xray-sdk-core'
+      - dependency-name: '@types/*'
+  - package-ecosystem: npm
+    directory: 'packages/tracking/functions/email-status'
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    ignore:
+      - dependency-name: '@aws-sdk/*'
+      - dependency-name: 'aws-xray-sdk-core'
+      - dependency-name: '@types/*'
+  - package-ecosystem: npm
+    directory: 'packages/web/functions/ssr'
+    schedule:
+      interval: daily
+    open-pull-requests-limit: 10
+    labels:
+      - dependencies
+    ignore:
+      - dependency-name: '@aws-sdk/*'
+      - dependency-name: 'aws-xray-sdk-core'
+      - dependency-name: '@types/*'
+  - package-ecosystem: npm
+    directory: 'packages/web'
     schedule:
       interval: daily
     open-pull-requests-limit: 10
