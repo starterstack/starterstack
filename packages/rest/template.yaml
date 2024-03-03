@@ -216,11 +216,6 @@ Resources:
           ResourcePath: /api/hello-python
           ThrottlingRateLimit: 200
           ThrottlingBurstLimit: 400
-        - MetricsEnabled: true
-          HttpMethod: GET
-          ResourcePath: /api/hello-ruby
-          ThrottlingRateLimit: 200
-          ThrottlingBurstLimit: 400
       PropagateTags: true
       Tags:
         Name: !Sub '${AWS::StackName} api gateway'
