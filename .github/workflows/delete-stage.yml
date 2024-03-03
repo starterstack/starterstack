@@ -85,7 +85,13 @@ jobs:
       aws-ci-role: ${{ secrets[format('AWS_CI_ROLE_{0}', (github.event.inputs.account || 'feature')) ] }}
 
   remove-parallel-backend:
-    needs: [check-github-env-exists, env, remove-parallel-remaining]
+    needs:
+      [
+        check-github-env-exists,
+        env,
+        remove-parallel-remaining,
+        remove-parallel-frontend
+      ]
     if: ${{ always() && !failure() && !cancelled() && needs.env.outputs.parallel-backend == 'true' }}
     uses: 'starterstack/starterstack/.github/workflows/sls.yml@main'
     with:
@@ -102,6 +108,7 @@ jobs:
         check-github-env-exists,
         env,
         remove-parallel-remaining,
+        remove-parallel-frontend,
         remove-parallel-backend
       ]
     if: ${{ always() && !failure() && !cancelled() && needs.env.outputs.parallel-stage == 'true' }}
@@ -122,6 +129,7 @@ jobs:
         check-github-env-exists,
         env,
         remove-parallel-remaining,
+        remove-parallel-frontend,
         remove-parallel-backend,
         remove-parallel-stage
       ]
@@ -145,6 +153,7 @@ jobs:
         check-github-env-exists,
         env,
         remove-parallel-remaining,
+        remove-parallel-frontend,
         remove-parallel-backend,
         remove-parallel-stage,
         cleanup-environment
@@ -162,6 +171,7 @@ jobs:
         check-github-env-exists,
         env,
         remove-parallel-remaining,
+        remove-parallel-frontend,
         remove-parallel-backend,
         remove-parallel-stage,
         cleanup-environment,
@@ -181,6 +191,7 @@ jobs:
         check-github-env-exists,
         env,
         remove-parallel-remaining,
+        remove-parallel-frontend,
         remove-parallel-backend,
         remove-parallel-stage,
         cleanup-environment,
