@@ -27,6 +27,62 @@ jobs:
       id-token: write
       contents: read
     steps:
-      - name: run tests
-        run: |
-          echo TODO
+      - uses: aws-actions/configure-aws-credentials@v4.0.2
+        with:
+          role-to-assume: ${{ secrets.aws-ci-role }}
+          aws-region: us-east-1
+          role-duration-seconds: 900
+      - run: |
+          set -ueo pipefail
+
+          state_machine_arn=$(
+            aws cloudformation describe-stacks \
+              --stack-name '${{ inputs.stack-name }}-test-${{ inputs.stage }}' \
+              --region '${{ inputs.aws-region }}' |
+              jq -r \
+              '''
+              .Stacks |
+              .[] |
+              .Outputs |
+              .[] |
+              select( .OutputKey | contains("SanityTestStateMachineArn")) | .OutputValue
+              '''
+          )
+          execution_arn=$(aws stepfunctions start-execution \
+            --state-machine-arn "${state_machine_arn:?}" \
+            --input '{"gitHubRunUrl": "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" }' \
+            --query 'executionArn' \
+            --region '${{ inputs.aws-region }}' \
+            --output text)
+
+          echo "started execution ${execution_arn:?}"
+
+          while true; do
+            status=$(aws stepfunctions describe-execution \
+              --execution-arn "${execution_arn:?}" \
+              --query 'status' \
+              --region '${{ inputs.aws-region }}' \
+              --output text)
+            case "${status:?}" in
+            RUNNING)
+              echo "execution is still running"
+              sleep 10
+              ;;
+            SUCCEEDED)
+              echo "execution succeeded"
+              break
+              ;;
+            FAILED)
+              echo "execution failed"
+              exit 1
+              ;;
+            TIMED_OUT)
+              echo "execution timed out"
+              exit 1
+              ;;
+            *)
+              echo "unknown status: ${status:?}"
+              exit 1
+              ;;
+            esac
+          done

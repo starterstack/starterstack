@@ -1,0 +1,311 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform:
+  - AWS::LanguageExtensions
+  - AWS::Serverless-2016-10-31
+
+Description: Web
+
+Globals:
+  Api:
+    OpenApiVersion: 3.0.1
+  Function:
+    Tracing: Active
+    Architectures:
+      - arm64
+    Runtime: nodejs20.x
+    PropagateTags: true
+    Environment:
+      Variables:
+        STAGE: !Ref Stage
+        GIT_COMMIT: !Ref GITCommit
+
+Parameters:
+  Stack:
+    Type: String
+  Stage:
+    Type: String
+  StageRootUrl:
+    Type: String
+  SentryDSN:
+    Type: String
+  SentryEnvironment:
+    Type: String
+  LogRetentionInDays:
+    Type: String
+  ApiGatewayRestLogFormat:
+    Type: String
+  ApiGatewayRestApiWafAcl:
+    Type: String
+  HttpAnonymousAuthFunction:
+    Type: String
+  GITCommit:
+    Type: String
+  SNSAlarmTopic:
+    Type: String
+
+Metadata:
+  expand:
+    plugins:
+      - '../git.mjs'
+      - '../hash.mjs'
+      - '@starterstack/sam-expand/plugins/parameter-overrides'
+      - '../stack-stage-config.mjs'
+      - '@starterstack/sam-expand/plugins/run-script-hooks'
+      - '../purge-lambda-versions.mjs'
+      - '../generate-cloudwatch-alarms.mjs'
+
+    config:
+      stackStageConfig:
+        suffixStage: true
+        addMappings: true
+      parameterOverrides:
+        - location: ../stack-stage-config.mjs
+          overrides:
+            - name: SNSAlarmTopic
+              exportName: snsAlarmTopic
+            - name: Stage
+              exportName: stage
+            - name: StageRootUrl
+              exportName: stageRootUrl
+            - name: SentryDSN
+              exportName: sentryDSN
+            - name: SentryEnvironment
+              exportName: sentryEnvironment
+            - name: LogRetentionInDays
+              exportName: logRetentionInDays
+            - name: HttpAnonymousAuthFunction
+              exportName: httpAnonymousAuthFunction
+            - name: ApiGatewayRestLogFormat
+              exportName: apiGatewayRestLogFormat
+            - name: ApiGatewayRestApiWafAcl
+              exportName: apiGatewayRestApiWafAcl
+              defaultValue: 'none'
+        - location: ../git.mjs
+          overrides:
+            - name: GITCommit
+              exportName: commit
+      purgeLambdaVersions:
+        keep: 3
+      script:
+        hooks:
+          pre:build:
+            - command: 'npm'
+              args:
+                - value: 'run'
+                - value: 'build'
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: region
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: sentryDSN
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: sentryEnvironment
+                - file:
+                    location: ../git.mjs
+                    exportName: commit
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: stage
+          pre:deploy:
+            - command: 'npm'
+              args:
+                - value: 'run'
+                - value: 'deploy'
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: s3Static
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: distributionId
+                    defaultValue: 'none'
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: region
+          post:deploy:
+            - command: ../tag-cloudwatch-alarms.sh
+              args:
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: stackName
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: region
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: stage
+      alarms:
+        snsTopicRef: SNSAlarmTopic
+
+Conditions:
+  IsWafEnabled: !Equals
+    - !FindInMap
+      - AWSAccounts
+      - !Ref 'AWS::AccountId'
+      - wafEnabled
+    - true
+Resources:
+  CloudWatchLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}
+      RetentionInDays: !Ref LogRetentionInDays
+      Tags:
+        - Key: 'Name'
+          Value: !Sub '${AWS::StackName} lambda logs'
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+  ApiGatewayApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref Stage
+      AccessLogSetting:
+        DestinationArn: !GetAtt ApiGatewayCloudWatchLogGroup.Arn
+        Format: !Ref ApiGatewayRestLogFormat
+      Auth:
+        AddApiKeyRequiredToCorsPreflight: false
+        AddDefaultAuthorizerToCorsPreflight: false
+        Authorizers:
+          LambdaAnonymousAuthorizer:
+            FunctionArn: !Ref HttpAnonymousAuthFunction
+            FunctionPayloadType: REQUEST
+            Identity:
+              ReauthorizeEvery: 900
+              Headers:
+                - cookie
+        DefaultAuthorizer: LambdaAnonymousAuthorizer
+      BinaryMediaTypes:
+        - 'application/octet-stream'
+        - 'audio/*'
+        - 'video/*'
+        - 'application/pdf'
+        - 'font/*'
+      Description: !Sub '${AWS::StackName} api gateway'
+      EndpointConfiguration:
+        Type: REGIONAL
+      MethodSettings:
+        - MetricsEnabled: true
+          HttpMethod: '*'
+          ResourcePath: '/*'
+          ThrottlingRateLimit: 2000
+          ThrottlingBurstLimit: 1000
+      PropagateTags: true
+      Tags:
+        Name: !Sub '${AWS::StackName} api gateway'
+      TracingEnabled: true
+
+  ApiGatewayApiWAF:
+    Type: AWS::WAFv2::WebACLAssociation
+    Condition: IsWafEnabled
+    Properties:
+      ResourceArn: !Sub 'arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${ApiGatewayApi}/stages/${Stage}'
+      WebACLArn: !Ref ApiGatewayRestApiWafAcl
+
+  ApiGatewayCloudWatchLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/apigateway/rest-api/${AWS::StackName}'
+      RetentionInDays: !Ref LogRetentionInDays
+      Tags:
+        - Key: 'Name'
+          Value: !Sub '${AWS::StackName} web log group'
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+
+  SSRFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/ssr/
+      Handler: index.handler
+      Description: 'serverless side rendering'
+      Timeout: 11
+      MemorySize: 128
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Sid: CloudWatchLogGroup
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !GetAtt CloudWatchLogGroup.Arn
+              Effect: Allow
+      Environment:
+        Variables:
+          STAGE_ORIGIN: !Ref StageRootUrl
+      LoggingConfig:
+        LogGroup: !Ref CloudWatchLogGroup
+      Events:
+        HeadWildcard:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGatewayApi
+            Method: HEAD
+            Path: /{proxy+}
+        GetWildcard:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGatewayApi
+            Method: GET
+            Path: /{proxy+}
+        HeadRoot:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGatewayApi
+            Method: HEAD
+            Path: /
+        GetRoot:
+          Type: Api
+          Properties:
+            RestApiId: !Ref ApiGatewayApi
+            Method: GET
+            Path: /
+    Metadata:
+      BuildMethod: makefile
+
+  SentryFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/sentry/
+      Handler: index.handler
+      Description: 'send cloudwatch logs to sentry'
+      Timeout: 6
+      MemorySize: 128
+      Environment:
+        Variables:
+          SENTRY_DSN: !Ref SentryDSN
+          SENTRY_ENVIRONMENT: !Ref SentryEnvironment
+          SENTRY_TUNNEL: !Sub ${StageRootUrl}/api/rest/sentry-tunnel
+          STAGE: !Ref Stage
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Sid: CloudWatchLogGroup
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !GetAtt CloudWatchLogGroup.Arn
+              Effect: Allow
+      LoggingConfig:
+        LogGroup: !Ref CloudWatchLogGroup
+      Events:
+        LambdaErrorTrigger:
+          Type: CloudWatchLogs
+          Properties:
+            LogGroupName: !Ref CloudWatchLogGroup
+            FilterPattern: !Sub '{$.level = "error" && $.x-correlation-lambda != "*SentryFunction*"}'
+        ApiGatewayErrorTrigger:
+          Type: CloudWatchLogs
+          Properties:
+            LogGroupName: !Ref ApiGatewayCloudWatchLogGroup
+            FilterPattern: '{$.status > 399 && $.status != 403 && $.resourcePath != "*sentry-tunnel*" }'
+
+    Metadata:
+      BuildMethod: makefile
+
+Outputs:
+  ApiGateway:
+    Description: api gateway id
+    Value: !Ref ApiGatewayApi
+    Export:
+      Name: !Sub '${AWS::StackName}ApiGatewayApi'

@@ -24,11 +24,9 @@
         "-pr-[\\d]+",
         "graphql-(pr-)?[^-]*-Http(Post|Get)",
         "-(pr-)?[^-]*-Sentry",
-        "cdn-(pr-)?[^-]*-(Http|WebSocket)(Anonymous)?Auth",
-        "rest-(pr-)?[^-]*-Session(Get|Post)",
-        "graphql-(pr-)?[^-]*-Broadcast",
         "-(pr-)?[^-]*-S3Replicate",
-        "websocket-(pr-)?[^-]*-(Connections|Default|Echo)"
+        "stage-(pr-)?[^-]*-(Http|WebSocket)(Anonymous)?Auth",
+        "graphql-(pr-)?[^-]*-(Broadcast|Connections|Default|Echo)"
       ]
     },
     "lightBundle": {

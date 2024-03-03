@@ -61,15 +61,14 @@ export const lifecycle = async function generateCloudwatchAlarms({
     for (const [logicalId, resource] of Object.entries(resources)) {
       if (
         ![
-          'AWS::Lambda::Function',
           'AWS::Serverless::Function',
+          'AWS::Serverless::Api',
           'AWS::Lambda::EventSourceMapping',
           'AWS::Lambda::EventInvokeConfig',
           'AWS::SQS::Queue',
           'AWS::Scheduler::ScheduleGroup',
           'AWS::Events::Rule',
           'AWS::SNS::Subscription',
-          'AWS::ApiGateway::Method',
           'AWS::ApiGatewayV2::Route',
           'AWS::DynamoDB::GlobalTable',
           'AWS::WAFv2::WebACL',
@@ -83,24 +82,6 @@ export const lifecycle = async function generateCloudwatchAlarms({
       }
       const condition = createCondition({ resource, template })
       switch (resource.Type) {
-        case 'AWS::Lambda::Function': {
-          generateLambdaThrottleAlarm({
-            logicalId,
-            resources,
-            snsAlarmTopic,
-            condition,
-            region
-          })
-          generateLambdaErrorRateAlarm({
-            logicalId,
-            resources,
-            snsAlarmTopic,
-            condition,
-            region
-          })
-
-          break
-        }
         case 'AWS::Serverless::Function': {
           generateLambdaThrottleAlarm({
             logicalId,
@@ -117,11 +98,7 @@ export const lifecycle = async function generateCloudwatchAlarms({
             region
           })
 
-          if (
-            resource.Properties?.EventInvokeConfig &&
-            resource?.Properties?.EventInvokeConfig?.DestinationConfig
-              ?.OnFailure?.Destination
-          ) {
+          if (resource.Properties?.EventInvokeConfig) {
             generateLambdaIteratorAgeAlarm({
               logicalId,
               resources,
@@ -129,31 +106,12 @@ export const lifecycle = async function generateCloudwatchAlarms({
               condition,
               region
             })
-          }
-
-          break
-        }
-        case 'AWS::Lambda::EventSourceMapping': {
-          const lambdaLogicalId =
-            resource?.Properties?.FunctionName?.['Fn::GetAtt']?.[0]
-          if (lambdaLogicalId) {
-            generateLambdaIteratorAgeAlarm({
-              logicalId: lambdaLogicalId,
-              resources,
-              snsAlarmTopic,
-              condition,
-              region
-            })
-          }
-
-          break
-        }
-        case 'AWS::Lambda::EventInvokeConfig': {
-          if (resource?.Properties?.DestinationConfig?.OnFailure?.Destination) {
-            const lambdaLogicalId = resource?.Properties?.FunctionName?.Ref
-            if (lambdaLogicalId) {
+            if (
+              resource.Properties.EventInvokeConfig.DestinationConfig?.OnFailure
+                ?.Destination
+            ) {
               generateLambdaDestinationDeliveryFailureAlarm({
-                logicalId: lambdaLogicalId,
+                logicalId,
                 resources,
                 snsAlarmTopic,
                 condition,
@@ -161,7 +119,6 @@ export const lifecycle = async function generateCloudwatchAlarms({
               })
             }
           }
-
           break
         }
         case 'AWS::SQS::Queue': {
@@ -231,6 +188,9 @@ export const lifecycle = async function generateCloudwatchAlarms({
             })
           }
 
+          break
+        }
+        case 'AWS::Serverless::Api': {
           break
         }
         case 'AWS::ApiGateway::Method': {

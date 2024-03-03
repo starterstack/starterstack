@@ -11,10 +11,11 @@ if [[ -n ${SHARP_IGNORE_GLOBAL_LIBVIPS:-} ]]; then
     npm install \
     --os=linux \
     --cpu=arm64 \
+    --no-save \
     --audit false \
     --fund false \
-    --no-save \
-    --loglevel=error
+    --loglevel=error \
+    --omit=dev
 else
   npm install \
     --no-save \

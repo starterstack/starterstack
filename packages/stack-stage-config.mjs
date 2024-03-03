@@ -447,10 +447,70 @@ export default async function getSettings({
    * @param {string} outputKey
    * @returns {Promise<string | undefined>}
    */
+  const getMediaOutput = (outputKey) => {
+    return getCloudFormationOutput({
+      region: config.stackRegion,
+      stackName: `${settings.stackName}-media-${stage}`,
+      outputKey
+    })
+  }
+
+  /**
+   * @param {string} outputKey
+   * @returns {Promise<string | undefined>}
+   */
+  const getStageOutput = (outputKey) => {
+    return getCloudFormationOutput({
+      region: config.stackRegion,
+      stackName: `${settings.stackName}-stage-${stage}`,
+      outputKey
+    })
+  }
+
+  /**
+   * @param {string} outputKey
+   * @returns {Promise<string | undefined>}
+   */
   const getCDNOutput = (outputKey) => {
     return getCloudFormationOutput({
       region: config.stackRegion,
       stackName: `${settings.stackName}-cdn-${stage}`,
+      outputKey
+    })
+  }
+
+  /**
+   * @param {string} outputKey
+   * @returns {Promise<string | undefined>}
+   */
+  const getWebOutput = (outputKey) => {
+    return getCloudFormationOutput({
+      region: config.stackRegion,
+      stackName: `${settings.stackName}-web-${stage}`,
+      outputKey
+    })
+  }
+
+  /**
+   * @param {string} outputKey
+   * @returns {Promise<string | undefined>}
+   */
+  const getRestOutput = (outputKey) => {
+    return getCloudFormationOutput({
+      region: config.stackRegion,
+      stackName: `${settings.stackName}-rest-${stage}`,
+      outputKey
+    })
+  }
+
+  /**
+   * @param {string} outputKey
+   * @returns {Promise<string | undefined>}
+   */
+  const getGraphQLOutput = (outputKey) => {
+    return getCloudFormationOutput({
+      region: config.stackRegion,
+      stackName: `${settings.stackName}-graphql-${stage}`,
       outputKey
     })
   }
@@ -503,6 +563,12 @@ export default async function getSettings({
     },
     get sentryEnvironment() {
       return settings.stages.includes(config.stage) ? config.stage : 'feature'
+    },
+    get stageRegion() {
+      const stage = settings.stages.includes(config.stage)
+        ? config.stage
+        : 'feature'
+      return settings.regions[stage]
     },
     get sentryDSN() {
       return 'https://_@_._/0'
@@ -647,42 +713,51 @@ export default async function getSettings({
       return getSESOutput('SESDefaultConfigurationSet')
     },
     get s3Media() {
-      return getCDNOutput('S3MediaBucket')
+      return getMediaOutput('S3MediaBucket')
     },
     get s3ProtectedMedia() {
-      return getCDNOutput('S3ProtectedMediaBucket')
+      return getMediaOutput('S3ProtectedMediaBucket')
     },
     get s3Static() {
-      return getCDNOutput('S3StaticBucket')
+      return getMediaOutput('S3StaticBucket')
     },
     get s3CloudFrontLogs() {
       return getCDNOutput('S3CloudFrontLogsBucket')
     },
+    get distributionId() {
+      return getCDNOutput('DistributionId')
+    },
     get s3ProtectedMediaLogs() {
-      return getCDNOutput('S3ProtectedMediaLogsBucket')
+      return getMediaOutput('S3ProtectedMediaLogsBucket')
     },
-    get apiGatewayRestApi() {
-      return getCDNOutput('ApiGatewayRest')
+    get apiGatewayRest() {
+      return getRestOutput('ApiGateway')
     },
-    get apiGatewayRestApiResourceId() {
-      return getCDNOutput('ApiGatewayRestResourceId')
+    get apiGatewayWeb() {
+      return getWebOutput('ApiGateway')
     },
-    get apiGatewayRestApiAuthorizer() {
-      return getCDNOutput('ApiGatewayRestApiAnonymousAuthorizer')
+    get apiGatewayGraphQL() {
+      return getGraphQLOutput('ApiGateway')
     },
-    get apiGatewayRestApiAnonymousAuthorizer() {
-      return getCDNOutput('ApiGatewayRestApiAnonymousAuthorizer')
+    get httpAuthFunction() {
+      return getStageOutput('HttpAuthFunction')
     },
-    get apiGatewayWebSocketId() {
-      return getCDNOutput('ApiGatewayWebSocket')
+    get httpAnonymousAuthFunction() {
+      return getStageOutput('HttpAnonymousAuthFunction')
+    },
+    get apiGatewayWebSocket() {
+      return getGraphQLOutput('ApiGatewayWebSocket')
     },
     get websocketAuthFunction() {
-      return getCDNOutput('WebSocketAuthFunction')
+      return getStageOutput('WebSocketAuthFunction')
+    },
+    get apiGatewayRestApiWafAcl() {
+      return getStageOutput('ApiGatewayRestApiWafAcl')
     },
     get cloudFrontWafACL() {
       return getCloudFormationOutput({
         region: 'us-east-1',
-        stackName: `${settings.stackName}-cloudfront-us-east-1-${stage}`,
+        stackName: `${settings.stackName}-stage-${stage}`,
         outputKey: 'CloudFrontWafACL'
       })
     },
@@ -728,6 +803,9 @@ export default async function getSettings({
     },
     get cloudFrontResponseHeaderPolicy() {
       return getRegionOutput('CloudFrontResponseHeaderPolicy')
+    },
+    get mfaTitle() {
+      return `${settings.stackName}${config.stage === 'prod' ? '' : ` ${config.stage}`}`
     }
   }
 }

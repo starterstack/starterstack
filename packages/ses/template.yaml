@@ -341,7 +341,7 @@ Resources:
     Type: AWS::SES::Template
     Properties:
       Template:
-        SubjectPart: 'Login/Signup to ${file(../settings.js):stageRoot}'
+        SubjectPart: !Sub Login/Signup to ${StageRoot}
         HtmlPart: |
           <h1>Welcome {{email}}</h1>
           <p>Click the following link to login to your account:</p>

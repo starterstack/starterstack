@@ -75,8 +75,7 @@ for (const type of strategy) {
         .map((x) => x.stack)
         .join(', ')}\u001B[0m`
     )
-    while (include.length > 0) {
-      const batch = include.splice(0, parallel)
+    for (const batch of batchFor({ include, parallel })) {
       const processes = batch.map((service) => createLintProcess(service))
       const pendingExitCodes = Promise.all(
         processes.map(({ ps }) => once(ps, 'exit'))
@@ -163,5 +162,31 @@ function createLintProcess(service) {
     ),
     stack: service.stack,
     region: service.region
+  }
+}
+
+function* batchFor({ include, parallel }) {
+  const pending = [...include]
+  while (pending.length > 0) {
+    const batch = pending.splice(0, parallel)
+    if (batch.length === 1) {
+      yield batch
+    } else {
+      const result = []
+      for (const item of batch) {
+        const directory = item.directory
+        const directoryItems = batch.filter((x) => x.directory === directory)
+        if (directoryItems.length > 1) {
+          for (const directoryItem of directoryItems) {
+            yield [directoryItem]
+          }
+        } else {
+          result.push(item)
+        }
+      }
+      if (result.length > 0) {
+        yield result
+      }
+    }
   }
 }

@@ -20,6 +20,8 @@ Globals:
 Parameters:
   Stack:
     Type: String
+  StageRootUrl:
+    Type: String
   Stage:
     Type: String
   AccountPerStage:
@@ -41,10 +43,6 @@ Parameters:
   StageUrl:
     Type: String
   EventBusName:
-    Type: String
-  S3MediaBucket:
-    Type: String
-  S3ProtectedMediaBucket:
     Type: String
   SNSAlarmTopic:
     Type: String
@@ -71,6 +69,8 @@ Metadata:
               exportName: snsAlarmTopic
             - name: Stage
               exportName: stage
+            - name: StageRootUrl
+              exportName: stageRootUrl
             - name: AccountPerStage
               exportName: accountPerStage
             - name: StageRoot
@@ -89,10 +89,6 @@ Metadata:
               exportName: stageRootUrl
             - name: EventBusName
               exportName: eventBusName
-            - name: S3MediaBucket
-              exportName: s3Media
-            - name: S3ProtectedMediaBucket
-              exportName: s3ProtectedMedia
         - location: ../git.mjs
           overrides:
             - name: GITCommit
@@ -101,6 +97,27 @@ Metadata:
         keep: 3
       script:
         hooks:
+          pre:delete:
+            - command: ../empty-s3-bucket.sh
+              args:
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: s3Media
+            - command: ../empty-s3-bucket.sh
+              args:
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: s3ProtectedMedia
+            - command: ../empty-s3-bucket.sh
+              args:
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: s3Static
+            - command: ../empty-s3-bucket.sh
+              args:
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: s3ProtectedMediaLogs
           post:deploy:
             - command: ../tag-eventbus-rules.sh
               args:
@@ -197,9 +214,254 @@ Resources:
           Value: !Sub ${AWS::StackName}-lambda-dlq
         - Key: 'ManagedBy'
           Value: !Ref Stack
+  S3Static:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: TransitionToIntelligentTiering
+            Status: Enabled
+            Transitions:
+              - StorageClass: INTELLIGENT_TIERING
+                TransitionInDays: 0
+          - Id: NonCurrentRetention
+            Status: Enabled
+            NoncurrentVersionExpiration:
+              NewerNoncurrentVersions: 3
+              NoncurrentDays: 7
+          - Id: DeleteNonCurrent
+            ExpiredObjectDeleteMarker: true
+            Status: Enabled
+      AccelerateConfiguration:
+        AccelerationStatus: Enabled
+      VersioningConfiguration:
+        Status: Enabled
+      Tags:
+        - Key: 'Name'
+          Value: !Sub ${AWS::StackName}-static
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+
+  S3Media:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: TransitionToIntelligentTiering
+            Status: Enabled
+            Prefix: media
+            Transitions:
+              - StorageClass: INTELLIGENT_TIERING
+                TransitionInDays: 0
+          - Id: ExpireTemp
+            Status: Enabled
+            ExpirationInDays: 1
+            Prefix: temp
+          - Id: NonCurrentRetentionMedia
+            Status: Enabled
+            Prefix: media
+            NoncurrentVersionExpiration:
+              NewerNoncurrentVersions: 3
+              NoncurrentDays: 7
+          - Id: NonCurrentRetentionTemp
+            Status: Enabled
+            Prefix: temp
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 1
+          - Id: DeleteNonCurrent
+            ExpiredObjectDeleteMarker: true
+            Status: Enabled
+      AccelerateConfiguration:
+        AccelerationStatus: Enabled
+      CorsConfiguration:
+        CorsRules:
+          - AllowedMethods:
+              - POST
+            AllowedOrigins:
+              - !Ref StageRootUrl
+            MaxAge: 600
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - BucketKeyEnabled: true
+            ServerSideEncryptionByDefault:
+              SSEAlgorithm: 'AES256'
+      VersioningConfiguration:
+        Status: Enabled
+      NotificationConfiguration:
+        EventBridgeConfiguration:
+          EventBridgeEnabled: true
+      MetricsConfigurations:
+        - Id: !Sub ${AWS::StackName}-media-temp-filter
+          Prefix: temp
+      Tags:
+        - Key: 'Name'
+          Value: !Sub ${AWS::StackName}-media
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+
+  S3ProtectedMedia:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: TransitionToIntelligentTiering
+            Status: Enabled
+            Prefix: media
+            Transitions:
+              - StorageClass: INTELLIGENT_TIERING
+                TransitionInDays: 0
+          - Id: ExpireTemp
+            Status: Enabled
+            ExpirationInDays: 1
+            Prefix: temp
+          - Id: ExpirePdf
+            Status: Enabled
+            ExpirationInDays: 1
+            Prefix: pdf
+          - Id: ExpireDynamoDBBackups
+            Status: Enabled
+            ExpirationInDays: 31
+            Prefix: AWSDynamoDB
+          - Id: NonCurrentRetentionMedia
+            Status: Enabled
+            Prefix: media
+            NoncurrentVersionExpiration:
+              NewerNoncurrentVersions: 3
+              NoncurrentDays: 7
+          - Id: NonCurrentRetentionTemp
+            Status: Enabled
+            Prefix: temp
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 1
+          - Id: NonCurrentRetentionPdf
+            Status: Enabled
+            Prefix: pdf
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 1
+          - Id: NonCurrentRetentionDBBackups
+            Status: Enabled
+            Prefix: AWSDynamoDB
+            NoncurrentVersionExpiration:
+              NoncurrentDays: 1
+          - Id: AbortIncompleteMultipartUpload
+            Status: Enabled
+            AbortIncompleteMultipartUpload:
+              DaysAfterInitiation: 1
+            Prefix: temp
+          - Id: DeleteNonCurrent
+            ExpiredObjectDeleteMarker: true
+            Status: Enabled
+      AccelerateConfiguration:
+        AccelerationStatus: Enabled
+      CorsConfiguration:
+        CorsRules:
+          - AllowedMethods:
+              - POST
+            AllowedOrigins:
+              - !Ref StageRootUrl
+            MaxAge: 600
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - BucketKeyEnabled: true
+            ServerSideEncryptionByDefault:
+              SSEAlgorithm: 'AES256'
+      VersioningConfiguration:
+        Status: Enabled
+      NotificationConfiguration:
+        EventBridgeConfiguration:
+          EventBridgeEnabled: true
+      MetricsConfigurations:
+        - Id: !Sub ${AWS::StackName}-protected-media-temp-filter
+          Prefix: temp
+      LoggingConfiguration:
+        DestinationBucketName: !Ref S3ProtectedMediaLogs
+      Tags:
+        - Key: 'Name'
+          Value: !Sub ${AWS::StackName}-protected-media
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+
+  S3ProtectedMediaLogs:
+    Type: AWS::S3::Bucket
+    Properties:
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      LifecycleConfiguration:
+        Rules:
+          - Id: TransitionToIntelligentTiering
+            Status: Enabled
+            Transitions:
+              - StorageClass: INTELLIGENT_TIERING
+                TransitionInDays: 0
+          - Id: ExpireLogs
+            Status: Enabled
+            ExpirationInDays: 7
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - BucketKeyEnabled: true
+            ServerSideEncryptionByDefault:
+              SSEAlgorithm: 'AES256'
+      Tags:
+        - Key: 'Name'
+          Value: !Sub ${AWS::StackName}-protected-media-logs
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+
+  S3ProtectedMediaLogsPolicy:
+    Type: AWS::S3::BucketPolicy
+    Properties:
+      Bucket: !Ref S3ProtectedMediaLogs
+      PolicyDocument:
+        Version: '2012-10-17'
+        Id: PolicyForAccessLoggingForProtectedMedia
+        Statement:
+          - Effect: Deny
+            Action: 's3:*'
+            Resource:
+              - !Sub '${S3ProtectedMediaLogs.Arn}'
+              - !Sub '${S3ProtectedMediaLogs.Arn}/*'
+            Principal: '*'
+            Condition:
+              Bool:
+                'aws:SecureTransport': false
+          - Effect: Allow
+            Action:
+              - 's3:PutObject'
+              - 's3:PutObjectACL'
+            Resource:
+              - !Sub '${S3ProtectedMediaLogs.Arn}/*'
+            Condition:
+              Bool:
+                'aws:SecureTransport': true
+              ArnLike:
+                'aws:SourceArn': !GetAtt S3ProtectedMedia.Arn
+              StringEquals:
+                'aws:SourceAccount': !Sub '${AWS::AccountId}'
+            Principal:
+              Service: 'logging.s3.amazonaws.com'
+
   CreatePresignedPostFunction:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub '${AWS::StackName}-CreatePresignedPostFunction'
       CodeUri: functions/create-presigned-post/
       Handler: index.handler
       Description: 'create presigned url for direct upload to s3 media buckets'
@@ -210,8 +472,8 @@ Resources:
           PRESIGN_SECONDS_EXPIRY: 300
           UPLOAD_MB_LIMIT: 30
           STACK: !Ref Stack
-          MEDIA_BUCKET: !Ref S3MediaBucket
-          PROTECTED_MEDIA_BUCKET: !Ref S3ProtectedMediaBucket
+          MEDIA_BUCKET: !Ref S3Media
+          PROTECTED_MEDIA_BUCKET: !Ref S3ProtectedMedia
           DYNAMODB_STACK_TABLE: !Ref DynamoDBStackTableName
           BASE_URL: !Ref StageUrl
       Policies:
@@ -223,8 +485,8 @@ Resources:
                 - s3:PutObject
                 - s3:PutObjectTagging
               Resource:
-                - !Sub 'arn:${AWS::Partition}:s3:::${S3MediaBucket}/*'
-                - !Sub 'arn:${AWS::Partition}:s3:::${S3ProtectedMediaBucket}/*'
+                - !Sub 'arn:${AWS::Partition}:s3:::${S3Media}/*'
+                - !Sub 'arn:${AWS::Partition}:s3:::${S3ProtectedMedia}/*'
         - Version: 2012-10-17
           Statement:
             - Sid: DynamoDB
@@ -253,6 +515,7 @@ Resources:
   S3TriggerFunction:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub '${AWS::StackName}-S3TriggerFunction'
       CodeUri: functions/s3-trigger/
       Handler: index.handler
       Description: 'process uploads to s3 media buckets'
@@ -260,8 +523,8 @@ Resources:
       MemorySize: 1024
       Environment:
         Variables:
-          MEDIA_BUCKET: !Ref S3MediaBucket
-          PROTECTED_MEDIA_BUCKET: !Ref S3ProtectedMediaBucket
+          MEDIA_BUCKET: !Ref S3Media
+          PROTECTED_MEDIA_BUCKET: !Ref S3ProtectedMedia
           EVENTBRIDGE_BUS_NAME: !Ref EventBusName
           DYNAMODB_STACK_TABLE: !Ref DynamoDBStackTableName
       Policies:
@@ -280,10 +543,10 @@ Resources:
                 - s3:PutObjectTagging
                 - s3:GetObjectTagging
               Resource:
-                - !Sub 'arn:${AWS::Partition}:s3:::${S3MediaBucket}/*'
-                - !Sub 'arn:${AWS::Partition}:s3:::${S3MediaBucket}'
-                - !Sub 'arn:${AWS::Partition}:s3:::${S3ProtectedMediaBucket}/*'
-                - !Sub 'arn:${AWS::Partition}:s3:::${S3ProtectedMediaBucket}'
+                - !Sub 'arn:${AWS::Partition}:s3:::${S3Media}/*'
+                - !Sub 'arn:${AWS::Partition}:s3:::${S3Media}'
+                - !Sub 'arn:${AWS::Partition}:s3:::${S3ProtectedMedia}/*'
+                - !Sub 'arn:${AWS::Partition}:s3:::${S3ProtectedMedia}'
         - Version: 2012-10-17
           Statement:
             - Sid: DynamoDB
@@ -310,7 +573,6 @@ Resources:
         Trigger:
           Type: EventBridgeRule
           Properties:
-            EventBusName: !Ref EventBusName
             Pattern:
               source:
                 - 'aws.s3'
@@ -319,8 +581,8 @@ Resources:
               detail:
                 bucket:
                   name:
-                    - !Ref S3MediaBucket
-                    - !Ref S3ProtectedMediaBucket
+                    - !Ref S3Media
+                    - !Ref S3ProtectedMedia
                 object:
                   key:
                     - prefix: temp
@@ -346,6 +608,7 @@ Resources:
     Condition: ShouldReplicate
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub '${AWS::StackName}-S3ReplicateFunction'
       CodeUri: functions/s3-replicate/
       Handler: index.handler
       Description: 'replicate media'
@@ -363,9 +626,9 @@ Resources:
                 - s3:GetObject
                 - s3:GetObjectTagging
               Resource:
-                - !Sub 'arn:${AWS::Partition}:s3:::${S3MediaBucket}/media/*'
-                - !Sub 'arn:${AWS::Partition}:s3:::${S3ProtectedMediaBucket}/media/*'
-                - !Sub 'arn:${AWS::Partition}:s3:::${S3ProtectedMediaBucket}/AWSDynamoDB/*'
+                - !Sub '${S3Media.Arn}/media/*'
+                - !Sub '${S3ProtectedMedia.Arn}/media/*'
+                - !Sub '${S3ProtectedMedia.Arn}/AWSDynamoDB/*'
               Effect: Allow
         - Version: 2012-10-17
           Statement:
@@ -401,8 +664,8 @@ Resources:
               detail:
                 bucket:
                   name:
-                    - !Ref S3MediaBucket
-                    - !Ref S3ProtectedMediaBucket
+                    - !Ref S3Media
+                    - !Ref S3ProtectedMedia
             DeadLetterConfig:
               Arn: !GetAtt EventsDlq.Arn
             RetryPolicy:
@@ -424,6 +687,7 @@ Resources:
   CreatePdfFunction:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub '${AWS::StackName}-CreatePdfFunction'
       CodeUri: functions/create-pdf/
       Handler: index.handler
       Description: 'create pdf'
@@ -431,8 +695,8 @@ Resources:
       MemorySize: 512
       Environment:
         Variables:
-          MEDIA_BUCKET: !Ref S3MediaBucket
-          PROTECTED_MEDIA_BUCKET: !Ref S3ProtectedMediaBucket
+          MEDIA_BUCKET: !Ref S3Media
+          PROTECTED_MEDIA_BUCKET: !Ref S3ProtectedMedia
           STACK: !Ref Stack
       Policies:
         - Version: 2012-10-17
@@ -444,8 +708,8 @@ Resources:
                 - s3:PutObjectTagging
                 - s3:GetObject
               Resource:
-                - !Sub 'arn:${AWS::Partition}:s3:::${S3ProtectedMediaBucket}/pdf/*'
-                - !Sub 'arn:${AWS::Partition}:s3:::${S3ProtectedMediaBucket}/*'
+                - !Sub 'arn:${AWS::Partition}:s3:::${S3ProtectedMedia}/pdf/*'
+                - !Sub 'arn:${AWS::Partition}:s3:::${S3ProtectedMedia}/*'
         - Version: 2012-10-17
           Statement:
             - Sid: CloudWatchLogGroup
@@ -459,9 +723,10 @@ Resources:
     Metadata:
       BuildMethod: makefile
 
-  UploadProgress:
+  UploadProgressFunction:
     Type: AWS::Serverless::Function
     Properties:
+      FunctionName: !Sub '${AWS::StackName}-UploadProgressFunction'
       CodeUri: functions/upload-progress/
       Handler: index.handler
       Description: 's3 upload progress by key'
@@ -510,7 +775,7 @@ Resources:
           DYNAMODB_ARN_PREFIX: !Sub arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/
           DYNAMODB_STACK_TABLE: !Ref DynamoDBStackTableName
           DYNAMODB_STACK_AUDIT_TABLE: !Ref DynamoDBStackAuditTableName
-          S3_BUCKET: !Ref S3ProtectedMediaBucket
+          S3_BUCKET: !Ref S3ProtectedMedia
       Policies:
         - SQSSendMessagePolicy:
             QueueName: !GetAtt LambdaDlq.QueueName
@@ -521,7 +786,7 @@ Resources:
               Action:
                 - s3:PutObject
               Resource:
-                - !Sub 'arn:${AWS::Partition}:s3:::${S3ProtectedMediaBucket}/AWSDynamoDB/*'
+                - !Sub 'arn:${AWS::Partition}:s3:::${S3ProtectedMedia}/AWSDynamoDB/*'
         - Version: 2012-10-17
           Statement:
             - Sid: CloudWatchLogGroup
@@ -631,3 +896,25 @@ Resources:
         MaximumRetryAttempts: 0
     Metadata:
       BuildMethod: makefile
+
+Outputs:
+  S3StaticBucket:
+    Description: S3 Bucket for static content
+    Value: !Ref S3Static
+    Export:
+      Name: !Sub '${AWS::StackName}S3StaticBucket'
+  S3MediaBucket:
+    Description: S3 Bucket for media content
+    Value: !Ref S3Media
+    Export:
+      Name: !Sub '${AWS::StackName}S3MediaBucket'
+  S3ProtectedMediaBucket:
+    Description: S3 Bucket for protected media content
+    Value: !Ref S3ProtectedMedia
+    Export:
+      Name: !Sub '${AWS::StackName}S3ProtectedMediaBucket'
+  S3ProtectedMediaLogsBucket:
+    Description: S3 Bucket for protected media content access logs
+    Value: !Ref S3ProtectedMediaLogs
+    Export:
+      Name: !Sub '${AWS::StackName}S3ProtectedMediaLogsBucket'

@@ -1,0 +1,19 @@
+<svg
+   width="512.0px"
+   height="512.0px"
+   viewBox="0 0 512.0 512.0"
+   version="1.1"
+   xmlns="http://www.w3.org/2000/svg">
+  <g>
+    <circle cx="256" cy="256" r="250" fill="#007f00" stroke-width="1" />
+    <circle cx="256" cy="256" r="228" stroke="#007f00" stroke-width="1" fill="#ffffff" />
+    <text
+       style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-size:60;font-family:monospace;-inkscape-font-specification:monospace;fill:#007f00;fill-opacity:1;stroke:#007f00;stroke-width:2;stroke-dasharray:none;stroke-opacity:1"
+       x="38"
+       y="275">
+       <tspan
+         x="38"
+         y="275"
+         style="font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;font-family:monospace;-inkscape-font-specification:monospace;stroke-width:2;fill:#007f00;fill-opacity:1">starterstack</tspan></text>
+  </g>
+</svg>

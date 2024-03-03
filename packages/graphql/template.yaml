@@ -1,0 +1,711 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform:
+  - AWS::LanguageExtensions
+  - AWS::Serverless-2016-10-31
+
+Description: GraphQL
+
+Globals:
+  Api:
+    OpenApiVersion: 3.0.1
+  Function:
+    Tracing: Active
+    Architectures:
+      - arm64
+    Runtime: nodejs20.x
+    PropagateTags: true
+    Environment:
+      Variables:
+        STAGE: !Ref Stage
+        GIT_COMMIT: !Ref GITCommit
+        NODE_ENV: production
+
+Parameters:
+  Stack:
+    Type: String
+  Stage:
+    Type: String
+  StackDisplayName:
+    Type: String
+  EventBusName:
+    Type: String
+  StageRootUrl:
+    Type: String
+  LogRetentionInDays:
+    Type: String
+  ApiGatewayRestLogFormat:
+    Type: String
+  DynamoDBStackTableName:
+    Type: String
+  DynamoDBWebSocketTableName:
+    Type: String
+  HttpAnonymousAuthFunction:
+    Type: String
+  WebSocketAuthFunction:
+    Type: String
+  SentryDSN:
+    Type: String
+  SentryEnvironment:
+    Type: String
+  ApiGatewayRestApiWafAcl:
+    Type: String
+  GITCommit:
+    Type: String
+  SNSAlarmTopic:
+    Type: String
+
+Metadata:
+  expand:
+    plugins:
+      - '../git.mjs'
+      - '../hash.mjs'
+      - '@starterstack/sam-expand/plugins/parameter-overrides'
+      - '../stack-stage-config.mjs'
+      - '@starterstack/sam-expand/plugins/run-script-hooks'
+      - '../purge-lambda-versions.mjs'
+      - '../generate-cloudwatch-alarms.mjs'
+
+    config:
+      stackStageConfig:
+        suffixStage: true
+        addMappings: true
+      parameterOverrides:
+        - location: ../stack-stage-config.mjs
+          overrides:
+            - name: SNSAlarmTopic
+              exportName: snsAlarmTopic
+            - name: Stage
+              exportName: stage
+            - name: StageRootUrl
+              exportName: stageRootUrl
+            - name: DynamoDBStackTableName
+              exportName: dynamodbStackTableName
+            - name: DynamoDBWebSocketTableName
+              exportName: dynamodbWebSocketTableName
+            - name: SentryDSN
+              exportName: sentryDSN
+            - name: SentryEnvironment
+              exportName: sentryEnvironment
+            - name: LogRetentionInDays
+              exportName: logRetentionInDays
+            - name: ApiGatewayRestApiWafAcl
+              exportName: apiGatewayRestApiWafAcl
+              defaultValue: 'none'
+            - name: EventBusName
+              exportName: eventBusName
+            - name: HttpAnonymousAuthFunction
+              exportName: httpAnonymousAuthFunction
+            - name: WebSocketAuthFunction
+              exportName: websocketAuthFunction
+            - name: ApiGatewayRestLogFormat
+              exportName: apiGatewayRestLogFormat
+        - location: ../git.mjs
+          overrides:
+            - name: GITCommit
+              exportName: commit
+        - location: ../settings.json
+          overrides:
+            - name: StackDisplayName
+              exportName: stackDisplayName
+      purgeLambdaVersions:
+        keep: 3
+      script:
+        hooks:
+          post:deploy:
+            - command: ../tag-cloudwatch-alarms.sh
+              args:
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: stackName
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: region
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: stage
+      alarms:
+        snsTopicRef: SNSAlarmTopic
+
+Conditions:
+  IsWafEnabled: !Equals
+    - !FindInMap
+      - AWSAccounts
+      - !Ref 'AWS::AccountId'
+      - wafEnabled
+    - true
+
+Resources:
+  ApiGatewayWebSocketApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: !Sub '${AWS::StackName}-websocket'
+      Description: !Sub '${AWS::StackName} api gateway websocket'
+      ProtocolType: WEBSOCKET
+      RouteSelectionExpression: $request.body.type
+      Tags:
+        Name: !Sub '${AWS::StackName} websocket'
+        ManagedBy: !Ref Stack
+
+  ApiGatewayWebSocketStage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      ApiId: !Ref ApiGatewayWebSocketApi
+      StageName: !Ref Stage
+      AutoDeploy: true
+      DefaultRouteSettings:
+        DetailedMetricsEnabled: true
+        DataTraceEnabled: false
+        LoggingLevel: 'ERROR'
+        ThrottlingBurstLimit: 500
+        ThrottlingRateLimit: 1000
+      Tags:
+        Name: !Sub '${AWS::StackName} websocket ${Stage} stage'
+        ManagedBy: !Ref Stack
+
+  ApiGatewayApi:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: !Ref Stage
+      Models:
+        GraphQLPost:
+          type: object
+          properties:
+            query:
+              type: string
+            variables:
+              type: object
+              additionalProperties: true
+            operationName:
+              type: string
+          required:
+            - query
+          additionalProperties: false
+      AccessLogSetting:
+        DestinationArn: !GetAtt ApiGatewayCloudWatchLogGroup.Arn
+        Format: !Ref ApiGatewayRestLogFormat
+      Auth:
+        AddApiKeyRequiredToCorsPreflight: false
+        AddDefaultAuthorizerToCorsPreflight: false
+        Authorizers:
+          LambdaAnonymousAuthorizer:
+            FunctionArn: !Ref HttpAnonymousAuthFunction
+            FunctionPayloadType: REQUEST
+            Identity:
+              ReauthorizeEvery: 900
+              Headers:
+                - cookie
+        DefaultAuthorizer: LambdaAnonymousAuthorizer
+      BinaryMediaTypes:
+        - 'application/octet-stream'
+        - 'audio/*'
+        - 'video/*'
+        - 'application/pdf'
+        - 'font/*'
+      Description: !Sub '${AWS::StackName} api gateway'
+      EndpointConfiguration:
+        Type: REGIONAL
+      MethodSettings:
+        - MetricsEnabled: true
+          HttpMethod: '*'
+          ResourcePath: '/*'
+          ThrottlingRateLimit: 200
+          ThrottlingBurstLimit: 100
+        - MetricsEnabled: true
+          HttpMethod: GET
+          ResourcePath: /api/graphql
+          ThrottlingRateLimit: 4000
+          ThrottlingBurstLimit: 1000
+        - MetricsEnabled: true
+          HttpMethod: POST
+          ResourcePath: /api/graphql
+          ThrottlingRateLimit: 4000
+          ThrottlingBurstLimit: 1000
+      PropagateTags: true
+      Tags:
+        Name: !Sub '${AWS::StackName} api gateway'
+      TracingEnabled: true
+
+  ApiGatewayApiWAF:
+    Type: AWS::WAFv2::WebACLAssociation
+    Condition: IsWafEnabled
+    Properties:
+      ResourceArn: !Sub 'arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${ApiGatewayApi}/stages/${Stage}'
+      WebACLArn: !Ref ApiGatewayRestApiWafAcl
+
+  ApiGatewayCloudWatchLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/apigateway/rest-api/${AWS::StackName}'
+      RetentionInDays: !Ref LogRetentionInDays
+      Tags:
+        - Key: 'Name'
+          Value: !Sub '${AWS::StackName} rest api log group'
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+
+  CloudWatchLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}
+      RetentionInDays: !Ref LogRetentionInDays
+      Tags:
+        - Key: 'Name'
+          Value: !Sub '${AWS::StackName} lambda logs'
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+
+  ApiGatewayWebSocketLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub '/aws/apigateway/${ApiGatewayWebSocketApi}/${Stage}'
+      RetentionInDays: !Ref LogRetentionInDays
+      Tags:
+        - Key: 'Name'
+          Value: !Sub '${AWS::StackName} websocket api log group'
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+
+  EventsDlq:
+    Type: AWS::SQS::Queue
+    Properties:
+      SqsManagedSseEnabled: true
+      Tags:
+        - Key: 'Name'
+          Value: !Sub '${AWS::StackName}-events-dlq'
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+  EventsDlqPolicy:
+    Type: AWS::SQS::QueuePolicy
+    Properties:
+      PolicyDocument:
+        Statement:
+          - Effect: Allow
+            Action:
+              - 'sqs:SendMessage'
+            Principal:
+              Service: 'events.amazonaws.com'
+            Resource: !GetAtt EventsDlq.Arn
+            Condition:
+              ArnEquals:
+                'aws:SourceArn': !Sub 'arn:${AWS::Partition}:events:${AWS::Region}:${AWS::AccountId}:rule/${AWS::StackName}*'
+          - Effect: Allow
+            Action:
+              - 'sqs:SendMessage'
+            Principal:
+              Service: 'sns.amazonaws.com'
+            Resource: !GetAtt EventsDlq.Arn
+            Condition:
+              ArnEquals:
+                'aws:SourceArn': !Sub 'arn:${AWS::Partition}:sns:${AWS::Region}:${AWS::AccountId}:${AWS::StackName}*'
+      Queues:
+        - !Ref EventsDlq
+
+  LambdaDlq:
+    Type: AWS::SQS::Queue
+    Properties:
+      SqsManagedSseEnabled: true
+      Tags:
+        - Key: 'Name'
+          Value: !Sub ${AWS::StackName}-lambda-dlq
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+
+  GraphQLHttpFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/graphql/
+      Handler: http-handler.handler
+      Description: 'graphql http api'
+      Timeout: 6
+      MemorySize: 128
+      Environment:
+        Variables:
+          BASE_URL: !Ref StageRootUrl
+          TEAM: !Sub '${StackDisplayName} Team'
+          DYNAMODB_STACK_TABLE: !Ref DynamoDBStackTableName
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Sid: CloudWatchLogGroup
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !GetAtt CloudWatchLogGroup.Arn
+              Effect: Allow
+        - LambdaInvokePolicy:
+            FunctionName: !Sub '${Stack}-media-${Stage}-CreatePdfFunction'
+        - LambdaInvokePolicy:
+            FunctionName: !Sub '${Stack}-media-${Stage}-CreatePresignedPostFunction'
+        - LambdaInvokePolicy:
+            FunctionName: !Sub '${Stack}-media-${Stage}-UploadProgressFunction'
+
+      LoggingConfig:
+        LogGroup: !Ref CloudWatchLogGroup
+
+      Events:
+        ApiEventGet:
+          Type: Api
+          Properties:
+            Path: /api/graphql
+            Method: GET
+            RestApiId: !Ref ApiGatewayApi
+            RequestParameters:
+              - method.request.querystring.query:
+                  Required: true
+              - method.request.querystring.variables:
+                  Required: false
+              - method.request.querystring.operationName:
+                  Required: false
+
+        ApiEventPost:
+          Type: Api
+          Properties:
+            Path: /api/graphql
+            Method: POST
+            RequestModel:
+              Model: GraphQLPost
+              Required: true
+              ValidateBody: true
+              ValidateParameters: true
+            RestApiId: !Ref ApiGatewayApi
+
+    Metadata:
+      BuildMethod: makefile
+
+  SubscriptionsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/graphql/
+      Handler: ws-handler.handler
+      Description: 'graphql websocket subscriptions api'
+      Timeout: 10
+      MemorySize: 128
+      Environment:
+        Variables:
+          DYNAMODB_TABLE: !Ref DynamoDBWebSocketTableName
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Sid: CloudWatchLogGroup
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !GetAtt CloudWatchLogGroup.Arn
+              Effect: Allow
+        - Version: 2012-10-17
+          Statement:
+            - Sid: DynamoDBRead
+              Action:
+                - dynamodb:GetItem
+              Resource:
+                - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBWebSocketTableName}'
+              Effect: Allow
+              Condition:
+                ForAllValues:StringLike:
+                  dynamodb:LeadingKeys:
+                    - 'graphql-ws-connection#*'
+        - Version: 2012-10-17
+          Statement:
+            - Sid: DynamoDBUpdate
+              Action:
+                - dynamodb:PutItem
+                - dynamodb:DeleteItem
+              Resource:
+                - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBWebSocketTableName}'
+              Effect: Allow
+              Condition:
+                ForAllValues:StringLike:
+                  dynamodb:LeadingKeys:
+                    - 'graphql-ws-subscription#id#*'
+        - Version: 2012-10-17
+          Statement:
+            - Sid: ManageConnections
+              Action:
+                - execute-api:ManageConnections
+              Effect: Allow
+              Resource:
+                - !Sub 'arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayWebSocketApi}/${Stage}/POST/@connections/*'
+                - !Sub 'arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayWebSocketApi}/${Stage}/DELETE/@connections/*'
+
+      LoggingConfig:
+        LogGroup: !Ref CloudWatchLogGroup
+
+    Metadata:
+      BuildMethod: makefile
+
+  BroadcastFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/graphql/
+      Handler: broadcast-handler.handler
+      Description: 'graphql websocket subscriptions broadcast'
+      Timeout: 20
+      MemorySize: 128
+      Environment:
+        Variables:
+          DYNAMODB_TABLE: !Ref DynamoDBWebSocketTableName
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Sid: CloudWatchLogGroup
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !GetAtt CloudWatchLogGroup.Arn
+              Effect: Allow
+        - Version: 2012-10-17
+          Statement:
+            - Sid: DynamoDBRead
+              Action:
+                - dynamodb:Query
+              Resource:
+                - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBWebSocketTableName}/index/gsi2'
+              Effect: Allow
+              Condition:
+                ForAllValues:StringLike:
+                  dynamodb:LeadingKeys:
+                    - 'graphql-ws-subscription#topic#*'
+        - Version: 2012-10-17
+          Statement:
+            - Sid: ManageConnections
+              Action:
+                - execute-api:ManageConnections
+              Effect: Allow
+              Resource:
+                - !Sub 'arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayWebSocketApi}/${Stage}/POST/@connections/*'
+                - !Sub 'arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayWebSocketApi}/${Stage}/DELETE/@connections/*'
+        - SQSSendMessagePolicy:
+            QueueName: !GetAtt LambdaDlq.QueueName
+
+      Events:
+        Trigger:
+          Type: EventBridgeRule
+          Properties:
+            EventBusName: !Ref EventBusName
+            Pattern:
+              source:
+                - upload
+              detail-type:
+                - ready
+            DeadLetterConfig:
+              Arn: !GetAtt EventsDlq.Arn
+            RetryPolicy:
+              MaximumEventAgeInSeconds: 300
+              MaximumRetryAttempts: 3
+
+      DeadLetterQueue:
+        TargetArn: !GetAtt LambdaDlq.Arn
+        Type: SQS
+      EventInvokeConfig:
+        DestinationConfig:
+          OnFailure:
+            Type: SQS
+            Destination: !GetAtt LambdaDlq.Arn
+        MaximumEventAgeInSeconds: 300
+        MaximumRetryAttempts: 2
+
+      LoggingConfig:
+        LogGroup: !Ref CloudWatchLogGroup
+
+    Metadata:
+      BuildMethod: makefile
+
+  SentryFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/sentry/
+      Handler: index.handler
+      Description: 'send cloudwatch logs to sentry'
+      Timeout: 6
+      MemorySize: 128
+      Environment:
+        Variables:
+          SENTRY_DSN: !Ref SentryDSN
+          SENTRY_ENVIRONMENT: !Ref SentryEnvironment
+          SENTRY_TUNNEL: !Sub ${StageRootUrl}/api/rest/sentry-tunnel
+          STAGE: !Ref Stage
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Sid: CloudWatchLogGroup
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !GetAtt CloudWatchLogGroup.Arn
+              Effect: Allow
+      LoggingConfig:
+        LogGroup: !Ref CloudWatchLogGroup
+      Events:
+        LambdaErrorTrigger:
+          Type: CloudWatchLogs
+          Properties:
+            LogGroupName: !Ref CloudWatchLogGroup
+            FilterPattern: !Sub '{$.level = "error" && $.x-correlation-lambda != "*SentryFunction*"}'
+        ApiGatewayErrorTrigger:
+          Type: CloudWatchLogs
+          Properties:
+            LogGroupName: !Ref ApiGatewayCloudWatchLogGroup
+            FilterPattern: '{$.status > 399 && $.status != 403 && $.resourcePath != "*sentry-tunnel*" }'
+
+    Metadata:
+      BuildMethod: makefile
+
+  ConnectionsFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/connections/
+      Handler: index.handler
+      Description: 'websocket connections'
+      Timeout: 6
+      MemorySize: 128
+      Environment:
+        Variables:
+          DYNAMODB_TABLE: !Ref DynamoDBWebSocketTableName
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Sid: CloudWatchLogGroup
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !GetAtt CloudWatchLogGroup.Arn
+              Effect: Allow
+        - Version: 2012-10-17
+          Statement:
+            - Sid: ApiGateway
+              Action:
+                - execute-api:ManageConnections
+              Resource:
+                - !Sub 'arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayWebSocketApi}/${Stage}/POST/@connections/*'
+                - !Sub 'arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${ApiGatewayWebSocketApi}/${Stage}/DELETE/@connections/*'
+              Effect: Allow
+            - Sid: DynamoDBWrite
+              Action:
+                - dynamodb:PutItem
+                - dynamodb:DeleteItem
+              Resource:
+                - !Sub arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBWebSocketTableName}
+              Condition:
+                ForAllValues:StringLike:
+                  dynamodb:LeadingKeys:
+                    - 'graphql-ws-connection#*'
+              Effect: Allow
+            - Sid: DynamoDBQuery
+              Action:
+                - dynamodb:Query
+              Resource:
+                - !Sub arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBWebSocketTableName}/index/gsi1
+              Condition:
+                ForAllValues:StringLike:
+                  dynamodb:LeadingKeys:
+                    - 'graphql-ws-connection#*'
+              Effect: Allow
+            - Sid: DynamoDBBatchWrite
+              Action:
+                - dynamodb:BatchWriteItem
+              Resource:
+                - !Sub arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBWebSocketTableName}
+              Effect: Allow
+              Condition:
+                ForAllValues:StringLike:
+                  dynamodb:LeadingKeys:
+                    - 'graphql-ws-subscription#id#*'
+      LoggingConfig:
+        LogGroup: !Ref CloudWatchLogGroup
+    Metadata:
+      BuildMethod: makefile
+
+  ConnectionsFunctionPermissionWebSockets:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt ConnectionsFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+
+  ConnectionsFunctionIntegrationWebSockets:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref ApiGatewayWebSocketApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub 'arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${ConnectionsFunction.Arn}/invocations'
+
+  SubscriptionsFunctionPermissionWebSockets:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt SubscriptionsFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+
+  SubscriptionsFunctionIntegrationWebSockets:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref ApiGatewayWebSocketApi
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub 'arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${SubscriptionsFunction.Arn}/invocations'
+
+  ConnectionsFunctionAuthWebSockets:
+    Type: AWS::ApiGatewayV2::Authorizer
+    Properties:
+      ApiId: !Ref ApiGatewayWebSocketApi
+      Name: ConnectionsFunctionWebSocketAuth
+      AuthorizerType: REQUEST
+      AuthorizerUri: !Sub 'arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${WebSocketAuthFunction}/invocations'
+      IdentitySource:
+        - route.request.header.cookie
+
+  ConnectionsFunctionConnectRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref ApiGatewayWebSocketApi
+      RouteKey: $connect
+      AuthorizationType: CUSTOM
+      AuthorizerId: !Ref ConnectionsFunctionAuthWebSockets
+      Target: !Sub integrations/${ConnectionsFunctionIntegrationWebSockets}
+
+  ConnectionsFunctionDisconnectRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref ApiGatewayWebSocketApi
+      RouteKey: $disconnect
+      Target: !Sub integrations/${ConnectionsFunctionIntegrationWebSockets}
+
+  ConnectionsFunctionConnectionInitRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref ApiGatewayWebSocketApi
+      RouteKey: connection_init
+      Target: !Sub integrations/${ConnectionsFunctionIntegrationWebSockets}
+
+  ConnectionsFunctionPingRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref ApiGatewayWebSocketApi
+      RouteKey: ping
+      Target: !Sub integrations/${ConnectionsFunctionIntegrationWebSockets}
+
+  SubscriptionsFunctionSubscribeRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref ApiGatewayWebSocketApi
+      RouteKey: subscribe
+      Target: !Sub integrations/${SubscriptionsFunctionIntegrationWebSockets}
+
+  SubscriptionsFunctionCompleteRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref ApiGatewayWebSocketApi
+      RouteKey: complete
+      Target: !Sub integrations/${SubscriptionsFunctionIntegrationWebSockets}
+
+Outputs:
+  ApiGatewayWebSocket:
+    Description: api gateway websocketid
+    Value: !Ref ApiGatewayWebSocketApi
+    Export:
+      Name: !Sub '${AWS::StackName}ApiGatewayWebSocketApi'
+
+  ApiGateway:
+    Description: api gateway id
+    Value: !Ref ApiGatewayApi
+    Export:
+      Name: !Sub '${AWS::StackName}ApiGatewayApi'

@@ -1,0 +1,715 @@
+AWSTemplateFormatVersion: 2010-09-09
+Transform:
+  - AWS::LanguageExtensions
+  - AWS::Serverless-2016-10-31
+
+Description: Stage shared resources
+
+Globals:
+  Function:
+    Tracing: Active
+    Architectures:
+      - arm64
+    Runtime: nodejs20.x
+    PropagateTags: true
+    Environment:
+      Variables:
+        GIT_COMMIT: !Ref GITCommit
+
+Parameters:
+  Stack:
+    Type: String
+  Stage:
+    Type: String
+  StageRegion:
+    Type: String
+  StageRootUrl:
+    Type: String
+  SentryDSN:
+    Type: String
+  SentryEnvironment:
+    Type: String
+  LogRetentionInDays:
+    Type: String
+  GITCommit:
+    Type: String
+  DynamoDBStackTableName:
+    Type: String
+  SNSAlarmTopic:
+    Type: String
+
+Metadata:
+  expand:
+    plugins:
+      - '../git.mjs'
+      - '../hash.mjs'
+      - '../stack-stage-config.mjs'
+      - '@starterstack/sam-expand/plugins/parameter-overrides'
+      - '@starterstack/sam-expand/plugins/run-script-hooks'
+      - '../purge-lambda-versions.mjs'
+      - '../generate-cloudwatch-alarms.mjs'
+    config:
+      stackStageConfig:
+        regions: account
+        suffixStage: true
+        addMappings: true
+      parameterOverrides:
+        - location: ../stack-stage-config.mjs
+          overrides:
+            - name: StageRootUrl
+              exportName: stageRootUrl
+            - name: StageRegion
+              exportName: stageRegion
+            - name: SentryDSN
+              exportName: sentryDSN
+            - name: SentryEnvironment
+              exportName: sentryEnvironment
+            - name: LogRetentionInDays
+              exportName: logRetentionInDays
+            - name: SNSAlarmTopic
+              exportName: snsAlarmTopic
+            - name: DynamoDBStackTableName
+              exportName: dynamodbStackTableName
+        - location: ../git.mjs
+          overrides:
+            - name: GITCommit
+              exportName: commit
+      purgeLambdaVersions:
+        keep: 3
+      script:
+        hooks:
+          post:deploy:
+            - command: ../tag-cloudwatch-alarms.sh
+              args:
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: stackName
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: region
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: stage
+          post:delete:
+            - command: ./scripts/delete-dangling-acm-certificates.mjs
+              args:
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: zoneId
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: region
+      alarms:
+        snsTopicRef: SNSAlarmTopic
+
+Conditions:
+  IsStageRegion: !Equals
+    - !Sub '${AWS::Region}'
+    - !Ref StageRegion
+  IsWafEnabled: !Equals
+    - !FindInMap
+      - AWSAccounts
+      - !Ref 'AWS::AccountId'
+      - wafEnabled
+    - true
+  IsWafEnabledStage: !And
+    - !Condition IsWafEnabled
+    - !Condition IsStageRegion
+  IsWafEnabledUsEast1: !And
+    - !Condition IsWafEnabled
+    - !Equals
+      - !Sub '${AWS::Region}'
+      - 'us-east-1'
+Resources:
+  CloudFrontWafLogGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: IsWafEnabledUsEast1
+    Properties:
+      LogGroupName: !Sub 'aws-waf-logs-cloudfront/${AWS::StackName}'
+      RetentionInDays: !Ref LogRetentionInDays
+      Tags:
+        - Key: 'Name'
+          Value: !Sub '${AWS::StackName} waf acl log group for cloudfront'
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+
+  CloudFrontWafAcl:
+    Type: AWS::WAFv2::WebACL
+    Condition: IsWafEnabledUsEast1
+    Properties:
+      DefaultAction:
+        Allow: {}
+      Scope: CLOUDFRONT
+      VisibilityConfig:
+        SampledRequestsEnabled: true
+        CloudWatchMetricsEnabled: true
+        MetricName: !Sub '${AWS::StackName}-waf-acl-cloudfront'
+      Rules:
+        - Name: RateLimit
+          Priority: 0
+          Action:
+            Block:
+              CustomResponse:
+                ResponseCode: 429
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: !Sub '${AWS::StackName}-waf-acl-cloudfront-rate-limit'
+          Statement:
+            RateBasedStatement:
+              AggregateKeyType: IP
+              Limit: 1000
+        - Name: AWS-AWSManagedRulesCommonRuleSet
+          Priority: 1
+          OverrideAction:
+            None: {}
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: !Sub '${AWS::StackName}-waf-acl-cloudfront-common'
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesCommonRuleSet
+              ExcludedRules:
+                - Name: 'SizeRestrictions_BODY'
+                - Name: 'NoUserAgent_HEADER'
+        - Name: block-too-large-body-requests
+          Priority: 2
+          Statement:
+            AndStatement:
+              Statements:
+                - LabelMatchStatement:
+                    Scope: LABEL
+                    Key: awswaf:managed:aws:core-rule-set:SizeRestrictions_Body
+                - NotStatement:
+                    Statement:
+                      ByteMatchStatement:
+                        SearchString: '/api/rest/sentry-tunnel'
+                        FieldToMatch:
+                          UriPath: {}
+                        TextTransformations:
+                          - Priority: 0
+                            Type: NONE
+                        PositionalConstraint: STARTS_WITH
+          Action:
+            Block: {}
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: !Sub '${AWS::StackName}-waf-acl-cloudfront-block-too-large-body-requests'
+        - Name: block-missing-user-agent
+          Priority: 3
+          Statement:
+            AndStatement:
+              Statements:
+                - LabelMatchStatement:
+                    Scope: LABEL
+                    Key: awswaf:managed:aws:core-rule-set:NoUserAgent_Header
+                - NotStatement:
+                    Statement:
+                      ByteMatchStatement:
+                        SearchString: '/api/rest/sentry-tunnel'
+                        FieldToMatch:
+                          UriPath: {}
+                        TextTransformations:
+                          - Priority: 0
+                            Type: NONE
+                        PositionalConstraint: STARTS_WITH
+          Action:
+            Block: {}
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: !Sub '${AWS::StackName}-waf-acl-cloudfront-block-missing-user-agent'
+        - Name: AWS-ManagedRulesKnownBadInputsRuleSet
+          Priority: 4
+          OverrideAction:
+            None: {}
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: !Sub '${AWS::StackName}-waf-acl-cloudfront-bad-inputs'
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesKnownBadInputsRuleSet
+        - Name: AWS-ManagedRulesAmazonIpReputationList
+          Priority: 5
+          OverrideAction:
+            None: {}
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: !Sub '${AWS::StackName}-waf-acl-cloudfront-ip-reputation'
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesAmazonIpReputationList
+
+  CloudFrontWafLogging:
+    Type: AWS::WAFv2::LoggingConfiguration
+    Condition: IsWafEnabledUsEast1
+    Properties:
+      LogDestinationConfigs:
+        - !Select [0, !Split [':*', !GetAtt CloudFrontWafLogGroup.Arn]]
+      LoggingFilter:
+        DefaultBehavior: DROP
+        Filters:
+          - Behavior: KEEP
+            Conditions:
+              - ActionCondition:
+                  Action: BLOCK
+            Requirement: MEETS_ANY
+      ResourceArn: !GetAtt CloudFrontWafAcl.Arn
+  CloudWatchLogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${AWS::StackName}
+      RetentionInDays: !Ref LogRetentionInDays
+      Tags:
+        - Key: 'Name'
+          Value: !Sub '${AWS::StackName} lambda logs'
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+
+  ApiGatewayRestApiWafAcl:
+    Type: AWS::WAFv2::WebACL
+    Condition: IsWafEnabledStage
+    Properties:
+      DefaultAction:
+        Allow: {}
+      Scope: REGIONAL
+      VisibilityConfig:
+        SampledRequestsEnabled: true
+        CloudWatchMetricsEnabled: true
+        MetricName: !Sub '${AWS::StackName}-waf-acl-rest-api'
+      Rules:
+        - Name: RateLimit
+          Priority: 0
+          Action:
+            Block:
+              CustomResponse:
+                ResponseCode: 429
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: !Sub '${AWS::StackName}-waf-acl-rest-api-rate-limit'
+          Statement:
+            RateBasedStatement:
+              AggregateKeyType: IP
+              Limit: 1000
+        - Name: AWS-AWSManagedRulesCommonRuleSet
+          Priority: 1
+          OverrideAction:
+            None: {}
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: !Sub '${AWS::StackName}-waf-acl-rest-api-common'
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesCommonRuleSet
+              ExcludedRules:
+                - Name: 'SizeRestrictions_BODY'
+        - Name: block-too-large-body-requests
+          Priority: 2
+          Statement:
+            AndStatement:
+              Statements:
+                - LabelMatchStatement:
+                    Scope: LABEL
+                    Key: awswaf:managed:aws:core-rule-set:SizeRestrictions_Body
+                - NotStatement:
+                    Statement:
+                      ByteMatchStatement:
+                        SearchString: !Sub '/${Stage}/api-rest/sentry-tunnel'
+                        FieldToMatch:
+                          UriPath: {}
+                        TextTransformations:
+                          - Priority: 0
+                            Type: NONE
+                        PositionalConstraint: STARTS_WITH
+          Action:
+            Block: {}
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: !Sub '${AWS::StackName}-block-too-large-body-requests'
+        - Name: AWS-ManagedRulesKnownBadInputsRuleSet
+          Priority: 3
+          OverrideAction:
+            None: {}
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: !Sub '${AWS::StackName}-waf-acl-rest-api-bad-inputs'
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesKnownBadInputsRuleSet
+        - Name: AWS-ManagedRulesAmazonIpReputationList
+          Priority: 4
+          OverrideAction:
+            None: {}
+          VisibilityConfig:
+            SampledRequestsEnabled: true
+            CloudWatchMetricsEnabled: true
+            MetricName: !Sub '${AWS::StackName}-waf-acl-rest-api-ip-reputation'
+          Statement:
+            ManagedRuleGroupStatement:
+              VendorName: AWS
+              Name: AWSManagedRulesAmazonIpReputationList
+
+  ApiGatewayRestApiWafLogGroup:
+    Type: AWS::Logs::LogGroup
+    Condition: IsWafEnabledStage
+    Properties:
+      LogGroupName: !Sub 'aws-waf-logs-rest-api/${AWS::StackName}'
+      RetentionInDays: !Ref LogRetentionInDays
+      Tags:
+        - Key: 'Name'
+          Value: !Sub '${AWS::StackName} waf acl log group for rest api'
+        - Key: 'ManagedBy'
+          Value: !Ref Stack
+
+  ApiGatewayRestApiWafLogging:
+    Type: AWS::WAFv2::LoggingConfiguration
+    Condition: IsWafEnabledStage
+    Properties:
+      LogDestinationConfigs:
+        - !Select [0, !Split [':*', !GetAtt ApiGatewayRestApiWafLogGroup.Arn]]
+      LoggingFilter:
+        DefaultBehavior: DROP
+        Filters:
+          - Behavior: KEEP
+            Conditions:
+              - ActionCondition:
+                  Action: BLOCK
+            Requirement: MEETS_ANY
+      ResourceArn: !GetAtt ApiGatewayRestApiWafAcl.Arn
+
+  SentryFunctionStage:
+    Condition: IsWafEnabledStage
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/sentry/
+      Handler: index.handler
+      Description: 'send waf cloudwatch logs to sentry'
+      Timeout: 6
+      MemorySize: 128
+      Environment:
+        Variables:
+          SENTRY_DSN: !Ref SentryDSN
+          SENTRY_ENVIRONMENT: !Ref SentryEnvironment
+          SENTRY_TUNNEL: !Sub ${StageRootUrl}/api/rest/sentry-tunnel
+          STAGE: !Ref Stage
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Sid: CloudWatchLogGroup
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !GetAtt CloudWatchLogGroup.Arn
+              Effect: Allow
+      LoggingConfig:
+        LogGroup: !Ref CloudWatchLogGroup
+      Events:
+        Trigger:
+          Type: CloudWatchLogs
+          Properties:
+            LogGroupName: !Ref ApiGatewayRestApiWafLogGroup
+            FilterPattern: '{$.httpRequest.uri != "*sentry-tunnel*"}'
+    Metadata:
+      BuildMethod: makefile
+
+  SentryFunctionUsEast1:
+    Condition: IsWafEnabledUsEast1
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: functions/sentry/
+      Handler: index.handler
+      Description: 'send waf cloudwatch logs to sentry'
+      Timeout: 6
+      MemorySize: 128
+      Environment:
+        Variables:
+          SENTRY_DSN: !Ref SentryDSN
+          SENTRY_ENVIRONMENT: !Ref SentryEnvironment
+          SENTRY_TUNNEL: !Sub ${StageRootUrl}/api/rest/sentry-tunnel
+          STAGE: !Ref Stage
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Sid: CloudWatchLogGroup
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !GetAtt CloudWatchLogGroup.Arn
+              Effect: Allow
+      LoggingConfig:
+        LogGroup: !Ref CloudWatchLogGroup
+      Events:
+        Trigger:
+          Type: CloudWatchLogs
+          Properties:
+            LogGroupName: !Ref CloudFrontWafLogGroup
+            FilterPattern: '{$.httpRequest.uri != "*sentry-tunnel*"}'
+    Metadata:
+      BuildMethod: makefile
+
+  WebSocketAuthFunction:
+    Type: AWS::Serverless::Function
+    Condition: IsStageRegion
+    Properties:
+      CodeUri: functions/request-auth/
+      Handler: index.webSocketAuth
+      Description: 'websocket authorizer'
+      Timeout: 6
+      MemorySize: 128
+      Environment:
+        Variables:
+          SSM_API_JWT_SECRET: !Sub /${Stack}/${Stage}/API_JWT_SECRET
+          DYNAMODB_TABLE: !Ref DynamoDBStackTableName
+      Policies:
+        - SSMParameterReadPolicy:
+            ParameterName: !Sub ${Stack}/${Stage}/API_JWT_SECRET
+        - Version: 2012-10-17
+          Statement:
+            - Sid: CloudWatchLogGroup
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !GetAtt CloudWatchLogGroup.Arn
+              Effect: Allow
+        - Version: 2012-10-17
+          Statement:
+            - Sid: DynamoDB
+              Action:
+                - dynamodb:GetItem
+              Resource:
+                - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTableName}'
+              Effect: Allow
+              Condition:
+                ForAllValues:StringLike:
+                  dynamodb:LeadingKeys:
+                    - 'session#*'
+      LoggingConfig:
+        LogGroup: !Ref CloudWatchLogGroup
+    Metadata:
+      BuildMethod: makefile
+
+  WebSocketAuthFunctionPermissionWebSockets:
+    Type: AWS::Lambda::Permission
+    Condition: IsStageRegion
+    Properties:
+      FunctionName: !GetAtt WebSocketAuthFunction.Arn
+      Action: lambda:InvokeFunction
+      Principal: apigateway.amazonaws.com
+
+  WebSocketAnonymousAuthFunction:
+    Type: AWS::Serverless::Function
+    Condition: IsStageRegion
+    Properties:
+      CodeUri: functions/request-auth/
+      Handler: index.webSocketAnonymousAuth
+      Description: 'websocket anonmymous authorizer'
+      Timeout: 6
+      MemorySize: 128
+      Environment:
+        Variables:
+          SSM_API_JWT_SECRET: !Sub /${Stack}/${Stage}/API_JWT_SECRET
+          DYNAMODB_TABLE: !Ref DynamoDBStackTableName
+      Policies:
+        - SSMParameterReadPolicy:
+            ParameterName: !Sub ${Stack}/${Stage}/API_JWT_SECRET
+        - Version: 2012-10-17
+          Statement:
+            - Sid: CloudWatchLogGroup
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !GetAtt CloudWatchLogGroup.Arn
+              Effect: Allow
+        - Version: 2012-10-17
+          Statement:
+            - Sid: DynamoDB
+              Action:
+                - dynamodb:GetItem
+              Resource:
+                - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTableName}'
+              Effect: Allow
+              Condition:
+                ForAllValues:StringLike:
+                  dynamodb:LeadingKeys:
+                    - 'session#*'
+      LoggingConfig:
+        LogGroup: !Ref CloudWatchLogGroup
+    Metadata:
+      BuildMethod: makefile
+
+  HttpAuthFunction:
+    Type: AWS::Serverless::Function
+    Condition: IsStageRegion
+    Properties:
+      CodeUri: functions/request-auth/
+      Handler: index.httpAuth
+      Description: 'http authorizer'
+      Timeout: 6
+      MemorySize: 128
+      Environment:
+        Variables:
+          SSM_API_JWT_SECRET: !Sub /${Stack}/${Stage}/API_JWT_SECRET
+          DYNAMODB_TABLE: !Ref DynamoDBStackTableName
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Sid: ApiGateway
+              Action:
+                - apigateway:GET
+              Resource:
+                - !Sub arn:${AWS::Partition}:apigateway:*::/restapis*
+                - !Sub arn:${AWS::Partition}:apigateway:*::/apikeys*
+                - !Sub arn:${AWS::Partition}:apigateway:*::/usageplans*
+              Effect: Allow
+        - Version: 2012-10-17
+          Statement:
+            - Sid: DynamoDB
+              Action:
+                - dynamodb:GetItem
+              Resource:
+                - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTableName}'
+              Effect: Allow
+              Condition:
+                ForAllValues:StringLike:
+                  dynamodb:LeadingKeys:
+                    - 'session#*'
+        - SSMParameterReadPolicy:
+            ParameterName: !Sub ${Stack}/${Stage}/API_JWT_SECRET
+        - Version: 2012-10-17
+          Statement:
+            - Sid: CloudWatchLogGroup
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !GetAtt CloudWatchLogGroup.Arn
+              Effect: Allow
+        - Version: 2012-10-17
+          Statement:
+            - Sid: DynamoDB
+              Action:
+                - dynamodb:GetItem
+              Resource:
+                - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTableName}'
+              Effect: Allow
+              Condition:
+                ForAllValues:StringLike:
+                  dynamodb:LeadingKeys:
+                    - 'session#*'
+      LoggingConfig:
+        LogGroup: !Ref CloudWatchLogGroup
+    Metadata:
+      BuildMethod: makefile
+
+  HttpAnonymousAuthFunction:
+    Type: AWS::Serverless::Function
+    Condition: IsStageRegion
+    Properties:
+      CodeUri: functions/request-auth/
+      Handler: index.httpAnonymousAuth
+      Description: 'http anonmymous authorizer'
+      Timeout: 6
+      MemorySize: 128
+      Environment:
+        Variables:
+          SSM_API_JWT_SECRET: !Sub /${Stack}/${Stage}/API_JWT_SECRET
+          DYNAMODB_TABLE: !Ref DynamoDBStackTableName
+      Policies:
+        - Version: 2012-10-17
+          Statement:
+            - Sid: ApiGateway
+              Action:
+                - apigateway:GET
+              Resource:
+                - !Sub arn:${AWS::Partition}:apigateway:*::/restapis*
+                - !Sub arn:${AWS::Partition}:apigateway:*::/apikeys*
+                - !Sub arn:${AWS::Partition}:apigateway:*::/usageplans*
+              Effect: Allow
+        - SSMParameterReadPolicy:
+            ParameterName: !Sub ${Stack}/${Stage}/API_JWT_SECRET
+        - Version: 2012-10-17
+          Statement:
+            - Sid: CloudWatchLogGroup
+              Action:
+                - logs:CreateLogStream
+                - logs:PutLogEvents
+              Resource: !GetAtt CloudWatchLogGroup.Arn
+              Effect: Allow
+        - Version: 2012-10-17
+          Statement:
+            - Sid: DynamoDB
+              Action:
+                - dynamodb:GetItem
+              Resource:
+                - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTableName}'
+              Effect: Allow
+              Condition:
+                ForAllValues:StringLike:
+                  dynamodb:LeadingKeys:
+                    - 'session#*'
+      LoggingConfig:
+        LogGroup: !Ref CloudWatchLogGroup
+    Metadata:
+      BuildMethod: makefile
+
+Outputs:
+  ApiGatewayRestApiWafAcl:
+    Condition: IsWafEnabledStage
+    Description: api gateway rest api waf
+    Value: !Ref ApiGatewayRestApiWafAcl
+    Export:
+      Name: !Sub '${AWS::StackName}ApiGatewayRestApiWafAcl'
+
+  HttpAuthFunction:
+    Condition: IsStageRegion
+    Description: lambda http authorizer
+    Value: !GetAtt HttpAuthFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}HttpAuthFunction'
+
+  HttpAnonymousAuthFunction:
+    Condition: IsStageRegion
+    Description: lambda http authorizer allowing anonymous access
+    Value: !GetAtt HttpAnonymousAuthFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}HttpAnonymousAuthFunction'
+
+  WebSocketAuthFunction:
+    Condition: IsStageRegion
+    Description: lambda websocket authorizer
+    Value: !GetAtt WebSocketAuthFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}WebSocketAuthFunction'
+
+  WebSocketAnonymousAuthFunction:
+    Condition: IsStageRegion
+    Description: lambda websocket authorizer allowing anonymous access
+    Value: !GetAtt WebSocketAnonymousAuthFunction.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}WebSocketAnonymousAuthFunction'
+
+  CloudFrontWafLogGroup:
+    Condition: IsWafEnabledUsEast1
+    Description: CloudFront waf log group
+    Value: !Ref CloudFrontWafLogGroup
+    Export:
+      Name: !Sub '${AWS::StackName}CloudFrontWafLogGroup'
+
+  CloudFrontWafACL:
+    Condition: IsWafEnabledUsEast1
+    Description: CloudFront waf acl
+    Value: !GetAtt CloudFrontWafAcl.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}CloudFrontWafAcl'

@@ -267,7 +267,7 @@ Resources:
                 Action:
                   - 'dynamodb:Query'
                 Resource:
-                  - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTableName}'
+                  - !Sub 'arn:${AWS::Partition}:dynamodb:${AWS::Region}:${AWS::AccountId}:table/${DynamoDBStackTableName}/index/gsi2'
                 Condition:
                   ForAllValues:StringLike:
                     dynamodb:LeadingKeys:
@@ -433,3 +433,10 @@ Resources:
         LogGroup: !Ref CloudWatchLogGroup
     Metadata:
       BuildMethod: makefile
+
+Outputs:
+  SanityTestStateMachineArn:
+    Description: Sanity Test State Machine arn
+    Value: !GetAtt SanityTestStateMachine.Arn
+    Export:
+      Name: !Sub '${AWS::StackName}SanityTestStateMachineArn'

@@ -288,7 +288,7 @@ await test('viewer request', async (t) => {
             delete request.cookies.token
 
             assert.deepEqual(request, {
-              uri: `/${stage}/api-${uri.split('/').slice(2).join('/')}`,
+              uri: `/${stage}${uri}`,
               cookies: {},
               querystring: {},
               headers: {
@@ -299,7 +299,7 @@ await test('viewer request', async (t) => {
         })
       }
     })
-    await t.test('/ssr/', async (t) => {
+    await t.test('ssr', async (t) => {
       for (const stage of ['dev', 'pr-x', 'prod']) {
         await t.test(stage, async () => {
           const { stageRoot } = settings(stage)
@@ -329,7 +329,7 @@ await test('viewer request', async (t) => {
             delete request.cookies.token
 
             assert.deepEqual(request, {
-              uri: `/${stage}/ssr${uri}`,
+              uri: `/${stage}${uri}`,
               cookies: {},
               querystring: {},
               headers: {
