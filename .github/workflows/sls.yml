@@ -75,6 +75,10 @@ jobs:
         with:
           python-version: 3.12
 
+      - uses: aws-actions/setup-sam@v2
+        with:
+          use-installer: true
+
       - name: build
         if: ${{ inputs.remove == false }}
         run: |

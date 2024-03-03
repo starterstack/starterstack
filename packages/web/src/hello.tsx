@@ -108,9 +108,6 @@ export default function Hello({
         <p>
           <Link pathname='/hello/python' text='Say hi to Python' />
         </p>
-        <p>
-          <Link pathname='/hello/ruby' text='Say hi to Ruby' />
-        </p>
         {hi && (
           <>
             <p>

@@ -185,8 +185,6 @@ export default function createFetchData(urlPrefix, fetch, crypto) {
 
       if (url.startsWith('/hello/python')) {
         await sayHi('python')
-      } else if (url.startsWith('/hello/ruby')) {
-        await sayHi('ruby')
       } else if (url.startsWith('/hello/download/fake-invoice')) {
         try {
           const res = await fetch(`${urlPrefix}/api/graphql`, {

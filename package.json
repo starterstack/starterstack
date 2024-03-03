@@ -29,7 +29,6 @@
     "aws-lambda",
     "aws-lambda-node",
     "aws-lambda-python",
-    "aws-lambda-ruby",
     "cloudformation",
     "dynamodb",
     "api",
@@ -73,7 +72,6 @@
     "packages/settings.json": "bash ./scripts/build-actions.sh",
     "packages/shared/*.js": "bash ./scripts/tsc-shared.sh",
     "*.py": "bash ./scripts/lint-python.sh",
-    "*.rb": "bash ./scripts/lint-ruby.sh",
     "*.{sh,.bashrc}": "bash ./scripts/lint-sh.sh",
     "*.{md,yaml,json,yml,md}": "prettier --write"
   },

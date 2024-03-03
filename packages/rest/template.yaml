@@ -537,37 +537,6 @@ Resources:
             Method: GET
             RestApiId: !Ref ApiGatewayApi
 
-  HelloRubyFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      CodeUri: functions/ruby/
-      Handler: hello.handler
-      Description: hello ruby
-      Timeout: 6
-      MemorySize: 128
-      Runtime: ruby3.2
-      Policies:
-        - Version: 2012-10-17
-          Statement:
-            - Sid: CloudWatchLogGroup
-              Action:
-                - logs:CreateLogStream
-                - logs:PutLogEvents
-              Resource: !GetAtt CloudWatchLogGroup.Arn
-              Effect: Allow
-      LoggingConfig:
-        LogGroup: !Ref CloudWatchLogGroup
-
-      Events:
-        ApiEvent:
-          Type: Api
-          Properties:
-            Path: /api/rest/hello-ruby
-            Auth:
-              Authorizer: LambdaAnonymousAuthorizer
-            Method: GET
-            RestApiId: !Ref ApiGatewayApi
-
   LogoutFunction:
     Type: AWS::Serverless::Function
     Properties:
