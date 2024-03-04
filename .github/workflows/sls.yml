@@ -87,7 +87,6 @@ jobs:
             sam-expand \
               build \
                 -p \
-                -c \
                 --parameter-overrides Stage="${{matrix.stage}}" \
                 --region ${{matrix.region}}
         working-directory: ${{ matrix.directory }}
