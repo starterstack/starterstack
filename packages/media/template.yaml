@@ -76,7 +76,7 @@ Metadata:
             - name: StageRoot
               exportName: stageOrStackRoot
             - name: S3BackupBucket
-              exportName: ssmS3LogBucket
+              exportName: ssmS3BackupBucket
             - name: BackupRegion
               exportName: backupRegion
             - name: LogRetentionInDays

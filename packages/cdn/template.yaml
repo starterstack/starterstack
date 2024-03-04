@@ -98,7 +98,7 @@ Metadata:
             - name: AccountPerStage
               exportName: accountPerStage
             - name: S3BackupBucket
-              exportName: ssmS3LogBucket
+              exportName: ssmS3BackupBucket
             - name: BackupRegion
               exportName: backupRegion
             - name: AcmCertificateArn
