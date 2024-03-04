@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.17](https://github.com/starterstack/starterstack/compare/v0.0.16...v0.0.17) (2024-03-04)
+
+
+### Bug Fixes
+
+* **backup:** backup iam allowed role ([c8ead3a](https://github.com/starterstack/starterstack/commit/c8ead3a3d38aead239de488c2234c939fcb01c7e))
+* **media:** only s3 replicate certain prefixes ([8d4a423](https://github.com/starterstack/starterstack/commit/8d4a423a75c94751533bfd42073e6ac950d2bb72))
+
 ## [0.0.16](https://github.com/starterstack/starterstack/compare/v0.0.15...v0.0.16) (2024-03-04)
 
 
