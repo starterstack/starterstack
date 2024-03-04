@@ -111,7 +111,7 @@ Resources:
               StringEquals:
                 s3:x-amz-acl: bucket-owner-full-control
               StringLike:
-                aws:PrincipalArn: !Sub 'arn:${AWS::Partition}:iam::${ProductionAccountId}:role/${Stack}-cdn-${ProductionStage}-S3ReplicationFunctionRole-*'
+                aws:PrincipalArn: !Sub 'arn:${AWS::Partition}:iam::${ProductionAccountId}:role/${Stack}-cdn-${ProductionStage}-S3ReplicateFunctionRole-*'
             Principal:
               AWS: '*'
           - Action:
@@ -125,7 +125,7 @@ Resources:
               StringEquals:
                 s3:x-amz-acl: bucket-owner-full-control
               StringLike:
-                aws:PrincipalArn: !Sub 'arn:${AWS::Partition}:iam::${ProductionAccountId}:role/${Stack}-media-${ProductionStage}-S3ReplicationFunctionRole-*'
+                aws:PrincipalArn: !Sub 'arn:${AWS::Partition}:iam::${ProductionAccountId}:role/${Stack}-media-${ProductionStage}-S3ReplicateFunctionRole-*'
             Principal:
               AWS: '*'
           - Action:
@@ -140,7 +140,7 @@ Resources:
               StringEquals:
                 s3:x-amz-acl: bucket-owner-full-control
               StringLike:
-                aws:PrincipalArn: !Sub 'arn:${AWS::Partition}:iam::${ProductionAccountId}:role/${Stack}-media-${ProductionStage}-S3ReplicationFunctionRole-*'
+                aws:PrincipalArn: !Sub 'arn:${AWS::Partition}:iam::${ProductionAccountId}:role/${Stack}-media-${ProductionStage}-S3ReplicateFunctionRole-*'
             Principal:
               AWS: '*'
           - Action:
@@ -154,7 +154,7 @@ Resources:
               StringEquals:
                 s3:x-amz-acl: bucket-owner-full-control
               StringLike:
-                aws:PrincipalArn: !Sub 'arn:${AWS::Partition}:iam::${ProductionAccountId}:role/${Stack}-ses-${ProductionStage}-S3ReplicationFunctionRole-*'
+                aws:PrincipalArn: !Sub 'arn:${AWS::Partition}:iam::${ProductionAccountId}:role/${Stack}-ses-${ProductionStage}-S3ReplicateFunctionRole-*'
             Principal:
               AWS: '*'
           - Action:
@@ -166,7 +166,7 @@ Resources:
               Bool:
                 aws:SecureTransport: true
               StringLike:
-                aws:PrincipalArn: !Sub 'arn:${AWS::Partition}:iam::${ProductionAccountId}:role/${Stack}-cdn-${ProductionStage}-S3ReplicationFunctionRole-*'
+                aws:PrincipalArn: !Sub 'arn:${AWS::Partition}:iam::${ProductionAccountId}:role/${Stack}-cdn-${ProductionStage}-S3ReplicateFunctionRole-*'
             Principal:
               AWS: '*'
           - Action:
@@ -178,7 +178,7 @@ Resources:
               Bool:
                 aws:SecureTransport: true
               StringLike:
-                aws:PrincipalArn: !Sub 'arn:${AWS::Partition}:iam::${ProductionAccountId}:role/${Stack}-media-${ProductionStage}-S3ReplicationFunctionRole-*'
+                aws:PrincipalArn: !Sub 'arn:${AWS::Partition}:iam::${ProductionAccountId}:role/${Stack}-media-${ProductionStage}-S3ReplicateFunctionRole-*'
             Principal:
               AWS: '*'
           - Action:
@@ -191,7 +191,7 @@ Resources:
               Bool:
                 aws:SecureTransport: true
               StringLike:
-                aws:PrincipalArn: !Sub 'arn:${AWS::Partition}:iam::${ProductionAccountId}:role/${Stack}-media-${ProductionStage}-S3ReplicationFunctionRole-*'
+                aws:PrincipalArn: !Sub 'arn:${AWS::Partition}:iam::${ProductionAccountId}:role/${Stack}-media-${ProductionStage}-S3ReplicateFunctionRole-*'
             Principal:
               AWS: '*'
           - Action:
@@ -203,7 +203,7 @@ Resources:
               Bool:
                 aws:SecureTransport: true
               StringLike:
-                aws:PrincipalArn: !Sub 'arn:${AWS::Partition}:iam::${ProductionAccountId}:role/${Stack}-ses-${ProductionStage}-S3ReplicationFunctionRole-*'
+                aws:PrincipalArn: !Sub 'arn:${AWS::Partition}:iam::${ProductionAccountId}:role/${Stack}-ses-${ProductionStage}-S3ReplicateFunctionRole-*'
             Principal:
               AWS: '*'
 Outputs:
