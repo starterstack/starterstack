@@ -90,6 +90,17 @@ Metadata:
                 - file:
                     location: ../stack-stage-config.mjs
                     exportName: stage
+            - command: ./scripts/patch-api-gateway-account.sh
+              args:
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: region
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: stageRegion
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: apiGatewayCloudwatchRole
           post:delete:
             - command: ./scripts/delete-dangling-acm-certificates.mjs
               args:
