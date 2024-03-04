@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.15](https://github.com/starterstack/starterstack/compare/v0.0.14...v0.0.15) (2024-03-04)
+
+
+### Bug Fixes
+
+* **github actions sls:** remove cache ([e36cbc3](https://github.com/starterstack/starterstack/commit/e36cbc3a3bb4bf91b4734d87378fcfb68a0f9ee3))
+
 ## [0.0.14](https://github.com/starterstack/starterstack/compare/v0.0.13...v0.0.14) (2024-03-04)
 
 
