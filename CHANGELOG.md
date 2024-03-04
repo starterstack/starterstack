@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.16](https://github.com/starterstack/starterstack/compare/v0.0.15...v0.0.16) (2024-03-04)
+
+
+### Bug Fixes
+
+* **s3 replication:** backup bucket ([35f36ee](https://github.com/starterstack/starterstack/commit/35f36ee6ac9229649329f7c41aebb3ad92618ad3))
+* **test:** more sanity test assertions ([d047fcf](https://github.com/starterstack/starterstack/commit/d047fcf72eb5f7d56db6bfe60183ea86e97a816a))
+
 ## [0.0.15](https://github.com/starterstack/starterstack/compare/v0.0.14...v0.0.15) (2024-03-04)
 
 
