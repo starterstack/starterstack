@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.14](https://github.com/starterstack/starterstack/compare/v0.0.13...v0.0.14) (2024-03-04)
+
+
+### Bug Fixes
+
+* **api gateway:** patch account moved to correct region ([3bc4716](https://github.com/starterstack/starterstack/commit/3bc4716caa657cc3f9e67aa258b2d45e7dc6096f))
+* **stage:** delete apigateway deployment ([0485d2e](https://github.com/starterstack/starterstack/commit/0485d2ec448fb3ef4bda0295204153d0139c2504))
+
 ## [0.0.13](https://github.com/starterstack/starterstack/compare/v0.0.12...v0.0.13) (2024-03-03)
 
 
