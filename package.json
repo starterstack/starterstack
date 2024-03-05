@@ -107,7 +107,7 @@
     "@sindresorhus/tsconfig": "5.0.0",
     "@starterstack/sam-expand": "0.2.7",
     "@types/aws-lambda": "8.10.131",
-    "@typescript-eslint/eslint-plugin": "7.1.0",
+    "@typescript-eslint/eslint-plugin": "7.1.1",
     "@typescript-eslint/parser": "7.1.1",
     "aws-sdk-client-mock": "3.0.1",
     "aws-xray-sdk-core": "3.5.3",
