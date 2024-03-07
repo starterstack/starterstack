@@ -47,7 +47,7 @@ function sam() {
       "$(dirname "${source:?}")/../node_modules/.bin/sam-expand" \
       build \
       -p \
-      -c \
+      --no-cached \
       --parameter-overrides Stage="${stage:?}" \
       --region "${region:?}"
 
