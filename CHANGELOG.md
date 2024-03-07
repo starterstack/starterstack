@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.18](https://github.com/starterstack/starterstack/compare/v0.0.17...v0.0.18) (2024-03-07)
+
+
+### Bug Fixes
+
+* **missing web build:** sam build with --no-cached ([a0ec447](https://github.com/starterstack/starterstack/commit/a0ec447c87fbd5fb2e19b24ee21029b6c9d8fd03))
+* **web:** deploy of web build directory ([d7ee01e](https://github.com/starterstack/starterstack/commit/d7ee01ee8eae02fe3a47a47d3c00d94008fcefe0))
+
 ## [0.0.17](https://github.com/starterstack/starterstack/compare/v0.0.16...v0.0.17) (2024-03-04)
 
 
