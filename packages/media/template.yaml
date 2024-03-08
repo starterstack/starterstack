@@ -862,12 +862,12 @@ Resources:
               Effect: Allow
         - Version: 2012-10-17
           Statement:
-            - Sid: DynamoDB
+            - Sid: DynamoDBListExports
               Effect: Allow
               Action:
                 - dynamodb:ListExports
               Resource: '*'
-            - Sid: DynamoDB
+            - Sid: DynamoDBReadExports
               Effect: Allow
               Action:
                 - dynamodb:DescribeExport
