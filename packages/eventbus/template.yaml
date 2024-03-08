@@ -150,7 +150,6 @@ Resources:
     Type: AWS::Events::Rule
     Condition: ShouldReplicate
     Properties:
-      Name: !Sub '${AWS::StackName}event-rule-replicate-rule-1'
       EventPattern:
         account:
           - !Sub '${AWS::AccountId}'
