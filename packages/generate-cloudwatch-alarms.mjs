@@ -118,7 +118,7 @@ export const lifecycle = async function generateCloudwatchAlarms({
             }
           }
 
-          const rules = Object.entries(resources.Properties.Events ?? {})
+          const rules = Object.entries(resource.Properties.Events ?? {})
             .filter(([, value]) => value?.Type === 'EventBridgeRule')
             .map(([key, value]) => ({
               logicalId: `${logicalId}${key}`,
