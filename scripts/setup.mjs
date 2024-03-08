@@ -410,7 +410,6 @@ locate the git commit removing them and revert it.`)
     await replaceOwnerRepository(`.github/workflows/${workflow}`)
   }
   console.log('✨ settings written ✨')
-  await import('./generate-graphql-lambda-invoke-arns.mjs')
 
   const { githubSecrets } = await inquirer.prompt({
     type: 'confirm',
