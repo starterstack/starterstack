@@ -63,8 +63,6 @@ export const lifecycle = async function generateCloudwatchAlarms({
         ![
           'AWS::Serverless::Function',
           'AWS::Serverless::Api',
-          'AWS::Lambda::EventSourceMapping',
-          'AWS::Lambda::EventInvokeConfig',
           'AWS::SQS::Queue',
           'AWS::Scheduler::ScheduleGroup',
           'AWS::Events::Rule',
@@ -119,6 +117,35 @@ export const lifecycle = async function generateCloudwatchAlarms({
               })
             }
           }
+
+          const rules = Object.entries(resources.Properties.Events ?? {})
+            .filter(([, value]) => value?.Type === 'EventBridgeRule')
+            .map(([key, value]) => ({
+              logicalId: `${logicalId}${key}`,
+              resource: value
+            }))
+
+          for (const { resource, logicalId } of rules) {
+            if (resource?.Properties?.DeadLetterConfig) {
+              generateEventsInvocationsFailedToBeSentToDlqAlarm({
+                logicalId,
+                resource,
+                resources,
+                snsAlarmTopic,
+                condition,
+                region
+              })
+            }
+            generateEventsThrottledRulesAlarm({
+              logicalId,
+              resource,
+              resources,
+              snsAlarmTopic,
+              condition,
+              region
+            })
+          }
+
           break
         }
         case 'AWS::SQS::Queue': {
@@ -152,7 +179,7 @@ export const lifecycle = async function generateCloudwatchAlarms({
         }
         case 'AWS::Events::Rule': {
           if (
-            resource?.Properties?.Targets?.find(
+            resource?.Properties?.Targets?.some(
               (target) => !!target.DeadLetterConfig
             )
           ) {
@@ -191,65 +218,39 @@ export const lifecycle = async function generateCloudwatchAlarms({
           break
         }
         case 'AWS::Serverless::Api': {
-          break
-        }
-        case 'AWS::ApiGateway::Method': {
-          const restApiPath = getRestApiPath({
-            resourceId: resource.Properties?.ResourceId,
-            resources
-          })
-          const apiName = `${stackName}-cdn-${stage}-rest-api`
-          const httpMethod = resource.Properties.HttpMethod
-          generateRestApiErrorRateAlarm({
-            apiName,
-            httpMethod,
-            restApiPath,
-            resources,
-            snsAlarmTopic,
-            condition,
-            region,
-            stage
-          })
-          generateRestApiP90LatencyAlarm({
-            apiName,
-            httpMethod,
-            restApiPath,
-            resources,
-            condition,
-            region,
-            stage
-          })
+          const apiName = { Ref: 'AWS::StackName' }
 
+          for (const resource of Object.values(resources)) {
+            if (resource.Properties.Type === 'AWS::Serverless::Function') {
+              for (const eventResource of Object.values(
+                resource.Events ?? {}
+              )) {
+                if (eventResource.Type === 'Api') {
+                  const restApiPath = eventResource.Properties.Path
+                  const httpMethod = eventResource.Properties.Method
+                  generateRestApiErrorRateAlarm({
+                    apiName,
+                    httpMethod,
+                    restApiPath,
+                    resources,
+                    snsAlarmTopic,
+                    condition,
+                    region,
+                    stage
+                  })
+                }
+              }
+            }
+          }
           break
         }
         case 'AWS::ApiGatewayV2::Route': {
-          const [httpMethod, httpApiPath] =
-            resource.Properties.RouteKey.split(' ')
-
-          if (httpMethod && httpApiPath) {
-            const apiName = `${stackName}-cdn-${stage}-http`
-            generateHttpApiErrorRateAlarm({
-              apiName,
-              httpMethod,
-              httpApiPath,
-              resource,
-              resources,
-              snsAlarmTopic,
-              condition,
-              region,
-              stage
-            })
-            generateHttpApiP90LatencyAlarm({
-              apiName,
-              httpMethod,
-              httpApiPath,
-              resource,
-              resources,
-              condition,
-              region
-            })
-          } else {
-            const apiName = `${stackName}-cdn-${stage}-websocket`
+          if (resource.Properties.RouteKey) {
+            const api = resources[resource.Properties?.ApiId?.Ref]
+            if (!api) {
+              throw new Error(`no websocket api gateway found for ${logicalId}`)
+            }
+            const apiName = api.Properties.Name
             generateWebSocketErrorRateAlarm({
               apiName,
               resource,
@@ -478,18 +479,11 @@ function generateEventsInvocationsFailedToBeSentToDlqAlarm({
 }) {
   const threshold = 0
   const evaluationPeriods = 1
-  const { Name: ruleName, EventBusName: eventBus } = resource.Properties
+  const { EventBusName: eventBus } = resource.Properties
   const alarmName = {
-    'Fn::Join': [
-      '',
-      [
-        `${stackName} event rule `,
-        ruleName,
-        ` in ${region} invocations failed to be sent to dlq count > ${threshold} over the last ${evaluationPeriods} mins`
-      ]
-    ]
+    'Fn::Sub': `${stackName} event rule \${logicalId} in ${region} invocations failed to be sent to dlq count > ${threshold} over the last ${evaluationPeriods} mins`
   }
-  const dimensions = [{ Name: 'RuleName', Value: ruleName }]
+  const dimensions = [{ Name: 'RuleName', Value: { Ref: logicalId } }]
   if (eventBus) {
     dimensions.push({ Name: 'EventBusName', Value: eventBus })
   }
@@ -568,19 +562,12 @@ function generateEventsThrottledRulesAlarm({
 }) {
   const threshold = 0
   const evaluationPeriods = 1
-  const { Name: ruleName, EventBusName: eventBus } = resource.Properties
+  const { EventBusName: eventBus } = resource.Properties
 
   const alarmName = {
-    'Fn::Join': [
-      '',
-      [
-        `${stackName} event rule `,
-        ruleName,
-        ` in ${region} throttled count > ${threshold} over the last ${evaluationPeriods} mins`
-      ]
-    ]
+    'Fn::Sub': `${stackName} event rule \${logicalId} in ${region} throttled clount > ${threshold} over the last ${evaluationPeriods} mins`
   }
-  const dimensions = [{ Name: 'RuleName', Value: ruleName }]
+  const dimensions = [{ Name: 'RuleName', Value: { Ref: logicalId } }]
   if (eventBus) {
     dimensions.push({ Name: 'EventBusName', Value: eventBus })
   }
@@ -924,7 +911,13 @@ function generateRestApiErrorRateAlarm({
 }) {
   const threshold = 0.1
   const evaluationPeriods = 5
-  const alarmName = `${stackName} ${apiName} ${httpMethod} ${restApiPath} in ${region} error rate > ${threshold * 100}% over the last ${evaluationPeriods} mins`
+  const alarmName = {
+    'Fn::Sub': [
+      `${stackName} \${apiName} ${httpMethod} ${restApiPath} in ${region} error rate > ${threshold * 100}% over the last ${evaluationPeriods} mins`,
+      { apiName }
+    ]
+  }
+
   const dimensions = [
     { Name: 'ApiName', Value: apiName },
     { Name: 'Resource', Value: restApiPath },
@@ -1000,147 +993,6 @@ function generateRestApiErrorRateAlarm({
   }
 }
 
-function generateRestApiP90LatencyAlarm({
-  apiName,
-  httpMethod,
-  restApiPath,
-  resources,
-  condition,
-  region,
-  stage
-}) {
-  const threshold = 3000
-  const evaluationPeriods = 5
-  const alarmName = `${stackName} ${apiName} ${httpMethod} ${restApiPath} in ${region} p90 latency > ${threshold}ms over the last ${evaluationPeriods} mins`
-  resources[
-    `${restApiPath.replaceAll(/[^a-z]/gi, '')}${httpMethod}P90LatencyAlarm`
-  ] = {
-    Type: 'AWS::CloudWatch::Alarm',
-    Condition: condition,
-    Properties: {
-      AlarmDescription: alarmName,
-      AlarmName: alarmName,
-      ComparisonOperator: 'GreaterThanThreshold',
-      Dimensions: [
-        { Name: 'ApiName', Value: apiName },
-        { Name: 'Resource', Value: restApiPath },
-        { Name: 'Method', Value: httpMethod },
-        { Name: 'Stage', Value: stage }
-      ],
-      EvaluationPeriods: evaluationPeriods,
-      MetricName: 'Latency',
-      Namespace: 'AWS/ApiGateway',
-      Period: 60,
-      ExtendedStatistic: 'p90',
-      Threshold: threshold
-    }
-  }
-}
-
-function getRestApiPath({ resourceId, resources, restApiPath = '' }) {
-  if (resourceId.Ref) {
-    const resource = resources[resourceId.Ref]
-    const parentId = resource.Properties.ParentId
-
-    return getRestApiPath({
-      resourceId: parentId,
-      resources,
-      restApiPath: path.posix.join(resource.Properties.PathPart, restApiPath)
-    })
-  } else {
-    return path.posix.join('/', restApiPath)
-  }
-}
-
-function generateHttpApiErrorRateAlarm({
-  apiName,
-  httpMethod,
-  httpApiPath,
-  resource,
-  resources,
-  snsAlarmTopic,
-  condition,
-  region,
-  stage
-}) {
-  const threshold = 0.1
-  const evaluationPeriods = 5
-  const alarmName = `${stackName} ${apiName} ${httpMethod} ${httpApiPath} in ${region} error rate > ${threshold * 100}% over the last ${evaluationPeriods} mins`
-  const dimensions = [
-    { Name: 'ApiId', Value: resource.Properties.ApiId },
-    { Name: 'Resource', Value: httpApiPath },
-    { Name: 'Method', Value: httpMethod },
-    { Name: 'Stage', Value: stage }
-  ]
-  resources[
-    `${httpApiPath.replaceAll(/[^a-z]/gi, '')}${httpMethod}ErrorRateAlarm`
-  ] = {
-    Type: 'AWS::CloudWatch::Alarm',
-    Condition: condition,
-    Properties: {
-      AlarmActions: [snsAlarmTopic],
-      AlarmDescription: alarmName,
-      AlarmName: alarmName,
-      ComparisonOperator: 'GreaterThanThreshold',
-      Metrics: [
-        {
-          Id: 'count',
-          Label: 'Count',
-          MetricStat: {
-            Metric: {
-              Dimensions: dimensions,
-              MetricName: 'Count',
-              Namespace: 'AWS/ApiGateway'
-            },
-            Period: 60,
-            Stat: 'Sum',
-            Unit: 'Count'
-          },
-          ReturnData: false
-        },
-        {
-          Id: 'error4xx',
-          Label: '4XX Error',
-          MetricStat: {
-            Metric: {
-              Dimensions: dimensions,
-              MetricName: '4xx',
-              Namespace: 'AWS/ApiGateway'
-            },
-            Period: 60,
-            Stat: 'Sum',
-            Unit: 'Count'
-          },
-          ReturnData: false
-        },
-        {
-          Id: 'error5xx',
-          Label: '5XX Error',
-          MetricStat: {
-            Metric: {
-              Dimensions: dimensions,
-              MetricName: '5xx',
-              Namespace: 'AWS/ApiGateway'
-            },
-            Period: 60,
-            Stat: 'Sum',
-            Unit: 'Count'
-          },
-          ReturnData: false
-        },
-        {
-          Id: 'errorRate',
-          Label: 'Error Rate',
-          Expression: '(error4xx + error5xx) / count',
-          ReturnData: true
-        }
-      ],
-      EvaluationPeriods: evaluationPeriods,
-      Threshold: threshold
-    }
-  }
-}
-
 function generateWebSocketErrorRateAlarm({
   apiName,
   resource,
@@ -1153,7 +1005,12 @@ function generateWebSocketErrorRateAlarm({
   const threshold = 0.1
   const evaluationPeriods = 5
   const routeKey = resource.Properties.RouteKey
-  const alarmName = `${stackName} ${apiName} ${routeKey} in ${region} error rate > ${threshold * 100}% over the last ${evaluationPeriods} mins`
+  const alarmName = {
+    'Fn::Sub': [
+      `${stackName} \${apiName} ${routeKey} in ${region} error rate > ${threshold * 100}% over the last ${evaluationPeriods} mins`,
+      { apiName }
+    ]
+  }
   const dimensions = [
     { Name: 'ApiId', Value: resource.Properties.ApiId },
     { Name: 'Route', Value: routeKey },
@@ -1238,43 +1095,6 @@ function generateWebSocketErrorRateAlarm({
         }
       ],
       EvaluationPeriods: evaluationPeriods,
-      Threshold: threshold
-    }
-  }
-}
-
-function generateHttpApiP90LatencyAlarm({
-  apiName,
-  httpMethod,
-  httpApiPath,
-  resource,
-  resources,
-  condition,
-  region
-}) {
-  const threshold = 3000
-  const evaluationPeriods = 5
-  const alarmName = `${stackName} ${apiName} ${httpMethod} ${httpApiPath} in ${region} p90 latency > ${threshold}ms over the last ${evaluationPeriods} mins`
-  resources[
-    `${httpApiPath.replaceAll(/[^a-z]/gi, '')}${httpMethod}P90LatencyAlarm`
-  ] = {
-    Type: 'AWS::CloudWatch::Alarm',
-    Condition: condition,
-    Properties: {
-      AlarmDescription: alarmName,
-      AlarmName: alarmName,
-      ComparisonOperator: 'GreaterThanThreshold',
-      Dimensions: [
-        { Name: 'ApiId', Value: resource.Properties.ApiId },
-        { Name: 'Resource', Value: httpApiPath },
-        { Name: 'Method', Value: httpMethod },
-        { Name: 'Stage', Value: '$default' }
-      ],
-      EvaluationPeriods: evaluationPeriods,
-      MetricName: 'Latency',
-      Namespace: 'AWS/ApiGateway',
-      Period: 60,
-      ExtendedStatistic: 'p90',
       Threshold: threshold
     }
   }
