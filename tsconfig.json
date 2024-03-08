@@ -6,7 +6,9 @@
     "sourceMap": true,
     "target": "ES2022",
     "declarationMap": false,
-    "emitDeclarationOnly": true
+    "emitDeclarationOnly": true,
+    "types": ["@starterstack/sam-expand"],
+    "esModuleInterop": true
   },
   "include": [".github/actions/*.js", "./**/*"],
   "exclude": ["node_modules/**/*", "build"]

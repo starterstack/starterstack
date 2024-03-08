@@ -41,7 +41,7 @@
           "functions/**/*"
         ],
         "parserOptions": {
-          "project": "tsconfig.eslint.json"
+          "project": "tsconfig.json"
         },
         "extends": "../../.eslintrc.yml"
       }
