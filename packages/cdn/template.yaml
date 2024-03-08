@@ -778,6 +778,8 @@ Resources:
               Effect: Allow
               Resource:
                 - !Sub 'arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${ApiGatewayRest}/stages/${Stage}/cache/authorizers'
+                - !Sub 'arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${ApiGatewayWeb}/stages/${Stage}/cache/authorizers'
+                - !Sub 'arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${ApiGatewayGraphQL}/stages/${Stage}/cache/authorizers'
         - Version: 2012-10-17
           Statement:
             - Sid: CloudFrontKeyValueStore
