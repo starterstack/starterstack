@@ -679,7 +679,7 @@ Outputs:
   ApiGatewayRestApiWafAcl:
     Condition: IsWafEnabledStage
     Description: api gateway rest api waf
-    Value: !Ref ApiGatewayRestApiWafAcl
+    Value: !GetAtt ApiGatewayRestApiWafAcl.Arn
     Export:
       Name: !Sub '${AWS::StackName}ApiGatewayRestApiWafAcl'
 
