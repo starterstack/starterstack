@@ -221,9 +221,9 @@ export const lifecycle = async function generateCloudwatchAlarms({
           const apiName = { Ref: 'AWS::StackName' }
 
           for (const resource of Object.values(resources)) {
-            if (resource.Properties.Type === 'AWS::Serverless::Function') {
+            if (resource.Type === 'AWS::Serverless::Function') {
               for (const eventResource of Object.values(
-                resource.Events ?? {}
+                resource.Properties.Events ?? {}
               )) {
                 if (eventResource.Type === 'Api') {
                   const restApiPath = eventResource.Properties.Path
