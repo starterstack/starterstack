@@ -166,11 +166,6 @@ Metadata:
                 - file:
                     location: ../stack-stage-config.mjs
                     exportName: s3CloudFrontLogs
-            - command: ../empty-s3-bucket.sh
-              args:
-                - file:
-                    location: ../stack-stage-config.mjs
-                    exportName: s3ProtectedMediaLogs
           post:deploy:
             - command: ../tag-cloudwatch-alarms.sh
               args:
