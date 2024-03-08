@@ -29,11 +29,11 @@
     },
     "002389126878": {
       "stage": "feature",
-      "wafEnabled": true,
+      "wafEnabled": false,
       "isLogAccount": false,
       "isBackupAccount": false,
-      "dynamodbPointInTimeDailyS3ExportsEnabled": true,
-      "cloudwatchAlertsEnabled": true,
+      "dynamodbPointInTimeDailyS3ExportsEnabled": false,
+      "cloudwatchAlertsEnabled": false,
       "cloudfrontServerTiming": 40
     },
     "324835590264": {
