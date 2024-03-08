@@ -481,7 +481,7 @@ function generateEventsInvocationsFailedToBeSentToDlqAlarm({
   const evaluationPeriods = 1
   const { EventBusName: eventBus } = resource.Properties
   const alarmName = {
-    'Fn::Sub': `${stackName} event rule \${logicalId} in ${region} invocations failed to be sent to dlq count > ${threshold} over the last ${evaluationPeriods} mins`
+    'Fn::Sub': `${stackName} event rule \${${logicalId}} in ${region} invocations failed to be sent to dlq count > ${threshold} over the last ${evaluationPeriods} mins`
   }
   const dimensions = [{ Name: 'RuleName', Value: { Ref: logicalId } }]
   if (eventBus) {
@@ -565,7 +565,7 @@ function generateEventsThrottledRulesAlarm({
   const { EventBusName: eventBus } = resource.Properties
 
   const alarmName = {
-    'Fn::Sub': `${stackName} event rule \${logicalId} in ${region} throttled clount > ${threshold} over the last ${evaluationPeriods} mins`
+    'Fn::Sub': `${stackName} event rule \${${logicalId}} in ${region} throttled clount > ${threshold} over the last ${evaluationPeriods} mins`
   }
   const dimensions = [{ Name: 'RuleName', Value: { Ref: logicalId } }]
   if (eventBus) {
