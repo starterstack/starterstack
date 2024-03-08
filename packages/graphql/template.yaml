@@ -229,7 +229,7 @@ Resources:
     Type: AWS::WAFv2::WebACLAssociation
     Condition: IsWafEnabled
     Properties:
-      ResourceArn: !Sub 'arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${ApiGatewayApi}/stages/${Stage}'
+      ResourceArn: !Sub 'arn:${AWS::Partition}:apigateway:${AWS::Region}::/restapis/${ApiGatewayApi}/stages/${ApiGatewayApi.Stage}'
       WebACLArn: !Ref ApiGatewayRestApiWafAcl
 
   ApiGatewayCloudWatchLogGroup:

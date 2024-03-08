@@ -10,14 +10,19 @@ const PERIOD = 60
 const EVALUATION_PERIODS = 5
 const DEFAULT_CONCURRENT_EXECUTIONS = 1000
 
+/** @type {import('@starterstack/sam-expand/plugins').Plugin} */
 export const lifecycle = async function getRegionLimits({
   command,
   argv,
+  argvReader,
   template,
   log
 }) {
   if (command === 'build' && argv.includes('--region')) {
-    const region = argv[argv.indexOf('--region') + 1].replaceAll(/["']/g, '')
+    const region = argvReader('region')
+    if (!region) {
+      throw new Error('region missing')
+    }
     const snsAlarmTopic = { Ref: 'SNSAlarmTopic' }
     const unreservedConcurrentExecutions =
       await getUnreservedConcurrentExecutions(region)
