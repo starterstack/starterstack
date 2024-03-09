@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.21](https://github.com/starterstack/starterstack/compare/v0.0.20...v0.0.21) (2024-03-09)
+
+
+### Bug Fixes
+
+* **role:** developer should be super ([0e0efa8](https://github.com/starterstack/starterstack/commit/0e0efa89313287f18dbd87018e5fef666262d63c))
+
 ## [0.0.20](https://github.com/starterstack/starterstack/compare/v0.0.19...v0.0.20) (2024-03-09)
 
 
