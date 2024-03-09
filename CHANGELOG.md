@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.0.19](https://github.com/starterstack/starterstack/compare/v0.0.18...v0.0.19) (2024-03-09)
+
+
+### Bug Fixes
+
+* **cdn:** iam for jwt change ([434fb5d](https://github.com/starterstack/starterstack/commit/434fb5d06ffd556504831f9929845eb7a6b09f7a))
+* **cdn:** post remove script ([75790c2](https://github.com/starterstack/starterstack/commit/75790c2914935a88bbaa3c1dce3e19ffd0213adc))
+* cloudwatch alarms ([#133](https://github.com/starterstack/starterstack/issues/133)) ([359d6ba](https://github.com/starterstack/starterstack/commit/359d6ba392ac3a2bc4105037fc74f0175db43645))
+
 ## [0.0.18](https://github.com/starterstack/starterstack/compare/v0.0.17...v0.0.18) (2024-03-07)
 
 
