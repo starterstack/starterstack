@@ -111,7 +111,7 @@ Metadata:
         keep: 3
       script:
         hooks:
-          pre:build:
+          post:build:
             - command: node
               args:
                 - value: --test
