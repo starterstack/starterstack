@@ -111,10 +111,10 @@ await test('introspection', async () => {
     },
     variables: {}
   })
-  assert(errors().length > 0)
+
+  assert.ok(errors.length > 0, 'introspection not allowed for non super users')
 
   {
-    // introspection allowed for developers
     const errors = await validate({
       schema,
       ast,
@@ -124,7 +124,7 @@ await test('introspection', async () => {
       },
       variables: {}
     })
-    assert(errors().length === 0)
+    assert.ok(errors.length === 0, 'introspection allowed for super user')
   }
 
   process.env.IS_OFFLINE = '1'
@@ -139,8 +139,7 @@ await test('introspection', async () => {
       },
       variables: {}
     })
-    // introspection allowed when offline
-    assert(errors.length === 0)
+    assert.ok(errors.length === 0, 'introspection allowed when offline')
   }
 })
 
@@ -163,7 +162,7 @@ await test('validate invalid fields in query', async () => {
     variables: {}
   })
 
-  assert(errors.length > 0)
+  assert.ok(errors.length > 0)
 })
 
 await test('validate simple subscription', async () => {

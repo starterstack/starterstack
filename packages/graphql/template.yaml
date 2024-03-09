@@ -111,6 +111,10 @@ Metadata:
         keep: 3
       script:
         hooks:
+          pre:build:
+            - command: node
+              args:
+                - value: --test
           post:deploy:
             - command: ../tag-cloudwatch-alarms.sh
               args:
