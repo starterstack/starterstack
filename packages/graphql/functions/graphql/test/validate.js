@@ -119,7 +119,7 @@ await test('introspection', async () => {
       schema,
       ast,
       context: {
-        roles: ['developer'],
+        roles: ['super'],
         transport: 'http:'
       },
       variables: {}

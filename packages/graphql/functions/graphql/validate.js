@@ -15,7 +15,7 @@ export default async function customValidate({
   variables
 }) {
   const noIntrospection =
-    !context.roles?.includes('developer') && !process.env.IS_OFFLINE
+    !context.roles?.includes('super') && !process.env.IS_OFFLINE
 
   const validationQueue = []
 
