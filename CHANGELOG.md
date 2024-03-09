@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.0.20](https://github.com/starterstack/starterstack/compare/v0.0.19...v0.0.20) (2024-03-09)
+
+
+### Bug Fixes
+
+* **graphql tests:** npm install ([c9a7743](https://github.com/starterstack/starterstack/commit/c9a7743b85d58aa91fbfc8739d4c3cd9df030b60))
+* **graphql:** run tests post build ([eea2785](https://github.com/starterstack/starterstack/commit/eea2785ef013d44fec999d696a9d14fa649161b9))
+* proxy user with tests ([0dc81a3](https://github.com/starterstack/starterstack/commit/0dc81a3e11b58c6b7bbc1932080561a0861784d6))
+
 ## [0.0.19](https://github.com/starterstack/starterstack/compare/v0.0.18...v0.0.19) (2024-03-09)
 
 
