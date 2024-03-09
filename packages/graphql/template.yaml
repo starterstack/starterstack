@@ -112,6 +112,10 @@ Metadata:
       script:
         hooks:
           post:build:
+            - command: npm
+              args:
+                - value: ci
+                - value: --prefix functions/graphql
             - command: node
               args:
                 - value: --test
