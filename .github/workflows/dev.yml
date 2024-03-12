@@ -7,6 +7,16 @@ concurrency:
 on:
   workflow_dispatch:
     inputs:
+      stage:
+        description: 'stage'
+        default: 'dev'
+      account:
+        type: choice
+        description: 'account'
+        default: 'dev'
+        options:
+          - dev
+          - feature
       sha:
         description: 'commit sha'
     branches:
@@ -22,6 +32,6 @@ jobs:
     uses: 'starterstack/starterstack/.github/workflows/main.yml@main'
     secrets: 'inherit'
     with:
-      account: 'dev'
-      stage: 'dev'
+      account: ${{ github.event.inputs.account || 'dev' }}
+      stage: ${{ github.event.inputs.stage || 'dev' }}
       sha: ${{ github.event.inputs.sha || github.sha }}
