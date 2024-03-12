@@ -155,8 +155,7 @@ jobs:
         remove-parallel-remaining,
         remove-parallel-frontend,
         remove-parallel-backend,
-        remove-parallel-stage,
-        cleanup-environment
+        remove-parallel-stage
       ]
     if: ${{ always() && !failure() && !cancelled() && needs.check-github-env-exists.outputs.result == 'true' }}
     uses: 'starterstack/starterstack/.github/workflows/sls-mentor.yml@main'
