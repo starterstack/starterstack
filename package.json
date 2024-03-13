@@ -105,7 +105,7 @@
     "@aws-sdk/signature-v4-multi-region": "3.502.0",
     "@aws-sdk/util-dynamodb": "3.490.0",
     "@commitlint/cli": "19.0.3",
-    "@commitlint/config-conventional": "19.0.3",
+    "@commitlint/config-conventional": "19.1.0",
     "@sindresorhus/tsconfig": "5.0.0",
     "@starterstack/sam-expand": "0.2.12",
     "@types/aws-lambda": "8.10.131",
