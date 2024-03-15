@@ -159,6 +159,8 @@ export default function createFetchData(urlPrefix, fetch, crypto) {
           if (state.files.length === 0) {
             state[Symbol.for('refresh')] = 5
           }
+        } else {
+          setTimeout(() => window.location.reload(), 5000)
         }
       }
     } else if (url.startsWith('/pingpong')) {
