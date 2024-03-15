@@ -88,6 +88,26 @@ Metadata:
         keep: 3
       script:
         hooks:
+          pre:sync:
+            - command: 'npm'
+              args:
+                - value: 'run'
+                - value: 'build'
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: region
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: sentryDSN
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: sentryEnvironment
+                - file:
+                    location: ../git.mjs
+                    exportName: commit
+                - file:
+                    location: ../stack-stage-config.mjs
+                    exportName: stage
           pre:build:
             - command: 'npm'
               args:

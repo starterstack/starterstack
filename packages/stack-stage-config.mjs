@@ -119,14 +119,17 @@ export const lifecycle = async function stackStageConfig({
 
   if (lifecycle === 'pre:expand') {
     const stackStageConfig = await getStackStageConfig(template)
-    if (command === 'build' && stackStageConfig.addMappings) {
+    if (
+      (command === 'build' || command === 'sync') &&
+      stackStageConfig.addMappings
+    ) {
       template.Mappings ||= {}
       template.Mappings.AWSAccounts = settings.awsAccounts
     }
     let stage = argvReader('Stage', { parameter: true })
     let region = argvReader('region')
 
-    if (['build', 'deploy', 'delete', 'validate'].includes(command)) {
+    if (['sync', 'build', 'deploy', 'delete', 'validate'].includes(command)) {
       if (!stage && process.env.STAGE) {
         stage = process.env.STAGE
       }
@@ -159,7 +162,9 @@ export const lifecycle = async function stackStageConfig({
 
       if (regionValue) {
         region = regionValue
-        if (['build', 'deploy', 'delete', 'validate'].includes(command)) {
+        if (
+          ['sync', 'build', 'deploy', 'delete', 'validate'].includes(command)
+        ) {
           argv.push('--region', regionValue)
         }
       }
@@ -169,7 +174,7 @@ export const lifecycle = async function stackStageConfig({
       throw new TypeError('missing region')
     }
 
-    if (['deploy', 'delete'].includes(command)) {
+    if (['sync', 'deploy', 'delete'].includes(command)) {
       argv.push('--stack-name', `'${config.stackName}'`)
       if (config.s3DeploymentBucket[region]) {
         argv.push(
@@ -196,7 +201,7 @@ export const lifecycle = async function stackStageConfig({
         `Name='${config.stackName}'`
       )
     }
-    if (['build', 'deploy'].includes(command)) {
+    if (['sync', 'build', 'deploy'].includes(command)) {
       addParameter({ argv, name: 'Stack', value: settings.stackName })
       addParameter({ argv, name: 'Stage', value: stage })
     }
