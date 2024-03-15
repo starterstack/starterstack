@@ -9,6 +9,7 @@ function sam() {
   local package_lock
   local remove
   local lint_only
+  local deploy
 
   if [[ "${3:?}" == "true" ]]; then
     package_lock=1
@@ -59,9 +60,14 @@ function sam() {
       --region "${region:?}"
 
     if [[ ${lint_only?} -eq 0 ]]; then
+      if [[ "${stage:?}" =~ "^pr-" ]]; then
+        deploy="sync"
+      else
+        deploy="deploy"
+      fi
       node \
         "$(dirname "${source:?}")/../node_modules/.bin/sam-expand" \
-        deploy \
+        ${deploy:?} \
         --parameter-overrides Stage="${stage:?}" \
         --region "${region:?}"
     fi
