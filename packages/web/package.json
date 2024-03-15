@@ -19,7 +19,7 @@
     "web-vitals": "3.5.2"
   },
   "scripts": {
-    "start": "cross-env PORT=5001 IS_OFFLINE=1 react-app-rewired start",
+    "start": "cross-env BROWSER=none react-app-rewired start",
     "deploy": "bash ./scripts/deploy.sh",
     "build": "bash scripts/build.sh",
     "test": "react-app-rewired test",
@@ -65,9 +65,6 @@
     "cross-env": "7.0.3",
     "csp-html-webpack-plugin": "5.1.0",
     "customize-cra": "1.0.0",
-    "http-proxy-middleware": "2.0.6",
-    "jsonwebtoken": "9.0.2",
-    "mime": "4.0.1",
     "react-app-rewired": "2.2.1"
   },
   "description": "This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).",

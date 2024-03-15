@@ -1,7 +1,9 @@
 import process from 'node:process'
 import { promisify } from 'node:util'
 import inquirer from 'inquirer'
-import { createRequire } from 'node:module'
+import { fileURLToPath } from 'node:url'
+import path from 'node:path'
+import { readFile } from 'node:fs/promises'
 import * as OTPAuth from 'otpauth'
 import qrcodeTerminal from 'qrcode-terminal'
 import { createProxyMiddleware } from 'http-proxy-middleware'
@@ -9,17 +11,26 @@ import express from 'express'
 import { exec } from 'node:child_process'
 import ora from 'ora'
 
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
+
 /* eslint-disable unicorn/no-process-exit */
 
-const require = createRequire(import.meta.url)
-
-const {
-  stackName,
-  stages,
-  stackRootDomain
-} = require('../packages/settings.json')
+/** @type {{ stackName: string, stages: string[], stackRootDomain: string }} */
+const { stackName, stages, stackRootDomain } = JSON.parse(
+  await readFile(
+    path.join(__dirname, '..', 'packages', 'settings.json'),
+    'utf8'
+  )
+)
 
 const args = process.argv.slice(2)
+
+if (args.at(0) === '--help') {
+  console.log(
+    'usage proxy <stage> <localweb true|false> <anonymous true|false>'
+  )
+  process.exit(0)
+}
 
 const { stage } =
   args.length === 0
@@ -49,6 +60,18 @@ const { pr } =
 
 const stageRootUrl = getStageRootUrl(stage)
 
+const { localWeb } =
+  args.length === 0
+    ? await inquirer.prompt({
+        type: 'confirm',
+        name: 'localWeb',
+        default: false,
+        message: 'proxy local web'
+      })
+    : {
+        localWeb: args[1] === 'true'
+      }
+
 const url =
   stage === 'feature'
     ? stageRootUrl.replace(/(feature)/, `pr-${pr.replace(/^pr-/i, '')}.$1`)
@@ -62,7 +85,7 @@ const { anonymous } =
         name: 'anonymous',
         default: false
       })
-    : { anonymous: args[1] === 'true' }
+    : { anonymous: args[2] === 'true' }
 
 const app = express()
 
@@ -81,7 +104,10 @@ app.use(function cors(req, res, next) {
 app.use(
   createProxyMiddleware(
     function filter(pathname) {
-      return !pathname.startsWith('/api/ws')
+      return (
+        (!localWeb || pathname.startsWith('/api')) &&
+        !pathname.startsWith('/api/ws')
+      )
     },
     {
       target: url,
@@ -94,6 +120,20 @@ app.use(
     }
   )
 )
+
+if (localWeb) {
+  app.use(
+    createProxyMiddleware(
+      function filter(pathname) {
+        return !pathname.startsWith('/api')
+      },
+      {
+        target: 'http://localhost:3000',
+        changeOrigin: true
+      }
+    )
+  )
+}
 
 app.use(
   createProxyMiddleware(
@@ -119,11 +159,11 @@ app.use(
 )
 
 await new Promise((resolve, reject) => {
-  app.listen(5001, () => resolve()).on('error', reject)
+  app.listen(5001, () => resolve(true)).on('error', reject)
 })
 
-let token
-let email
+/** @type {string} */ let token
+/** @type {string} */ let email
 
 if (!anonymous) {
   const { tokenValue } = await inquirer.prompt({
@@ -180,7 +220,7 @@ if (!anonymous) {
 
       if (!loginUrl) process.exit(0)
 
-      let location
+      /** @type {string} */ let location
 
       {
         const res = await fetch(loginUrl, {
