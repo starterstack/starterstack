@@ -15,20 +15,13 @@ function build() {
   rm -rf build
   rm -rf .built
 
-  npm install \
-    --no-save \
-    --audit false \
-    --fund false \
-    --loglevel=error \
-    --ignore-scripts
-
   INLINE_RUNTIME_CHUNK=false \
     STACK_REGION="${1:?}" \
     REACT_APP_SENTRY_DSN="${2:-}" \
     REACT_APP_SENTRY_ENVIRONMENT="${3:-}" \
     REACT_APP_GIT_COMMIT="${4:-}" \
     REACT_APP_STAGE="${5:-}" \
-    react-app-rewired build
+    npx react-app-rewired build
   echo "${build_hash:?}" >.ssr_build_hash
   touch .built
 }

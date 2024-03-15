@@ -60,6 +60,7 @@
     ]
   },
   "devDependencies": {
+    "@babel/plugin-proposal-private-property-in-object": "7.21.11",
     "@sentry/types": "7.107.0",
     "@types/styled-components": "5.1.26",
     "cross-env": "7.0.3",
