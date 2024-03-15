@@ -105,7 +105,7 @@ export const lifecycle = async function stackStageConfig({
   lifecycle,
   log
 }) {
-  if (command === 'remote') {
+  if (command === 'remote' || command === 'local') {
     return
   }
 
