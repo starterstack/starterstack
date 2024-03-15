@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.0.22](https://github.com/starterstack/starterstack/compare/v0.0.21...v0.0.22) (2024-03-15)
+
+
+### Bug Fixes
+
+* add sync lifecycle ([6c61769](https://github.com/starterstack/starterstack/commit/6c617699d57831de549e287f87d662451142bfd8))
+* **github delete stage workflow:** earlier execution of sls-mentor ([3fe8ab0](https://github.com/starterstack/starterstack/commit/3fe8ab08643976dee142985461ffbb010650aea1))
+* **github dev workflow:** account/stage inputs ([177842b](https://github.com/starterstack/starterstack/commit/177842b5fa40e25b1a0a9f2591a2c93a174604fd))
+* **media buckets:** add localhost to CORS ([364afb3](https://github.com/starterstack/starterstack/commit/364afb32e99a26712629f67129a134db971cc666))
+* proxy script ([f9ef8aa](https://github.com/starterstack/starterstack/commit/f9ef8aae6bc879b7a5ee8ac6c5dcbb93ce7e86b1))
+* **web:** build ([99d42e3](https://github.com/starterstack/starterstack/commit/99d42e3d4a60cb0df91aef217e850f6b55eeff17))
+
 ## [0.0.21](https://github.com/starterstack/starterstack/compare/v0.0.20...v0.0.21) (2024-03-09)
 
 
