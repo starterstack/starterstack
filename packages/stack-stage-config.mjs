@@ -105,6 +105,14 @@ export const lifecycle = async function stackStageConfig({
   lifecycle,
   log
 }) {
+  if (command === 'remote') {
+    return
+  }
+
+  if (command === 'list' && argv.length === 1) {
+    return
+  }
+
   if (lifecycle === 'post:build') {
     if (!process.env.CI) {
       const stage = argvReader('Stage', { parameter: true })
@@ -129,7 +137,18 @@ export const lifecycle = async function stackStageConfig({
     let stage = argvReader('Stage', { parameter: true })
     let region = argvReader('region')
 
-    if (['sync', 'build', 'deploy', 'delete', 'validate'].includes(command)) {
+    if (
+      [
+        'sync',
+        'build',
+        'deploy',
+        'delete',
+        'validate',
+        'logs',
+        'traces',
+        'list'
+      ].includes(command)
+    ) {
       if (!stage && process.env.STAGE) {
         stage = process.env.STAGE
       }
@@ -163,7 +182,16 @@ export const lifecycle = async function stackStageConfig({
       if (regionValue) {
         region = regionValue
         if (
-          ['sync', 'build', 'deploy', 'delete', 'validate'].includes(command)
+          [
+            'sync',
+            'build',
+            'deploy',
+            'delete',
+            'validate',
+            'logs',
+            'traces',
+            'list'
+          ].includes(command)
         ) {
           argv.push('--region', regionValue)
         }
@@ -174,18 +202,24 @@ export const lifecycle = async function stackStageConfig({
       throw new TypeError('missing region')
     }
 
-    if (['sync', 'deploy', 'delete'].includes(command)) {
+    if (
+      ['sync', 'deploy', 'delete', 'logs'].includes(command) ||
+      (command === 'list' && argv.includes('stack-outputs'))
+    ) {
       argv.push('--stack-name', `'${config.stackName}'`)
-      if (config.s3DeploymentBucket[region]) {
-        argv.push(
-          '--s3-bucket',
-          `'${config.s3DeploymentBucket[region]}'`,
-          '--s3-prefix',
-          command === 'deploy'
-            ? `'${config.stackName}/${template.Outputs.DeployedCommit.Value}'`
-            : `'${config.stackName}'`
-        )
-      }
+    }
+    if (
+      ['sync', 'deploy', 'delete'].includes(command) &&
+      config.s3DeploymentBucket[region]
+    ) {
+      argv.push(
+        '--s3-bucket',
+        `'${config.s3DeploymentBucket[region]}'`,
+        '--s3-prefix',
+        command === 'deploy'
+          ? `'${config.stackName}/${template.Outputs.DeployedCommit.Value}'`
+          : `'${config.stackName}'`
+      )
     }
     if (command === 'deploy') {
       if (config.snsOpsTopic[region]) {
