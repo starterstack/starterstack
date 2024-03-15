@@ -1,5 +1,21 @@
 # Changelog
 
+## [0.0.22](https://github.com/starterstack/starterstack/compare/v0.0.21...v0.0.22) (2024-03-15)
+
+
+### Bug Fixes
+
+* add sync lifecycle ([6c61769](https://github.com/starterstack/starterstack/commit/6c617699d57831de549e287f87d662451142bfd8))
+* **github delete stage workflow:** earlier execution of sls-mentor ([3fe8ab0](https://github.com/starterstack/starterstack/commit/3fe8ab08643976dee142985461ffbb010650aea1))
+* **github dev workflow:** account/stage inputs ([177842b](https://github.com/starterstack/starterstack/commit/177842b5fa40e25b1a0a9f2591a2c93a174604fd))
+* **media buckets:** add localhost to CORS ([364afb3](https://github.com/starterstack/starterstack/commit/364afb32e99a26712629f67129a134db971cc666))
+* proxy script ([f9ef8aa](https://github.com/starterstack/starterstack/commit/f9ef8aae6bc879b7a5ee8ac6c5dcbb93ce7e86b1))
+* **sam.sh:** use sync for feature stages ([45dca80](https://github.com/starterstack/starterstack/commit/45dca8058cad724cf83c717e37ba4f23b1ee8cef))
+* **stack-stage-config:** added more sam commands ([f0ba7bf](https://github.com/starterstack/starterstack/commit/f0ba7bfdc3437a79730210f3c2f0c92bfba5255d))
+* **stack-stage-config:** ignore local commands ([c8f721a](https://github.com/starterstack/starterstack/commit/c8f721a989f8de6b8855af9f37893cecc280a7e1))
+* **web:** build ([99d42e3](https://github.com/starterstack/starterstack/commit/99d42e3d4a60cb0df91aef217e850f6b55eeff17))
+* **web:** refresh file upload like ssr ([1e47b3c](https://github.com/starterstack/starterstack/commit/1e47b3c25b5084307a0471fe38eb6dccbf804e1a))
+
 ## [0.0.21](https://github.com/starterstack/starterstack/compare/v0.0.20...v0.0.21) (2024-03-09)
 
 
