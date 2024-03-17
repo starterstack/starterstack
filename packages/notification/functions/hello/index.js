@@ -3,6 +3,8 @@ import { SendEmailCommand } from '@aws-sdk/client-sesv2'
 import ses from './ses-v2.js'
 import lambdaHandler from './lambda-handler.js'
 
+const { SES_HELLO_TEMPLATE_EN, SES_EMAIL_FROM } = process.env
+
 export const handler = lambdaHandler(async function helloEvent(
   event,
   context,
@@ -17,9 +19,7 @@ export const handler = lambdaHandler(async function helloEvent(
       new SendEmailCommand({
         Content: {
           Template: {
-            TemplateName: process.env.IS_OFFLINE
-              ? 'SES_HELLO_TEMPLATE_EN'
-              : process.env.SES_HELLO_TEMPLATE_EN,
+            TemplateName: SES_HELLO_TEMPLATE_EN,
             TemplateData: JSON.stringify({
               email,
               team
@@ -27,7 +27,7 @@ export const handler = lambdaHandler(async function helloEvent(
           }
         },
         Destination: { ToAddresses: [email] },
-        FromEmailAddress: process.env.SES_EMAIL_FROM
+        FromEmailAddress: SES_EMAIL_FROM
       }),
       {
         abortSignal

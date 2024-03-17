@@ -100,8 +100,6 @@ await test('introspection', async () => {
     `
   })
 
-  process.env.IS_OFFLINE = ''
-
   const errors = await validate({
     schema,
     ast,
@@ -125,21 +123,6 @@ await test('introspection', async () => {
       variables: {}
     })
     assert.ok(errors.length === 0, 'introspection allowed for super user')
-  }
-
-  process.env.IS_OFFLINE = '1'
-
-  {
-    const errors = await validate({
-      schema,
-      ast,
-      context: {
-        roles: [],
-        transport: 'http:'
-      },
-      variables: {}
-    })
-    assert.ok(errors.length === 0, 'introspection allowed when offline')
   }
 })
 

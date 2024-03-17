@@ -49,9 +49,6 @@ export default function createFetchData(urlPrefix, fetch, crypto) {
       const res = await fetch(`${urlPrefix}/api/graphql`, {
         headers: {
           'Content-Type': 'application/json',
-          ...(process.env.IS_OFFLINE && {
-            origin: 'http://localhost:3000'
-          }),
           Accept: 'application/json; charset=UTF8'
         },
         signal: AbortSignal.timeout(10000),

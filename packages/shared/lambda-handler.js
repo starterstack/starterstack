@@ -1,7 +1,6 @@
 // @ts-check
 import process from 'node:process'
 import { Buffer } from 'node:buffer'
-import { isMainThread } from 'node:worker_threads'
 
 const LOG_SAMPLE_RATE = 0.05
 
@@ -80,16 +79,14 @@ export default function wrapHandler(handler) {
   return async function lambdaHandler(event, context) {
     // @ts-ignore yes there is a timeout property...
     const abortSignal = AbortSignal.timeout(
-      process.env.IS_OFFLINE && context.getRemainingTimeInMillis() === 0
-        ? 900_000 // local + no timeout, abort in 15 minutes
-        : Math.floor(
-            event?.context?.getRemainingTimeInMillis
-              ? Math.min(
-                  event.context.getRemainingTimeInMillis,
-                  context.getRemainingTimeInMillis() - 50
-                )
-              : context.getRemainingTimeInMillis() - 50
-          )
+      Math.floor(
+        event?.context?.getRemainingTimeInMillis
+          ? Math.min(
+              event.context.getRemainingTimeInMillis,
+              context.getRemainingTimeInMillis() - 50
+            )
+          : context.getRemainingTimeInMillis() - 50
+      )
     )
 
     /** @type {CorrelationMap} */
@@ -126,16 +123,6 @@ export default function wrapHandler(handler) {
       headerParser,
       jsonParse
     })
-
-    // serverless offline can't marshal errors with worker threads
-    if (
-      result?.applicationError &&
-      typeof result?.applicationError?.toJSON === 'function' &&
-      process.env.IS_OFFLINE &&
-      !isMainThread
-    ) {
-      result.applicationError = result.applicationError.toJSON()
-    }
 
     return result
   }
@@ -313,8 +300,6 @@ function jsonParse(text) {
  */
 
 function createLogger(correlationIds) {
-  const offline = process.env.IS_OFFLINE
-
   const awsRequestId = correlationIds?.[prefix.awsRequestId]
   const apiRequestId = correlationIds?.[prefix.apiRequestId]
 
@@ -339,12 +324,15 @@ function createLogger(correlationIds) {
         typeof messageOrData === 'object' && !isError(messageOrData)
           ? {
               ...messageOrData,
-              ...(message &&
-                (isError(message)
-                  ? {
-                      ...serializeError(message)
-                    }
-                  : { msg: message }))
+              .../** @type {object} */
+              (
+                message &&
+                  (isError(message)
+                    ? {
+                        ...serializeError(message)
+                      }
+                    : { msg: message })
+              )
             }
           : {
               ...(isError(messageOrData)
@@ -365,36 +353,12 @@ function createLogger(correlationIds) {
         ...correlationIds,
         level: logLevelLabel,
         time: now,
-        ...(offline && { pid: process.pid }),
         ...data
       }
 
-      if (offline) {
-        const colorPrefix = `\u001B[${
-          {
-            50: 91,
-            30: 94,
-            40: 93,
-            20: 1
-          }[level]
-        }m`
-
-        const colorSuffix = '\u001B[0m'
-
-        console[logLevelLabel](
-          `${new Date(
-            now
-          ).toISOString()}\t${colorPrefix}${logLevelLabel.toLocaleUpperCase()}${colorSuffix}\t${JSON.stringify(
-            logMessage,
-            undefined,
-            2
-          )}`
-        )
-      } else {
-        const writeStream =
-          process[logLevelLabel === 'error' ? 'stderr' : 'stdout']
-        writeStream.write(JSON.stringify(logMessage) + '\n')
-      }
+      const writeStream =
+        process[logLevelLabel === 'error' ? 'stderr' : 'stdout']
+      writeStream.write(JSON.stringify(logMessage) + '\n')
     }
   }
 

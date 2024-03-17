@@ -30,21 +30,12 @@ export function createApiGatewayManagementApi({
   stage,
   abortSignal
 }) {
-  const endpoint = process.env.IS_OFFLINE
-    ? 'http://localhost:5003'
-    : `https://${domainName}/${stage}`
+  const endpoint = `https://${domainName}/${stage}`
   if (!clients[endpoint]) {
     clients[endpoint] = trace(
       new ApiGatewayManagementApiClient({
         apiVersion: '2018-11-29',
-        endpoint,
-        ...(process.env.IS_OFFLINE && {
-          credentials: {
-            accessKeyId: 'x',
-            secretAccessKey: 'x'
-          },
-          region: 'us-east-1'
-        })
+        endpoint
       })
     )
   }

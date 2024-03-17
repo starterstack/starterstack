@@ -255,11 +255,11 @@ await test('call chain restapi', async () => {
 })
 await test('infinite loop detection', async () => {
   try {
-    process.env.IS_OFFLINE = '1'
-    console.error = (f) => f
+    process.env.LOG_LEVEL = '70'
     await handler(function () {})(
       {
         [prefix.callChain]: 9,
+        [prefix.debugLogEnabled]: false,
         requestContext: {
           requestId: 'requestId'
         }
@@ -274,7 +274,7 @@ await test('infinite loop detection', async () => {
       'Possible infinite recursion detected, invocation is stopped.'
     )
   }
-  delete process.env.IS_OFFLINE
+  delete process.env.LOG_LEVEL
 })
 
 await test('parse headers', async () => {
@@ -458,8 +458,7 @@ await test('abort signal aborted', async () => {
 })
 
 await test('logging', async () => {
-  for (const offline of ['1', undefined]) {
-    const evalCode = `
+  const evalCode = `
      Math.random = () => 0.05
      Date.now = () => 42
      async function run() {
@@ -495,457 +494,229 @@ await test('logging', async () => {
      run()
      `
 
-    const tempFile = path.posix.join(__dirname, crypto.randomUUID()) + '.mjs'
-    await writeFile(tempFile, evalCode)
+  const tempFile = path.posix.join(__dirname, crypto.randomUUID()) + '.mjs'
+  await writeFile(tempFile, evalCode)
 
-    const stdout = []
-    const stderr = []
+  const stdout = []
+  const stderr = []
 
-    const ps = spawn(process.argv[0], [tempFile], {
-      env: {
-        ...process.env,
-        IS_OFFLINE: offline
+  const ps = spawn(process.argv[0], [tempFile], {
+    shell: true
+  })
+
+  ps.stdout.on('data', (chunk) => stdout.push(chunk))
+  ps.stderr.on('data', (chunk) => stderr.push(chunk))
+
+  await once(ps, 'close')
+
+  await unlink(tempFile)
+
+  assert.equal(ps.exitCode, 0)
+
+  const stdoutMessages = ldjson(stdout)
+  const stderrMessages = ldjson(stderr)
+  assert.deepEqual(
+    stdoutMessages,
+
+    [
+      {
+        msg: 'simple debug',
+        awsRequestId: 'awsRequestId',
+        apiRequestId: 'requestId',
+        'x-correlation-id': 'awsRequestId',
+        'x-correlation-api-id': 'requestId',
+        'x-correlation-trace-id': 'Root=<tap test>;Parent=x;Sampled=1',
+        'x-correlation-call-chain-length': 1,
+        'x-correlation-debug-log-enabled': true,
+        'x-correlation-lambda': 'tap tests',
+        'x-correlation-git-commit': 'git commit',
+        'x-correlation-log-stream': 'logGroupName/logStreamName',
+        level: 'debug',
+        time: 0
       },
-      shell: true
-    })
-
-    ps.stdout.on('data', (chunk) => stdout.push(chunk))
-    ps.stderr.on('data', (chunk) => stderr.push(chunk))
-
-    await once(ps, 'close')
-
-    await unlink(tempFile)
-
-    assert.equal(ps.exitCode, 0)
-
-    if (offline) {
-      const stdoutMessages = lines(stdout)
-      const stderrMessages = lines(stderr)
-      assert.deepEqual(
-        stderrMessages,
-
-        [
-          'stripped-time\t\u001B[93mWARN\u001B[0m\t{',
-          '  "msg": "simple warn",',
-          '  "awsRequestId": "awsRequestId",',
-          '  "apiRequestId": "requestId",',
-          '  "x-correlation-id": "awsRequestId",',
-          '  "x-correlation-api-id": "requestId",',
-          '  "x-correlation-trace-id": "Root=<tap test>;Parent=x;Sampled=1",',
-          '  "x-correlation-call-chain-length": 1,',
-          '  "x-correlation-debug-log-enabled": true,',
-          '  "x-correlation-lambda": "tap tests",',
-          '  "x-correlation-git-commit": "git commit",',
-          '  "x-correlation-log-stream": "logGroupName/logStreamName",',
-          '  "level": "warn",',
-          '  "time": 0,',
-          '  "pid": 1',
-          '}',
-          'stripped-time\t\u001B[93mWARN\u001B[0m\t{',
-          '  "msg": "warn",',
-          '  "awsRequestId": "awsRequestId",',
-          '  "apiRequestId": "requestId",',
-          '  "x-correlation-id": "awsRequestId",',
-          '  "x-correlation-api-id": "requestId",',
-          '  "x-correlation-trace-id": "Root=<tap test>;Parent=x;Sampled=1",',
-          '  "x-correlation-call-chain-length": 1,',
-          '  "x-correlation-debug-log-enabled": true,',
-          '  "x-correlation-lambda": "tap tests",',
-          '  "x-correlation-git-commit": "git commit",',
-          '  "x-correlation-log-stream": "logGroupName/logStreamName",',
-          '  "level": "warn",',
-          '  "time": 0,',
-          '  "pid": 1,',
-          '  "object": true',
-          '}',
-          'stripped-time\t\u001B[91mERROR\u001B[0m\t{',
-          '  "msg": "standard error",',
-          '  "awsRequestId": "awsRequestId",',
-          '  "apiRequestId": "requestId",',
-          '  "x-correlation-id": "awsRequestId",',
-          '  "x-correlation-api-id": "requestId",',
-          '  "x-correlation-trace-id": "Root=<tap test>;Parent=x;Sampled=1",',
-          '  "x-correlation-call-chain-length": 1,',
-          '  "x-correlation-debug-log-enabled": true,',
-          '  "x-correlation-lambda": "tap tests",',
-          '  "x-correlation-git-commit": "git commit",',
-          '  "x-correlation-log-stream": "logGroupName/logStreamName",',
-          '  "level": "error",',
-          '  "time": 0,',
-          '  "pid": 1,',
-          '  "type": "Error",',
-          '  "stack": "striped-stack"',
-          '}',
-          'stripped-time\t\u001B[91mERROR\u001B[0m\t{',
-          '  "msg": "standard error",',
-          '  "awsRequestId": "awsRequestId",',
-          '  "apiRequestId": "requestId",',
-          '  "x-correlation-id": "awsRequestId",',
-          '  "x-correlation-api-id": "requestId",',
-          '  "x-correlation-trace-id": "Root=<tap test>;Parent=x;Sampled=1",',
-          '  "x-correlation-call-chain-length": 1,',
-          '  "x-correlation-debug-log-enabled": true,',
-          '  "x-correlation-lambda": "tap tests",',
-          '  "x-correlation-git-commit": "git commit",',
-          '  "x-correlation-log-stream": "logGroupName/logStreamName",',
-          '  "level": "error",',
-          '  "time": 0,',
-          '  "pid": 1,',
-          '  "extra": "context",',
-          '  "type": "Error",',
-          '  "stack": "striped-stack"',
-          '}',
-          'stripped-time\t\u001B[91mERROR\u001B[0m\t{',
-          '  "msg": "application error",',
-          '  "awsRequestId": "awsRequestId",',
-          '  "apiRequestId": "requestId",',
-          '  "x-correlation-id": "awsRequestId",',
-          '  "x-correlation-api-id": "requestId",',
-          '  "x-correlation-trace-id": "Root=<tap test>;Parent=x;Sampled=1",',
-          '  "x-correlation-call-chain-length": 1,',
-          '  "x-correlation-debug-log-enabled": true,',
-          '  "x-correlation-lambda": "tap tests",',
-          '  "x-correlation-git-commit": "git commit",',
-          '  "x-correlation-log-stream": "logGroupName/logStreamName",',
-          '  "level": "error",',
-          '  "time": 0,',
-          '  "pid": 1,',
-          '  "type": "ApplicationError",',
-          '  "stack": "striped-stack"',
-          '}',
-          'stripped-time\t\u001B[91mERROR\u001B[0m\t{',
-          '  "msg": "application error",',
-          '  "awsRequestId": "awsRequestId",',
-          '  "apiRequestId": "requestId",',
-          '  "x-correlation-id": "awsRequestId",',
-          '  "x-correlation-api-id": "requestId",',
-          '  "x-correlation-trace-id": "Root=<tap test>;Parent=x;Sampled=1",',
-          '  "x-correlation-call-chain-length": 1,',
-          '  "x-correlation-debug-log-enabled": true,',
-          '  "x-correlation-lambda": "tap tests",',
-          '  "x-correlation-git-commit": "git commit",',
-          '  "x-correlation-log-stream": "logGroupName/logStreamName",',
-          '  "level": "error",',
-          '  "time": 0,',
-          '  "pid": 1,',
-          '  "extra": "context",',
-          '  "type": "ApplicationError",',
-          '  "stack": "striped-stack"',
-          '}',
-          'stripped-time\t\u001B[91mERROR\u001B[0m\t{',
-          '  "msg": "just a string",',
-          '  "awsRequestId": "awsRequestId",',
-          '  "apiRequestId": "requestId",',
-          '  "x-correlation-id": "awsRequestId",',
-          '  "x-correlation-api-id": "requestId",',
-          '  "x-correlation-trace-id": "Root=<tap test>;Parent=x;Sampled=1",',
-          '  "x-correlation-call-chain-length": 1,',
-          '  "x-correlation-debug-log-enabled": true,',
-          '  "x-correlation-lambda": "tap tests",',
-          '  "x-correlation-git-commit": "git commit",',
-          '  "x-correlation-log-stream": "logGroupName/logStreamName",',
-          '  "level": "error",',
-          '  "time": 0,',
-          '  "pid": 1',
-          '}',
-          'stripped-time\t\u001B[91mERROR\u001B[0m\t{',
-          '  "msg": "string with object",',
-          '  "awsRequestId": "awsRequestId",',
-          '  "apiRequestId": "requestId",',
-          '  "x-correlation-id": "awsRequestId",',
-          '  "x-correlation-api-id": "requestId",',
-          '  "x-correlation-trace-id": "Root=<tap test>;Parent=x;Sampled=1",',
-          '  "x-correlation-call-chain-length": 1,',
-          '  "x-correlation-debug-log-enabled": true,',
-          '  "x-correlation-lambda": "tap tests",',
-          '  "x-correlation-git-commit": "git commit",',
-          '  "x-correlation-log-stream": "logGroupName/logStreamName",',
-          '  "level": "error",',
-          '  "time": 0,',
-          '  "pid": 1,',
-          '  "object": true',
-          '}'
-        ]
-      )
-      assert.deepEqual(
-        stdoutMessages,
-
-        [
-          'stripped-time\t\u001B[1mDEBUG\u001B[0m\t{',
-          '  "msg": "simple debug",',
-          '  "awsRequestId": "awsRequestId",',
-          '  "apiRequestId": "requestId",',
-          '  "x-correlation-id": "awsRequestId",',
-          '  "x-correlation-api-id": "requestId",',
-          '  "x-correlation-trace-id": "Root=<tap test>;Parent=x;Sampled=1",',
-          '  "x-correlation-call-chain-length": 1,',
-          '  "x-correlation-debug-log-enabled": true,',
-          '  "x-correlation-lambda": "tap tests",',
-          '  "x-correlation-git-commit": "git commit",',
-          '  "x-correlation-log-stream": "logGroupName/logStreamName",',
-          '  "level": "debug",',
-          '  "time": 0,',
-          '  "pid": 1',
-          '}',
-          'stripped-time\t\u001B[1mDEBUG\u001B[0m\t{',
-          '  "msg": "debug",',
-          '  "awsRequestId": "awsRequestId",',
-          '  "apiRequestId": "requestId",',
-          '  "x-correlation-id": "awsRequestId",',
-          '  "x-correlation-api-id": "requestId",',
-          '  "x-correlation-trace-id": "Root=<tap test>;Parent=x;Sampled=1",',
-          '  "x-correlation-call-chain-length": 1,',
-          '  "x-correlation-debug-log-enabled": true,',
-          '  "x-correlation-lambda": "tap tests",',
-          '  "x-correlation-git-commit": "git commit",',
-          '  "x-correlation-log-stream": "logGroupName/logStreamName",',
-          '  "level": "debug",',
-          '  "time": 0,',
-          '  "pid": 1,',
-          '  "object": true',
-          '}',
-          'stripped-time\t\u001B[94mINFO\u001B[0m\t{',
-          '  "msg": "simple info",',
-          '  "awsRequestId": "awsRequestId",',
-          '  "apiRequestId": "requestId",',
-          '  "x-correlation-id": "awsRequestId",',
-          '  "x-correlation-api-id": "requestId",',
-          '  "x-correlation-trace-id": "Root=<tap test>;Parent=x;Sampled=1",',
-          '  "x-correlation-call-chain-length": 1,',
-          '  "x-correlation-debug-log-enabled": true,',
-          '  "x-correlation-lambda": "tap tests",',
-          '  "x-correlation-git-commit": "git commit",',
-          '  "x-correlation-log-stream": "logGroupName/logStreamName",',
-          '  "level": "info",',
-          '  "time": 0,',
-          '  "pid": 1',
-          '}',
-          'stripped-time\t\u001B[94mINFO\u001B[0m\t{',
-          '  "msg": "info",',
-          '  "awsRequestId": "awsRequestId",',
-          '  "apiRequestId": "requestId",',
-          '  "x-correlation-id": "awsRequestId",',
-          '  "x-correlation-api-id": "requestId",',
-          '  "x-correlation-trace-id": "Root=<tap test>;Parent=x;Sampled=1",',
-          '  "x-correlation-call-chain-length": 1,',
-          '  "x-correlation-debug-log-enabled": true,',
-          '  "x-correlation-lambda": "tap tests",',
-          '  "x-correlation-git-commit": "git commit",',
-          '  "x-correlation-log-stream": "logGroupName/logStreamName",',
-          '  "level": "info",',
-          '  "time": 0,',
-          '  "pid": 1,',
-          '  "object": true',
-          '}'
-        ]
-      )
-    } else {
-      const stdoutMessages = ldjson(stdout)
-      const stderrMessages = ldjson(stderr)
-      assert.deepEqual(
-        stdoutMessages,
-
-        [
-          {
-            msg: 'simple debug',
-            awsRequestId: 'awsRequestId',
-            apiRequestId: 'requestId',
-            'x-correlation-id': 'awsRequestId',
-            'x-correlation-api-id': 'requestId',
-            'x-correlation-trace-id': 'Root=<tap test>;Parent=x;Sampled=1',
-            'x-correlation-call-chain-length': 1,
-            'x-correlation-debug-log-enabled': true,
-            'x-correlation-lambda': 'tap tests',
-            'x-correlation-git-commit': 'git commit',
-            'x-correlation-log-stream': 'logGroupName/logStreamName',
-            level: 'debug',
-            time: 0
-          },
-          {
-            msg: 'debug',
-            awsRequestId: 'awsRequestId',
-            apiRequestId: 'requestId',
-            'x-correlation-id': 'awsRequestId',
-            'x-correlation-api-id': 'requestId',
-            'x-correlation-trace-id': 'Root=<tap test>;Parent=x;Sampled=1',
-            'x-correlation-call-chain-length': 1,
-            'x-correlation-debug-log-enabled': true,
-            'x-correlation-lambda': 'tap tests',
-            'x-correlation-git-commit': 'git commit',
-            'x-correlation-log-stream': 'logGroupName/logStreamName',
-            level: 'debug',
-            time: 0,
-            object: true
-          },
-          {
-            msg: 'simple info',
-            awsRequestId: 'awsRequestId',
-            apiRequestId: 'requestId',
-            'x-correlation-id': 'awsRequestId',
-            'x-correlation-api-id': 'requestId',
-            'x-correlation-trace-id': 'Root=<tap test>;Parent=x;Sampled=1',
-            'x-correlation-call-chain-length': 1,
-            'x-correlation-debug-log-enabled': true,
-            'x-correlation-lambda': 'tap tests',
-            'x-correlation-git-commit': 'git commit',
-            'x-correlation-log-stream': 'logGroupName/logStreamName',
-            level: 'info',
-            time: 0
-          },
-          {
-            msg: 'info',
-            awsRequestId: 'awsRequestId',
-            apiRequestId: 'requestId',
-            'x-correlation-id': 'awsRequestId',
-            'x-correlation-api-id': 'requestId',
-            'x-correlation-trace-id': 'Root=<tap test>;Parent=x;Sampled=1',
-            'x-correlation-call-chain-length': 1,
-            'x-correlation-debug-log-enabled': true,
-            'x-correlation-lambda': 'tap tests',
-            'x-correlation-git-commit': 'git commit',
-            'x-correlation-log-stream': 'logGroupName/logStreamName',
-            level: 'info',
-            time: 0,
-            object: true
-          },
-          {
-            msg: 'simple warn',
-            awsRequestId: 'awsRequestId',
-            apiRequestId: 'requestId',
-            'x-correlation-id': 'awsRequestId',
-            'x-correlation-api-id': 'requestId',
-            'x-correlation-trace-id': 'Root=<tap test>;Parent=x;Sampled=1',
-            'x-correlation-call-chain-length': 1,
-            'x-correlation-debug-log-enabled': true,
-            'x-correlation-lambda': 'tap tests',
-            'x-correlation-git-commit': 'git commit',
-            'x-correlation-log-stream': 'logGroupName/logStreamName',
-            level: 'warn',
-            time: 0
-          },
-          {
-            msg: 'warn',
-            awsRequestId: 'awsRequestId',
-            apiRequestId: 'requestId',
-            'x-correlation-id': 'awsRequestId',
-            'x-correlation-api-id': 'requestId',
-            'x-correlation-trace-id': 'Root=<tap test>;Parent=x;Sampled=1',
-            'x-correlation-call-chain-length': 1,
-            'x-correlation-debug-log-enabled': true,
-            'x-correlation-lambda': 'tap tests',
-            'x-correlation-git-commit': 'git commit',
-            'x-correlation-log-stream': 'logGroupName/logStreamName',
-            level: 'warn',
-            time: 0,
-            object: true
-          }
-        ]
-      )
-      assert.deepEqual(stderrMessages, [
-        {
-          msg: 'standard error',
-          awsRequestId: 'awsRequestId',
-          apiRequestId: 'requestId',
-          'x-correlation-id': 'awsRequestId',
-          'x-correlation-api-id': 'requestId',
-          'x-correlation-trace-id': 'Root=<tap test>;Parent=x;Sampled=1',
-          'x-correlation-call-chain-length': 1,
-          'x-correlation-debug-log-enabled': true,
-          'x-correlation-lambda': 'tap tests',
-          'x-correlation-git-commit': 'git commit',
-          'x-correlation-log-stream': 'logGroupName/logStreamName',
-          level: 'error',
-          time: 0,
-          type: 'Error',
-          stack: 'striped-stack'
-        },
-        {
-          msg: 'standard error',
-          awsRequestId: 'awsRequestId',
-          apiRequestId: 'requestId',
-          'x-correlation-id': 'awsRequestId',
-          'x-correlation-api-id': 'requestId',
-          'x-correlation-trace-id': 'Root=<tap test>;Parent=x;Sampled=1',
-          'x-correlation-call-chain-length': 1,
-          'x-correlation-debug-log-enabled': true,
-          'x-correlation-lambda': 'tap tests',
-          'x-correlation-git-commit': 'git commit',
-          'x-correlation-log-stream': 'logGroupName/logStreamName',
-          level: 'error',
-          time: 0,
-          extra: 'context',
-          type: 'Error',
-          stack: 'striped-stack'
-        },
-        {
-          msg: 'application error',
-          awsRequestId: 'awsRequestId',
-          apiRequestId: 'requestId',
-          'x-correlation-id': 'awsRequestId',
-          'x-correlation-api-id': 'requestId',
-          'x-correlation-trace-id': 'Root=<tap test>;Parent=x;Sampled=1',
-          'x-correlation-call-chain-length': 1,
-          'x-correlation-debug-log-enabled': true,
-          'x-correlation-lambda': 'tap tests',
-          'x-correlation-git-commit': 'git commit',
-          'x-correlation-log-stream': 'logGroupName/logStreamName',
-          level: 'error',
-          time: 0,
-          type: 'ApplicationError',
-          stack: 'striped-stack'
-        },
-        {
-          msg: 'application error',
-          awsRequestId: 'awsRequestId',
-          apiRequestId: 'requestId',
-          'x-correlation-id': 'awsRequestId',
-          'x-correlation-api-id': 'requestId',
-          'x-correlation-trace-id': 'Root=<tap test>;Parent=x;Sampled=1',
-          'x-correlation-call-chain-length': 1,
-          'x-correlation-debug-log-enabled': true,
-          'x-correlation-lambda': 'tap tests',
-          'x-correlation-git-commit': 'git commit',
-          'x-correlation-log-stream': 'logGroupName/logStreamName',
-          level: 'error',
-          time: 0,
-          extra: 'context',
-          type: 'ApplicationError',
-          stack: 'striped-stack'
-        },
-        {
-          msg: 'just a string',
-          awsRequestId: 'awsRequestId',
-          apiRequestId: 'requestId',
-          'x-correlation-id': 'awsRequestId',
-          'x-correlation-api-id': 'requestId',
-          'x-correlation-trace-id': 'Root=<tap test>;Parent=x;Sampled=1',
-          'x-correlation-call-chain-length': 1,
-          'x-correlation-debug-log-enabled': true,
-          'x-correlation-lambda': 'tap tests',
-          'x-correlation-git-commit': 'git commit',
-          'x-correlation-log-stream': 'logGroupName/logStreamName',
-          level: 'error',
-          time: 0
-        },
-        {
-          msg: 'string with object',
-          awsRequestId: 'awsRequestId',
-          apiRequestId: 'requestId',
-          'x-correlation-id': 'awsRequestId',
-          'x-correlation-api-id': 'requestId',
-          'x-correlation-trace-id': 'Root=<tap test>;Parent=x;Sampled=1',
-          'x-correlation-call-chain-length': 1,
-          'x-correlation-debug-log-enabled': true,
-          'x-correlation-lambda': 'tap tests',
-          'x-correlation-git-commit': 'git commit',
-          'x-correlation-log-stream': 'logGroupName/logStreamName',
-          level: 'error',
-          time: 0,
-          object: true
-        }
-      ])
+      {
+        msg: 'debug',
+        awsRequestId: 'awsRequestId',
+        apiRequestId: 'requestId',
+        'x-correlation-id': 'awsRequestId',
+        'x-correlation-api-id': 'requestId',
+        'x-correlation-trace-id': 'Root=<tap test>;Parent=x;Sampled=1',
+        'x-correlation-call-chain-length': 1,
+        'x-correlation-debug-log-enabled': true,
+        'x-correlation-lambda': 'tap tests',
+        'x-correlation-git-commit': 'git commit',
+        'x-correlation-log-stream': 'logGroupName/logStreamName',
+        level: 'debug',
+        time: 0,
+        object: true
+      },
+      {
+        msg: 'simple info',
+        awsRequestId: 'awsRequestId',
+        apiRequestId: 'requestId',
+        'x-correlation-id': 'awsRequestId',
+        'x-correlation-api-id': 'requestId',
+        'x-correlation-trace-id': 'Root=<tap test>;Parent=x;Sampled=1',
+        'x-correlation-call-chain-length': 1,
+        'x-correlation-debug-log-enabled': true,
+        'x-correlation-lambda': 'tap tests',
+        'x-correlation-git-commit': 'git commit',
+        'x-correlation-log-stream': 'logGroupName/logStreamName',
+        level: 'info',
+        time: 0
+      },
+      {
+        msg: 'info',
+        awsRequestId: 'awsRequestId',
+        apiRequestId: 'requestId',
+        'x-correlation-id': 'awsRequestId',
+        'x-correlation-api-id': 'requestId',
+        'x-correlation-trace-id': 'Root=<tap test>;Parent=x;Sampled=1',
+        'x-correlation-call-chain-length': 1,
+        'x-correlation-debug-log-enabled': true,
+        'x-correlation-lambda': 'tap tests',
+        'x-correlation-git-commit': 'git commit',
+        'x-correlation-log-stream': 'logGroupName/logStreamName',
+        level: 'info',
+        time: 0,
+        object: true
+      },
+      {
+        msg: 'simple warn',
+        awsRequestId: 'awsRequestId',
+        apiRequestId: 'requestId',
+        'x-correlation-id': 'awsRequestId',
+        'x-correlation-api-id': 'requestId',
+        'x-correlation-trace-id': 'Root=<tap test>;Parent=x;Sampled=1',
+        'x-correlation-call-chain-length': 1,
+        'x-correlation-debug-log-enabled': true,
+        'x-correlation-lambda': 'tap tests',
+        'x-correlation-git-commit': 'git commit',
+        'x-correlation-log-stream': 'logGroupName/logStreamName',
+        level: 'warn',
+        time: 0
+      },
+      {
+        msg: 'warn',
+        awsRequestId: 'awsRequestId',
+        apiRequestId: 'requestId',
+        'x-correlation-id': 'awsRequestId',
+        'x-correlation-api-id': 'requestId',
+        'x-correlation-trace-id': 'Root=<tap test>;Parent=x;Sampled=1',
+        'x-correlation-call-chain-length': 1,
+        'x-correlation-debug-log-enabled': true,
+        'x-correlation-lambda': 'tap tests',
+        'x-correlation-git-commit': 'git commit',
+        'x-correlation-log-stream': 'logGroupName/logStreamName',
+        level: 'warn',
+        time: 0,
+        object: true
+      }
+    ]
+  )
+  assert.deepEqual(stderrMessages, [
+    {
+      msg: 'standard error',
+      awsRequestId: 'awsRequestId',
+      apiRequestId: 'requestId',
+      'x-correlation-id': 'awsRequestId',
+      'x-correlation-api-id': 'requestId',
+      'x-correlation-trace-id': 'Root=<tap test>;Parent=x;Sampled=1',
+      'x-correlation-call-chain-length': 1,
+      'x-correlation-debug-log-enabled': true,
+      'x-correlation-lambda': 'tap tests',
+      'x-correlation-git-commit': 'git commit',
+      'x-correlation-log-stream': 'logGroupName/logStreamName',
+      level: 'error',
+      time: 0,
+      type: 'Error',
+      stack: 'striped-stack'
+    },
+    {
+      msg: 'standard error',
+      awsRequestId: 'awsRequestId',
+      apiRequestId: 'requestId',
+      'x-correlation-id': 'awsRequestId',
+      'x-correlation-api-id': 'requestId',
+      'x-correlation-trace-id': 'Root=<tap test>;Parent=x;Sampled=1',
+      'x-correlation-call-chain-length': 1,
+      'x-correlation-debug-log-enabled': true,
+      'x-correlation-lambda': 'tap tests',
+      'x-correlation-git-commit': 'git commit',
+      'x-correlation-log-stream': 'logGroupName/logStreamName',
+      level: 'error',
+      time: 0,
+      extra: 'context',
+      type: 'Error',
+      stack: 'striped-stack'
+    },
+    {
+      msg: 'application error',
+      awsRequestId: 'awsRequestId',
+      apiRequestId: 'requestId',
+      'x-correlation-id': 'awsRequestId',
+      'x-correlation-api-id': 'requestId',
+      'x-correlation-trace-id': 'Root=<tap test>;Parent=x;Sampled=1',
+      'x-correlation-call-chain-length': 1,
+      'x-correlation-debug-log-enabled': true,
+      'x-correlation-lambda': 'tap tests',
+      'x-correlation-git-commit': 'git commit',
+      'x-correlation-log-stream': 'logGroupName/logStreamName',
+      level: 'error',
+      time: 0,
+      type: 'ApplicationError',
+      stack: 'striped-stack'
+    },
+    {
+      msg: 'application error',
+      awsRequestId: 'awsRequestId',
+      apiRequestId: 'requestId',
+      'x-correlation-id': 'awsRequestId',
+      'x-correlation-api-id': 'requestId',
+      'x-correlation-trace-id': 'Root=<tap test>;Parent=x;Sampled=1',
+      'x-correlation-call-chain-length': 1,
+      'x-correlation-debug-log-enabled': true,
+      'x-correlation-lambda': 'tap tests',
+      'x-correlation-git-commit': 'git commit',
+      'x-correlation-log-stream': 'logGroupName/logStreamName',
+      level: 'error',
+      time: 0,
+      extra: 'context',
+      type: 'ApplicationError',
+      stack: 'striped-stack'
+    },
+    {
+      msg: 'just a string',
+      awsRequestId: 'awsRequestId',
+      apiRequestId: 'requestId',
+      'x-correlation-id': 'awsRequestId',
+      'x-correlation-api-id': 'requestId',
+      'x-correlation-trace-id': 'Root=<tap test>;Parent=x;Sampled=1',
+      'x-correlation-call-chain-length': 1,
+      'x-correlation-debug-log-enabled': true,
+      'x-correlation-lambda': 'tap tests',
+      'x-correlation-git-commit': 'git commit',
+      'x-correlation-log-stream': 'logGroupName/logStreamName',
+      level: 'error',
+      time: 0
+    },
+    {
+      msg: 'string with object',
+      awsRequestId: 'awsRequestId',
+      apiRequestId: 'requestId',
+      'x-correlation-id': 'awsRequestId',
+      'x-correlation-api-id': 'requestId',
+      'x-correlation-trace-id': 'Root=<tap test>;Parent=x;Sampled=1',
+      'x-correlation-call-chain-length': 1,
+      'x-correlation-debug-log-enabled': true,
+      'x-correlation-lambda': 'tap tests',
+      'x-correlation-git-commit': 'git commit',
+      'x-correlation-log-stream': 'logGroupName/logStreamName',
+      level: 'error',
+      time: 0,
+      object: true
     }
-  }
+  ])
 })
 
 function spawn(cmd, arguments_, options) {

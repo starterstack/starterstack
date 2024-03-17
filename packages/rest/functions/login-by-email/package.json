@@ -4,5 +4,8 @@
   "dependencies": {
     "aws-xray-sdk-core": "3.5.2",
     "jsonwebtoken": "9.0.2"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "9.0.6"
   }
 }

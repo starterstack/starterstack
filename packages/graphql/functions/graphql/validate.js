@@ -1,4 +1,3 @@
-import process from 'node:process'
 import ApplicationError from './application-error.js'
 import sanitizeInput from './sanitize-input.js'
 
@@ -14,8 +13,7 @@ export default async function customValidate({
   context,
   variables
 }) {
-  const noIntrospection =
-    !context.roles?.includes('super') && !process.env.IS_OFFLINE
+  const noIntrospection = !context.roles?.includes('super')
 
   const validationQueue = []
 

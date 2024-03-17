@@ -9,6 +9,8 @@ import { fileURLToPath } from 'node:url'
 import lambdaHandler from './lambda-handler.js'
 import FetchData from './fetch-data.mjs'
 
+const { PUBLIC_URL, STAGE_ORIGIN } = process.env
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 const require = createRequire(import.meta.url)
 const buildDirectory = path.join(__dirname, 'build')
@@ -234,7 +236,7 @@ export const handler = lambdaHandler(async function serverlessSideRendering(
                               continue
                             }
                             const prefix =
-                              key === 'href' ? process.env.PUBLIC_URL || '' : ''
+                              key === 'href' ? PUBLIC_URL || '' : ''
                             attributes.push(`${key}="${prefix}${value}"`)
                           }
                           links.push(`<link ${attributes.join(' ')}>`)
@@ -255,9 +257,7 @@ export const handler = lambdaHandler(async function serverlessSideRendering(
       }
     })
 
-    const urlPrefix = process.env.IS_OFFLINE
-      ? 'http://127.0.0.1:5001'
-      : process.env.STAGE_ORIGIN
+    const urlPrefix = STAGE_ORIGIN
 
     const fetchData = FetchData(
       urlPrefix,

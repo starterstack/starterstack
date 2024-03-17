@@ -13,12 +13,11 @@ import s3 from './s3.js'
 import lambdaHandler from './lambda-handler.js'
 import mime from 'mime'
 
-const bucket = process.env.IS_OFFLINE ? 'media' : process.env.S3_MAIL_BUCKET
-const { STACK } = process.env
+const { STACK, S3_MAIL_BUCKET } = process.env
 
 export const handler = lambdaHandler(async function sesReceive(
   event,
-  context,
+  _,
   { log, abortSignal }
 ) {
   log.debug({ event }, 'received')
@@ -30,7 +29,7 @@ export const handler = lambdaHandler(async function sesReceive(
       const parser = new MailParser()
       const { Body: message } = await s3.send(
         new GetObjectCommand({
-          Bucket: bucket,
+          Bucket: S3_MAIL_BUCKET,
           Key: mail.messageId
         }),
         {
@@ -59,7 +58,7 @@ export const handler = lambdaHandler(async function sesReceive(
 
               await s3.send(
                 new PutObjectCommand({
-                  Bucket: bucket,
+                  Bucket: S3_MAIL_BUCKET,
                   Key: `${mail.messageId}/${data.filename}`,
                   Body: Buffer.concat(attachment),
                   ...(contentType && {
@@ -75,7 +74,7 @@ export const handler = lambdaHandler(async function sesReceive(
 
               await s3.send(
                 new PutObjectTaggingCommand({
-                  Bucket: bucket,
+                  Bucket: S3_MAIL_BUCKET,
                   Key: `${mail.messageId}/${data.filename}`,
                   Tagging: {
                     TagSet: [

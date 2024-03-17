@@ -56,17 +56,6 @@ updates:
       - dependency-name: 'aws-xray-sdk-core'
       - dependency-name: '@types/*'
   - package-ecosystem: npm
-    directory: 'packages/cdn/functions/request-auth'
-    schedule:
-      interval: daily
-    open-pull-requests-limit: 10
-    labels:
-      - dependencies
-    ignore:
-      - dependency-name: '@aws-sdk/*'
-      - dependency-name: 'aws-xray-sdk-core'
-      - dependency-name: '@types/*'
-  - package-ecosystem: npm
     directory: 'packages/cdn/functions/s3-replicate'
     schedule:
       interval: daily

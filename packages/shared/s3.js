@@ -5,53 +5,7 @@ import { S3Client } from '@aws-sdk/client-s3'
 import AWSXRay from 'aws-xray-sdk-core'
 
 /** @type S3Client */
-export default trace(
-  middleware(
-    new S3Client({
-      ...(process.env.IS_OFFLINE && {
-        endpoint: 'http://localhost:4569',
-        credentials: {
-          accessKeyId: 'S3RVER',
-          secretAccessKey: 'S3RVER'
-        },
-        region: 'us-east-1',
-        forcePathStyle: true
-      })
-    })
-  )
-)
-
-/**
- @type Record<string, S3Client>
-*/
-const endpointClients = {}
-
-/**
- @param {string?} endpoint
- @returns S3Client
-*/
-export function withEndpoint(endpoint) {
-  if (!endpointClients[String(endpoint)]) {
-    endpointClients[String(endpoint)] = trace(
-      middleware(
-        // @ts-ignore
-        new S3Client({
-          ...(process.env.IS_OFFLINE && {
-            endpoint,
-            credentials: {
-              accessKeyId: 'S3RVER',
-              secretAccessKey: 'S3RVER'
-            },
-            region: 'us-east-1'
-          }),
-          forcePathStyle: true
-        })
-      )
-    )
-  }
-
-  return endpointClients[String(endpoint)]
-}
+export default trace(middleware(new S3Client({})))
 
 /**
  * @param {S3Client} client

@@ -1,1 +1,0 @@
-../../../shared/dynamodb.js

@@ -8,15 +8,7 @@ import AWSXRay from 'aws-xray-sdk-core'
 // @ts-ignore
 export const client = new DynamoDBClient({
   // eslint-disable-next-line unicorn/no-null
-  logger: null,
-  ...(process.env.IS_OFFLINE && {
-    endpoint: 'http://localhost:8000',
-    region: 'us-east-1',
-    credentials: {
-      accessKeyId: 'x',
-      secretAccessKey: 'x'
-    }
-  })
+  logger: null
 })
 
 /** @type DynamoDBDocumentClient */

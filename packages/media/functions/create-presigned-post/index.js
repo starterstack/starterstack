@@ -1,7 +1,7 @@
 import process from 'node:process'
 import crypto from 'node:crypto'
 import { createPresignedPost } from '@aws-sdk/s3-presigned-post'
-import { withEndpoint, encodeRfc2047 } from './s3.js'
+import s3, { encodeRfc2047 } from './s3.js'
 import dynamodb from './dynamodb.js'
 import { PutCommand } from '@aws-sdk/lib-dynamodb'
 import ms from 'ms'
@@ -13,12 +13,14 @@ const {
   MEDIA_BUCKET,
   PROTECTED_MEDIA_BUCKET,
   UPLOAD_MB_LIMIT = 30,
+  DYNAMODB_STACK_TABLE,
+  BASE_URL,
   STACK
 } = process.env
 
 export const handler = lambdaHandler(async function createPresignedPostHandler(
   event,
-  context,
+  _,
   { log, correlationIds, abortSignal }
 ) {
   log.debug({ event }, 'received')
@@ -51,10 +53,6 @@ export const handler = lambdaHandler(async function createPresignedPostHandler(
 
     const bucket = isProtected ? PROTECTED_MEDIA_BUCKET : MEDIA_BUCKET
 
-    const s3 = withEndpoint(
-      process.env.IS_OFFLINE ? event.context.origin : undefined
-    )
-
     const s3Key = `temp/${protectedPrefix}${crypto.randomUUID()}`
 
     const { url, fields } = await createPresignedPost(s3, {
@@ -85,9 +83,7 @@ export const handler = lambdaHandler(async function createPresignedPostHandler(
           ? 'must-revalidate, public, max-age=86400'
           : 'must-revalidate, public, max-age=31536000',
         ...(redirect && {
-          success_action_redirect: `${
-            process.env.IS_OFFLINE ? event.context.origin : process.env.BASE_URL
-          }/uploaded/${encodeURIComponent(s3Key)}`
+          success_action_redirect: `${BASE_URL}/uploaded/${encodeURIComponent(s3Key)}`
         }),
         ...(contentType && { 'content-type': contentType })
       },
@@ -99,7 +95,7 @@ export const handler = lambdaHandler(async function createPresignedPostHandler(
 
     await dynamodb.send(
       new PutCommand({
-        TableName: process.env.DYNAMODB_STACK_TABLE,
+        TableName: DYNAMODB_STACK_TABLE,
         Item: {
           pk: `upload#${s3Key}`,
           sk: `upload#${s3Key}`,

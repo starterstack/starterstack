@@ -30,7 +30,7 @@ const {
 
 export const handler = lambdaHandler(async function session(
   event,
-  context,
+  _,
   { abortSignal, log, headerParser, bodyParser }
 ) {
   log.debug({ event }, 'received')
@@ -229,12 +229,6 @@ export const handler = lambdaHandler(async function session(
         Date.now() + ms(expiresIn)
       ).toGMTString()}`
 
-      if (process.env.IS_OFFLINE) {
-        console.log(
-          `\n\nApollo studio url \u001B[1m${`http://localhost:5001/api/graphql?token=${sessionToken}`}\u001B[0m\n\n`
-        )
-      }
-
       return tokenCookie
     }
 
@@ -284,22 +278,6 @@ export const handler = lambdaHandler(async function session(
 
         response.qrcode = qrcodeDataUrl
         response.secret = otpSecret
-      }
-
-      if (process.env.IS_OFFLINE) {
-        const { otpSecret } = getOtp({
-          mfaSecret,
-          mfaSecretVersion,
-          assignedMfa
-        })
-        const otpauth = new OTPAuth.TOTP({
-          issuer: MFA_TITLE,
-          label: email,
-          secret: OTPAuth.Secret.fromBase32(otpSecret),
-          digits: 6,
-          period: 30
-        })
-        console.log(`\n\nMFA \u001B[1m${otpauth.generate()}\u001B[0m\n\n`)
       }
 
       return {

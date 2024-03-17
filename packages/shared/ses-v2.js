@@ -8,14 +8,7 @@ export default trace(createClient())
 
 function createClient() {
   const client = new SESv2Client({
-    region: 'eu-west-1',
-    ...(process.env.IS_OFFLINE && {
-      credentials: {
-        accessKeyId: 'x',
-        secretAccessKey: 'x'
-      },
-      endpoint: 'http://localhost:5012'
-    })
+    region: 'eu-west-1'
   })
   client.middlewareStack.add(
     (next, context) => (args) => {

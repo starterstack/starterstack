@@ -24,14 +24,7 @@ export function assertFailedEntries({
 function createClient() {
   const client = new EventBridgeClient({
     apiVersion: '2015-10-07',
-    ...(eventBusRegion && { region: eventBusRegion }),
-    ...(process.env.IS_OFFLINE && {
-      endpoint: 'http://localhost:5010',
-      credentials: {
-        accessKeyId: 'x',
-        secretAccessKey: 'x'
-      }
-    })
+    ...(eventBusRegion && { region: eventBusRegion })
   })
   client.middlewareStack.add(
     (next, context) => (args) => {

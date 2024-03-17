@@ -8,7 +8,7 @@ import { GetCommand } from '@aws-sdk/lib-dynamodb'
 import lambdaHandler from './lambda-handler.js'
 import roleMapping from './role-mapping.js'
 
-const { SSM_API_JWT_SECRET, IS_OFFLINE, DYNAMODB_TABLE } = process.env
+const { SSM_API_JWT_SECRET, DYNAMODB_TABLE } = process.env
 
 function getTokenVersion(token) {
   try {
@@ -169,9 +169,7 @@ async function auth({
 
   const { v, role, ref } = tokenData
 
-  const tokenAllowed = IS_OFFLINE
-    ? allowAnonymous || role
-    : v && (allowAnonymous || role)
+  const tokenAllowed = v && (allowAnonymous || role)
 
   delete tokenData.v
   delete tokenData.iat
@@ -241,7 +239,7 @@ async function getSecretForToken(token, { abortSignal }) {
 
 async function verifyToken(token, { abortSignal }) {
   const apiSecret = await getSecretForToken(token, { abortSignal })
-  const apiSecretPrefix = IS_OFFLINE ? '' : 'cf:'
+  const apiSecretPrefix = 'cf:'
 
   if (!apiSecret) return {}
 

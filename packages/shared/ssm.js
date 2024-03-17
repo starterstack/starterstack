@@ -25,18 +25,7 @@ const cache = {}
 const TTL_10_MINUTES = 60 * 1000 * 10
 
 /** @type SSMClient */
-const ssm = trace(
-  new SSMClient({
-    ...(process.env.IS_OFFLINE && {
-      endpoint: 'http://localhost:5012',
-      region: 'us-east-1',
-      credentials: {
-        accessKeyId: 'x',
-        secretAccessKey: 'x'
-      }
-    })
-  })
-)
+const ssm = trace(new SSMClient({}))
 
 /**
  * @type {{

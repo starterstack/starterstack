@@ -10,9 +10,17 @@ import dynamodb from './dynamodb.js'
 import ApplicationError from './application-error.js'
 import lambdaHandler from './lambda-handler.js'
 
+const {
+  SSM_API_JWT_SECRET,
+  DYNAMODB_STACK_TABLE,
+  BASE_URL,
+  EVENTBRIDGE_BUS_NAME,
+  TEAM
+} = process.env
+
 export const handler = lambdaHandler(async function login(
   event,
-  context,
+  _,
   { abortSignal, log, bodyParser, headerParser }
 ) {
   log.debug({ event }, 'received')
@@ -31,12 +39,9 @@ export const handler = lambdaHandler(async function login(
     }
 
     const {
-      [`${process.env.SSM_API_JWT_SECRET}`]: {
-        value: apiSecret,
-        version: apiSecretVersion
-      } = {}
+      [SSM_API_JWT_SECRET]: { value: apiSecret, version: apiSecretVersion } = {}
     } = await ssm.get({
-      name: process.env.SSM_API_JWT_SECRET,
+      name: SSM_API_JWT_SECRET,
       abortSignal
     })
 
@@ -70,7 +75,7 @@ export const handler = lambdaHandler(async function login(
       Items: [{ attempt = 0 } = {}]
     } = await dynamodb.send(
       new QueryCommand({
-        TableName: process.env.DYNAMODB_STACK_TABLE,
+        TableName: DYNAMODB_STACK_TABLE,
         KeyConditionExpression: '#pk = :pk and #sk = :sk',
         FilterExpression: '#ttl > :now',
         Limit: 1,
@@ -123,25 +128,21 @@ export const handler = lambdaHandler(async function login(
       )
     )
 
-    const baseUrl = process.env.IS_OFFLINE
-      ? event.headers.referer
-        ? event.headers.referer.split('/').slice(0, 3).join('/')
-        : process.env.BASE_URL
-      : process.env.BASE_URL
+    const baseUrl = BASE_URL
 
     assertFailedEntries(
       await eventBridge.send(
         new PutEventsCommand({
           Entries: [
             {
-              EventBusName: process.env.EVENTBRIDGE_BUS_NAME,
+              EventBusName: EVENTBRIDGE_BUS_NAME,
               Source: 'email',
               DetailType: 'login/signup',
               Detail: JSON.stringify({
                 loginUrl: `${baseUrl}/session?token=${encodeURIComponent(
                   token
                 )}`,
-                team: process.env.TEAM,
+                team: TEAM,
                 email,
                 correlationId: crypto.randomUUID(),
                 taskToken

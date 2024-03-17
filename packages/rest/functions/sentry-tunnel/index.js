@@ -4,24 +4,20 @@ import ssm from './ssm.js'
 import lambdaHandler from './lambda-handler.js'
 import ApplicationError from './application-error.js'
 
+const { SSM_SENTRY_DSN, SENTRY_REPLACE_DSN } = process.env
+
 export const handler = lambdaHandler(async function sentryTunnel(
   event,
   context,
   { abortSignal, log, bodyParser }
 ) {
   try {
-    const { [`${process.env.SSM_SENTRY_DSN}`]: { value: dsn } = {} } =
-      await ssm.get({
-        name: process.env.SSM_SENTRY_DSN,
-        abortSignal
-      })
+    const { [`${SSM_SENTRY_DSN}`]: { value: dsn } = {} } = await ssm.get({
+      name: SSM_SENTRY_DSN,
+      abortSignal
+    })
 
     if (!dsn) {
-      if (process.env.IS_OFFLINE) {
-        return {
-          status: 400
-        }
-      }
       throw new ApplicationError('no dsn', { code: 'noDSN' })
     }
 
@@ -32,7 +28,7 @@ export const handler = lambdaHandler(async function sentryTunnel(
         method: 'POST',
         body: bodyParser
           .text()
-          .replaceAll(new RegExp(process.env.SENTRY_REPLACE_DSN, 'gi'), dsn)
+          .replaceAll(new RegExp(SENTRY_REPLACE_DSN, 'gi'), dsn)
       },
       {
         signal: abortSignal,

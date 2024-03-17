@@ -1,4 +1,3 @@
-import process from 'node:process'
 import { readFile } from 'node:fs/promises'
 import crypto from 'node:crypto'
 import createLambdaClient from './lambda.js'
@@ -18,16 +17,7 @@ export async function uploadFile({
   uploadedBy,
   visibility
 }) {
-  const lambda = createLambdaClient({
-    ...(process.env.IS_OFFLINE && {
-      endpoint: 'http://localhost:4009',
-      region: 'us-east-1',
-      credentials: {
-        accessKeyId: 'x',
-        secretAccessKey: 'x'
-      }
-    })
-  })
+  const lambda = createLambdaClient({})
   const contentType = mime.getType(fileName)
   const { Payload: response } = await lambda.send(
     new InvokeCommand({
@@ -46,10 +36,7 @@ export async function uploadFile({
         },
         context: {
           id: uploadedBy ?? 'migrations',
-          aud: 'user',
-          ...(process.env.IS_OFFLINE && {
-            origin: 'http://127.0.0.1:5001'
-          })
+          aud: 'user'
         }
       })
     }),
