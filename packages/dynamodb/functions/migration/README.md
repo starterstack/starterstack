@@ -1,12 +1,11 @@
 # migrations
 
-```
+```sh
 npm run new-migration
-npm run migrations
 ```
 
 ### Include binary files
 
-Binary files are excluded by default in (../../../settings.js)[settings.js].
+Binary files are excluded by default.
 
 To include files add them to the (./.include-lambda-blob-files)[.include-lambda-blob-files] directory.
