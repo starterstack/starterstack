@@ -859,7 +859,7 @@ export default async function getSettings({
  **/
 
 async function getCloudFormationOutput({ region, stackName, outputKey }) {
-  if (process.env.IS_OFFLINE === 'true') {
+  if (process.env['IS_OFFLINE'] === 'true') {
     return outputKey
   }
   let result = cloudformationResults.get(`${region}.${stackName}`)
@@ -885,6 +885,7 @@ async function getCloudFormationOutput({ region, stackName, outputKey }) {
       return output.OutputValue
     }
   }
+  return
 }
 
 /**
