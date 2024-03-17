@@ -2,7 +2,8 @@
   "id" : 1,
   "name" : "starterstack",
   "description" : "Starterstack",
-  "lastModifiedDate" : "2024-01-13T15:16:50Z",
+  "lastModifiedDate" : "2024-03-17T11:26:10Z",
+  "lastModifiedAgent" : "structurizr-javascript",
   "properties" : {
     "structurizr.dsl" : "d29ya3NwYWNlICJzdGFydGVyc3RhY2siICJTdGFydGVyc3RhY2siIHsKCiAgICAhaWRlbnRpZmllcnMgaGllcmFyY2hpY2FsCiAgICAhaW1wbGllZFJlbGF0aW9uc2hpcHMgdHJ1ZQogICAgIWRvY3MgZG9jCiAgICAhYWRycyBkb2MvYWRyCgogICAgbW9kZWwgewogICAgICAgIHN0YXJ0ZXJzdGFjayA9IHNvZnR3YXJlU3lzdGVtICJTdGFydGVyc3RhY2siICJSZWZlcmVuY2UgYXJjaGl0ZWN0dXJlLiIgewogICAgICAgICAgdGFncyAic3RhcnRlcnN0YWNrIgogICAgICAgIAogICAgICAgICAgc3RhY2tUYWJsZSA9IGNvbnRhaW5lciAiU3RhY2sgVGFibGUiICJTdG9yZXMgaW5mb3JtYXRpb24gYWJvdXQgdXNlcnMiICJEeW5hbW9EQiIgewogICAgICAgICAgICB0YWdzICJBbWF6b24gV2ViIFNlcnZpY2VzIC0gRHluYW1vREIiCiAgICAgICAgICB9CiAgICAgICAgCiAgICAgICAgICB3ZWJTb2NrZXRUYWJsZSA9IGNvbnRhaW5lciAiV2ViU29ja2V0IFRhYmxlIiAiU3RvcmVzIHdlYnNvY2tldCBjb25uZWN0aW9ucyIgIkR5bmFtb0RCIiB7CiAgICAgICAgICAgIHRhZ3MgIkFtYXpvbiBXZWIgU2VydmljZXMgLSBEeW5hbW9EQiIKICAgICAgICAgIH0KICAgICAgICAKICAgICAgICAgIGF1ZGl0VGFibGUgPSBjb250YWluZXIgIkF1ZGl0IFRhYmxlIiAiU3RvcmVzIHZlcnNpb25lZCBkYXRhIiAiRHluYW1vREIiIHsKICAgICAgICAgICAgdGFncyAiQW1hem9uIFdlYiBTZXJ2aWNlcyAtIER5bmFtb0RCIgogICAgICAgICAgfQogICAgICAgIAogICAgICAgICAgcm91dGU1MyA9IGNvbnRhaW5lciAiRE5TIiAic3RhcnRlcnN0YWNrIiAiUm91dGUgNTMiIHsKICAgICAgICAgICAgdGFncyAiQW1hem9uIFdlYiBTZXJ2aWNlcyAtIFJvdXRlIDUzIgogICAgICAgICAgfQogICAgICAgIAogICAgICAgICAgY2xvdWRGcm9udFdBRiA9IGNvbnRhaW5lciAiQ0ROIFdBRiIgIlByb3RlY3RzIENETiIgIldBRiIgewogICAgICAgICAgICB0YWdzICJBbWF6b24gV2ViIFNlcnZpY2VzIC0gV0FGIgogICAgICAgICAgfQogICAgICAgIAogICAgICAgICAgY2xvdWRGcm9udCA9IGNvbnRhaW5lciAiQ0ROIiAiQ2FjaGVzIGFuZCBzZXJ2ZXMgc3RhdGljIGFuZCBkeW5hbW9kYiBjb250ZW50IiAiQ2xvdWRGcm9udCIgewogICAgICAgICAgICB0YWdzICJBbWF6b24gV2ViIFNlcnZpY2VzIC0gQ2xvdWRGcm9udCIKICAgICAgICAgIH0KICAgICAgICAKICAgICAgICAgIGNsb3VkRnJvbnRGdW5jdGlvbnMgPSBjb250YWluZXIgIkNsb3VkRnJvbnQgZnVuY3Rpb25zIiAiUHJvY2VzcyBvcmlnaW4gcmVxdWVzdHMgYW5kIHJlc3BvbnNlcyIgewogICAgICAgICAgICBjbG91ZEZyb250IC0+IHRoaXMKICAgICAgICAgIH0KICAgICAgICAKICAgICAgICAgIGFwaUdhdGV3YXlXZWJTb2NrZXQgPSBjb250YWluZXIgIkFQSSBXZWJTb2NrZXQgR2F0ZXdheSIgIndlYnNvY2tldCBhcGkiIHsKICAgICAgICAgICAgdGFncyAiQW1hem9uIFdlYiBTZXJ2aWNlcyAtIEFtYXpvbiBBUEkgR2F0ZXdheSIKICAgICAgICAgICAgY2xvdWRGcm9udCAtPiB0aGlzICJjYWxscyIgIndzcyIKICAgICAgICAgIH0KICAgICAgICAKICAgICAgICAgIGFwaUdhdGV3YXlXQUYgPSBjb250YWluZXIgIkFwaSBHYXRld2F5IFdBRiIgIlByb3RlY3RzIEFwaSBHYXRld2F5IiAiV0FGIiB7CiAgICAgICAgICAgIHRhZ3MgIkFtYXpvbiBXZWIgU2VydmljZXMgLSBXQUYiCiAgICAgICAgICAgIGNsb3VkRnJvbnQgLT4gdGhpcyAiY2FsbHMiCiAgICAgICAgICB9CiAgICAgICAgCiAgICAgICAgICBhcGlHYXRld2F5SHR0cCA9IGNvbnRhaW5lciAiQVBJIEhUVFAgR2F0ZXdheSIgImh0dHBzIGFwaSJ7CiAgICAgICAgICAgIHRhZ3MgIkFtYXpvbiBXZWIgU2VydmljZXMgLSBBbWF6b24gQVBJIEdhdGV3YXkiCiAgICAgICAgICAgIGFwaUdhdGV3YXlXQUYgLT4gdGhpcyAiY2FsbHMiICJodHRwcyIKICAgICAgICAgIH0KICAgICAgICAKICAgICAgICAgIHNzbSA9IGNvbnRhaW5lciAiUGFyYW1ldGVyIFN0b3JlIiAiU1NNIiB7CiAgICAgICAgICAgIHRhZ3MgIkFtYXpvbiBXZWIgU2VydmljZXMgLSBBV1MgU3lzdGVtcyBNYW5hZ2VyIFBhcmFtZXRlciBTdG9yZSIKICAgICAgICAgIH0KICAgICAgICAKICAgICAgICAgIGF1dGhvcml6ZXIgPSBjb250YWluZXIgIkFQSSBBdXRob3JpemVyIiAidmFsaWRhdGVzIHNlc3Npb24sIGp3dCBhbmQgcm9sZXMiICJsYW1iZGEiIHsKICAgICAgICAgICAgdGFncyAiQW1hem9uIFdlYiBTZXJ2aWNlcyAtIEFXUyBMYW1iZGEgTGFtYmRhIEZ1bmN0aW9uIgogICAgICAgICAgICB0aGlzIC0+IHN0YWNrVGFibGUgInJlYWRzL3dyaXRlcyB1c2VyIGRhdGEiICJodHRwcyIKICAgICAgICAgICAgdGhpcyAtPiBzc20gInJlYWRzIGNvbmZpZyIgImh0dHBzIgogICAgICAgICAgICBhcGlHYXRld2F5SHR0cCAtPiB0aGlzICJjYWxscyIgImh0dHBzIgogICAgICAgICAgICBhcGlHYXRld2F5V2ViU29ja2V0IC0+IHRoaXMgImNhbGxzIiAiaHR0cHMiCiAgICAgICAgICB9CiAgICAgICAgCiAgICAgICAgICB3ZWJzb2NrZXQgPSBjb250YWluZXIgIldlYlNvY2tldCBMYW1iZGEiICJ3ZWJzb2NrZXQgc3RhY2siIHsKICAgICAgICAgICAgdGFncyAiQW1hem9uIFdlYiBTZXJ2aWNlcyAtIExhbWJkYSIKICAgICAgICAgICAgYXV0aG9yaXplciAtPiB0aGlzICJjYWxscyIgImh0dHBzIgogICAgICAgICAgICB0aGlzIC0+IHdlYlNvY2tldFRhYmxlICJ3cml0ZXMvZGVsZXRlcyIgImh0dHBzIgogICAgICAgICAgfQogICAgICAgIAogICAgICAgICAgYWNtID0gY29udGFpbmVyICJDZXJ0aWZpY2F0ZXMiICJTZXJ2ZXMgc3RhcnRlcnN0YWNrIGNlcnRpZmljYXRlcyIgIkFDTSIgewogICAgICAgICAgICB0YWdzICJBbWF6b24gV2ViIFNlcnZpY2VzIC0gQ2VydGlmaWNhdGUgTWFuYWdlciIKICAgICAgICAgIH0KICAgICAgICAgIGNsb3VkZnJvbnQgLT4gYWNtICJ1c2VzIgogICAgICAgIAogICAgICAgICAgczNTdGF0aWMgPSBjb250YWluZXIgIlMzIFN0YXRpYyBCdWNrZXQiICJiYWNrb2ZmaWNlIHdlYiBhcHBsaWNhdGlvbiBjb250ZW50IiB7CiAgICAgICAgICAgIHRhZ3MgIkFtYXpvbiBXZWIgU2VydmljZXMgLSBTaW1wbGUgU3RvcmFnZSBTZXJ2aWNlIEJ1Y2tldCBXaXRoIE9iamVjdHMiCiAgICAgICAgICB9CiAgICAgICAgCiAgICAgICAgICBjb250YWluZXIgIlNpbmdsZSBQYWdlIEFwcGxpY2F0aW9uIiAiUmVhY3QiIHsKICAgICAgICAgICAgczNTdGF0aWMgLT4gdGhpcwogICAgICAgICAgfQogICAgICAgIAogICAgICAgICAgczNNZWRpYSA9IGNvbnRhaW5lciAiUzMgTWVkaWEgQnVja2V0IiAibWVkaWEgY29udGVudCIgewogICAgICAgICAgICB0YWdzICJBbWF6b24gV2ViIFNlcnZpY2VzIC0gU2ltcGxlIFN0b3JhZ2UgU2VydmljZSBCdWNrZXQgV2l0aCBPYmplY3RzIgogICAgICAgICAgfQogICAgICAgIAogICAgICAgICAgcm91dGU1MyAtPiBjbG91ZEZyb250V0FGCiAgICAgICAgICBjbG91ZEZyb250V0FGIC0+IGNsb3VkRnJvbnQKICAgICAgICAgIGNsb3VkRnJvbnQgLT4gczNTdGF0aWMKICAgICAgICAgIGNsb3VkRnJvbnQgLT4gczNNZWRpYQogICAgICAgIAogICAgICAgICAgYnVzID0gY29udGFpbmVyICJFdmVudEJ1cyIgIkV2ZW50QnJpZGdlIiB7CiAgICAgICAgICAgIHRhZ3MgIkFtYXpvbiBXZWIgU2VydmljZXMgLSBFdmVudEJyaWRnZSIKICAgICAgICAgIH0KICAgICAgICAKICAgICAgICAgIGNvbnRhaW5lciAiYXJjaGl2ZSIgIlN0b3JlIGFsbCBldmVudHMgZm9yIGZ1dHVyZSB1c2UiIHsKICAgICAgICAgICAgYnVzIC0+IHRoaXMgImFyY2hpdmUiCiAgICAgICAgICB9CiAgICAgICAgCiAgICAgICAgICByZXN0ID0gY29udGFpbmVyICJVc2VyIHJlc3QgQVBJIiAiaGFuZGxlIHVzZXIgbG9naW4gZXZlbnRzIGFuZCBzZXNzaW9uIiAicmVzdCBzdGFjayIgewogICAgICAgICAgICB0YWdzICJBbWF6b24gV2ViIFNlcnZpY2VzIC0gQ2xvdWRGb3JtYXRpb24iCiAgICAgICAgICAgIHRoaXMgLT4gc3RhY2tUYWJsZSAicmVhZHMvd3JpdGVzIHVzZXIgZGF0YSIgImh0dHBzIgogICAgICAgICAgICB0aGlzIC0+IHNzbSAicmVhZHMgY29uZmlnIiAiaHR0cHMiCiAgICAgICAgICAgIHRoaXMgLT4gYnVzICJwb3N0cyBldmVudHMiICJodHRwcyIKICAgICAgICAgICAgYXV0aG9yaXplciAtPiB0aGlzICJjYWxscyIgImh0dHBzIgogICAgICAgICAgfQogICAgICAgIAogICAgICAgICAgZ3JhcGhxbCA9IGNvbnRhaW5lciAiR3JhcGhRTCBBUEkiICJoYW5kbGUgcXVlcmllcywgbXV0YXRpb25zLCBhbmQgc3Vic2NyaXB0aW9ucyBmb3IgYm9va2luZyBzY2hlbWEiICJncmFwaHFsIHN0YWNrIiB7CiAgICAgICAgICAgIHRhZ3MgIkFtYXpvbiBXZWIgU2VydmljZXMgLSBBV1MgTGFtYmRhIExhbWJkYSBGdW5jdGlvbiIKICAgICAgICAgICAgdGhpcyAtPiBzdGFja1RhYmxlICJyZWFkcy93cml0ZXMgdXNlciBkYXRhIiAiaHR0cHMiCiAgICAgICAgICAgIHRoaXMgLT4gc3NtICJyZWFkcyBjb25maWciICJodHRwcyIKICAgICAgICAgICAgdGhpcyAtPiBidXMgInBvc3RzIGV2ZW50cyIgImh0dHBzIgogICAgICAgICAgICBhdXRob3JpemVyIC0+IHRoaXMgImNhbGxzIiAiaHR0cHMiCiAgICAgICAgICB9CiAgICAgICAgCiAgICAgICAgICBjb250YWluZXIgIkV2ZW50QnJpZGdlIFBpcGUiICJwcm9jZXNzIHN0YWNrIGRhdGEiIHsKICAgICAgICAgICAgdGFncyAiQW1hem9uIFdlYiBTZXJ2aWNlcyAtIEV2ZW50QnJpZGdlIFBpcGVzIgogICAgICAgICAgICBzdGFja1RhYmxlIC0+IHRoaXMgImhhbmRsZSBzY2hlZHVsZWQgVFRMIGRvY3VtZW50cyIKICAgICAgICAgICAgc3RhY2tUYWJsZSAtPiB0aGlzICJwcm9jZXNzIGJvb2tpbmcgYXVkaXQgZGF0YSIKICAgICAgICAgICAgdGhpcyAtPiBhdWRpdFRhYmxlCiAgICAgICAgICB9CiAgICAgICAgCiAgICAgICAgICBub3RpZmljYXRpb24gPSAgY29udGFpbmVyICJOb3RpZmljYXRpb24iICJTZW5kcyBlbWFpbCwgYW5kIHNtcyBtZXNzYWdlcyIsICJub3RpZmljYXRpb24gc3RhY2siIHsKICAgICAgICAgICAgdGFncyAiQW1hem9uIFdlYiBTZXJ2aWNlcyAtIEFXUyBMYW1iZGEgTGFtYmRhIEZ1bmN0aW9uIgogICAgICAgICAgICB0aGlzIC0+IHN0YWNrVGFibGUgInJlYWRzL3dyaXRlcyB1c2VyIGRhdGEiICJodHRwcyIKICAgICAgICAgICAgdGhpcyAtPiBzc20gInJlYWRzIGNvbmZpZyIgImh0dHBzIgogICAgICAgICAgICBidXMgLT4gdGhpcyAidHJpZ2dlcnMiCiAgICAgICAgICB9CiAgICAgICAgCiAgICAgICAgfQoKICAgICAgICB1c2VyID0gcGVyc29uICJ1c2VyIiAiVXNlci4iCiAgICAgICAgZGV2ZWxvcGVyID0gcGVyc29uICJEZXZlbG9wZXIgdXNlciIgIkEgc3RhcnRlcnN0YWNrIERldmVsb3Blci4iCgogICAgICAgIHNlbnRyeSA9IHNvZnR3YXJlU3lzdGVtICJTZW50cnkiICJSZXBvcnQgQVBJIGVycm9ycy4iCgogICAgICAgIHNsYWNrID0gc29mdHdhcmVTeXN0ZW0gIlNsYWNrIiAiUmVjZWl2ZXMgb3BzIGFuZCBhbGFybSBldmVudHMuIgogICAgICAgIGdpdGh1YiA9IHNvZnR3YXJlU3lzdGVtICJHaXRIdWIiICJNYW5hZ2VzIG91ciBjb2RlIGFuZCBkZXBsb3ltZW50cy4iCgogICAgICAgIHN0YXJ0ZXJzdGFjayAtPiBzbGFjawogICAgICAgIHN0YXJ0ZXJzdGFjayAtPiBzZW50cnkKICAgICAgICBnaXRodWIgLT4gc3RhcnRlcnN0YWNrCgogICAgICAgIHVzZXIgLT4gc3RhcnRlcnN0YWNrICJ1c2VyIGFjY2VzcyB0byBzdGFydGVyc3RhY2suIiAiaHR0cHMiCgogICAgICAgIHVzZXIgLT4gc3RhcnRlcnN0YWNrLnJlc3QKICAgICAgICB1c2VyIC0+IHN0YXJ0ZXJzdGFjay5ncmFwaHFsCgogICAgICAgIHN0YXJ0ZXJzdGFjay5hcGlHYXRld2F5V2ViU29ja2V0IC0+IHVzZXIgInJlYWwgdGltZSB1cGRhdGVzIiAid3NzIgoKICAgICAgICBzdGFydGVyc3RhY2subm90aWZpY2F0aW9uIC0+IHNlbnRyeSAicmVwb3J0IGVycm9ycyIgImh0dHBzIgogICAgICAgIHN0YXJ0ZXJzdGFjay5jbG91ZEZyb250V0FGIC0+IHNlbnRyeSAicmVwb3J0IGVycm9ycyIgImh0dHBzIgogICAgICAgIHN0YXJ0ZXJzdGFjay5ub3RpZmljYXRpb24gLT4gdXNlciAic2VuZHMgZW1haWwgdXNpbmcgU0VTIgoKICAgICAgICBkZXZlbG9wZXIgLT4gZ2l0aHViICJjb2RlcyBhbmQgZGVwbG95cyIgICJnaXR8aHR0cHMiCiAgICAgICAgZGV2ZWxvcGVyIC0+IHNlbnRyeSAiYWNjZXNzIGlzc3VlcyIgImh0dHBzIgogICAgICAgIGRldmVsb3BlciAtPiBzbGFjayAicmVhZCBldmVudHMiICJodHRwcyIKICAgIH0KCiAgICB2aWV3cyB7CiAgICAgICAgc3lzdGVtTGFuZHNjYXBlIHN0YXJ0ZXJzdGFjayBsYW5kc2NhcGUgewogICAgICAgICAgaW5jbHVkZSAqCiAgICAgICAgfQoKICAgICAgICBzeXN0ZW1Db250ZXh0IHN0YXJ0ZXJzdGFjayBjb250ZXh0IHsKICAgICAgICAgIGluY2x1ZGUgKgogICAgICAgIH0KCiAgICAgICAgY29udGFpbmVyIHN0YXJ0ZXJzdGFjayBjb250YWluZXIgewogICAgICAgICAgaW5jbHVkZSAqCiAgICAgICAgfQoKICAgICAgICBzdHlsZXMgewogICAgICAgICAgZWxlbWVudCAiU29mdHdhcmUgU3lzdGVtIiB7CiAgICAgICAgICAgIGJhY2tncm91bmQgI2RkZGRkZAogICAgICAgICAgICBjb2xvciAjMjMyMzIzCiAgICAgICAgICB9CiAgICAgICAgICBlbGVtZW50ICJzdGFydGVyc3RhY2siIHsKICAgICAgICAgICAgYmFja2dyb3VuZCAjMTE2OGJkCiAgICAgICAgICAgIGNvbG9yICNjZmRlZjEKICAgICAgICAgIH0KICAgICAgICAgIGVsZW1lbnQgIkFtYXpvbiBXZWIgU2VydmljZXMgLSBEeW5hbW9EQiIgewogICAgICAgICAgICBzaGFwZSBjeWxpbmRlcgogICAgICAgICAgfQogICAgICAgIH0KCiAgICAgICAgdGhlbWUgaHR0cHM6Ly9zdGF0aWMuc3RydWN0dXJpenIuY29tL3RoZW1lcy9hbWF6b24td2ViLXNlcnZpY2VzLTIwMjMuMDEuMzEvaWNvbnMuanNvbgogICAgICAgIHRoZW1lIGh0dHBzOi8vc3RhdGljLnN0cnVjdHVyaXpyLmNvbS90aGVtZXMvZGVmYXVsdC90aGVtZS5qc29uCgogICAgfQoKfQo="
   },
@@ -17,28 +18,28 @@
       "name" : "user",
       "description" : "User.",
       "relationships" : [ {
+        "id" : "65",
+        "tags" : "Relationship",
+        "properties" : {
+          "structurizr.dsl.identifier" : "efecb16b-c342-4aa2-bc7c-87bfb78a19ce"
+        },
+        "sourceId" : "56",
+        "destinationId" : "38"
+      }, {
         "id" : "64",
         "tags" : "Relationship",
         "properties" : {
-          "structurizr.dsl.identifier" : "84b25186-c613-467d-9085-53044b233613"
+          "structurizr.dsl.identifier" : "b6314375-d4c0-40c0-af05-8521350d3d97"
         },
         "sourceId" : "56",
         "destinationId" : "1",
         "description" : "user access to starterstack.",
         "technology" : "https"
       }, {
-        "id" : "65",
-        "tags" : "Relationship",
-        "properties" : {
-          "structurizr.dsl.identifier" : "886fe10a-35eb-45fc-bebc-26ffb286b9a3"
-        },
-        "sourceId" : "56",
-        "destinationId" : "38"
-      }, {
         "id" : "66",
         "tags" : "Relationship",
         "properties" : {
-          "structurizr.dsl.identifier" : "554ad2f0-ae7b-49f2-9aa5-b2b42e674e16"
+          "structurizr.dsl.identifier" : "21b3822c-48e8-4436-946d-dd4c17064e31"
         },
         "sourceId" : "56",
         "destinationId" : "43"
@@ -53,20 +54,10 @@
       "name" : "Developer user",
       "description" : "A starterstack Developer.",
       "relationships" : [ {
-        "id" : "72",
-        "tags" : "Relationship",
-        "properties" : {
-          "structurizr.dsl.identifier" : "20f774c3-985f-402f-ba1e-4b27e4af96c5"
-        },
-        "sourceId" : "57",
-        "destinationId" : "60",
-        "description" : "codes and deploys",
-        "technology" : "git|https"
-      }, {
         "id" : "73",
         "tags" : "Relationship",
         "properties" : {
-          "structurizr.dsl.identifier" : "3f040ace-e822-429b-881a-7d9497def0fb"
+          "structurizr.dsl.identifier" : "a2ba448c-3db1-4ce8-abe2-ea526af8dddc"
         },
         "sourceId" : "57",
         "destinationId" : "58",
@@ -76,16 +67,36 @@
         "id" : "74",
         "tags" : "Relationship",
         "properties" : {
-          "structurizr.dsl.identifier" : "35a1f63f-9bda-4005-bd5e-086b3f1c5b76"
+          "structurizr.dsl.identifier" : "8c4e2650-5380-4bf9-973a-fb99149ea71c"
         },
         "sourceId" : "57",
         "destinationId" : "59",
         "description" : "read events",
         "technology" : "https"
+      }, {
+        "id" : "72",
+        "tags" : "Relationship",
+        "properties" : {
+          "structurizr.dsl.identifier" : "7f7b41f9-32c7-49b1-a68d-b6d90a69ce8e"
+        },
+        "sourceId" : "57",
+        "destinationId" : "60",
+        "description" : "codes and deploys",
+        "technology" : "git|https"
       } ],
       "location" : "Unspecified"
     } ],
     "softwareSystems" : [ {
+      "id" : "59",
+      "tags" : "Element,Software System",
+      "properties" : {
+        "structurizr.dsl.identifier" : "slack"
+      },
+      "name" : "Slack",
+      "description" : "Receives ops and alarm events.",
+      "location" : "Unspecified",
+      "documentation" : { }
+    }, {
       "id" : "1",
       "tags" : "Element,Software System,starterstack",
       "properties" : {
@@ -94,21 +105,21 @@
       "name" : "Starterstack",
       "description" : "Reference architecture.",
       "relationships" : [ {
-        "id" : "61",
-        "tags" : "Relationship",
-        "properties" : {
-          "structurizr.dsl.identifier" : "e7b921dd-957e-408b-91e6-1fd8eef0a0e7"
-        },
-        "sourceId" : "1",
-        "destinationId" : "59"
-      }, {
         "id" : "62",
         "tags" : "Relationship",
         "properties" : {
-          "structurizr.dsl.identifier" : "d978b098-8455-41a2-a187-a417623271d0"
+          "structurizr.dsl.identifier" : "f9503e58-5aa7-49da-a5dd-6819896414f7"
         },
         "sourceId" : "1",
         "destinationId" : "58"
+      }, {
+        "id" : "61",
+        "tags" : "Relationship",
+        "properties" : {
+          "structurizr.dsl.identifier" : "14b74d05-46d5-4465-b15f-04c27ce36267"
+        },
+        "sourceId" : "1",
+        "destinationId" : "59"
       }, {
         "id" : "68",
         "sourceId" : "1",
@@ -119,110 +130,67 @@
       } ],
       "location" : "Unspecified",
       "containers" : [ {
-        "id" : "48",
-        "tags" : "Element,Container,Amazon Web Services - EventBridge Pipes",
+        "id" : "7",
+        "tags" : "Element,Container,Amazon Web Services - CloudFront",
         "properties" : {
-          "structurizr.dsl.identifier" : "starterstack.11a90838-7659-4a1c-a8a9-3cc56f49a7e5"
+          "structurizr.dsl.identifier" : "starterstack.cloudfront"
         },
-        "name" : "EventBridge Pipe",
-        "description" : "process stack data",
+        "name" : "CDN",
+        "description" : "Caches and serves static and dynamodb content",
         "relationships" : [ {
-          "id" : "51",
+          "id" : "13",
           "tags" : "Relationship",
           "properties" : {
-            "structurizr.dsl.identifier" : "a6e93403-9bb4-43b1-bd75-d00b2031b03c"
+            "structurizr.dsl.identifier" : "ac732bf1-0b34-4592-8ff7-5af9182e6d4a"
           },
-          "sourceId" : "48",
-          "destinationId" : "4"
+          "sourceId" : "7",
+          "destinationId" : "12",
+          "description" : "calls"
+        }, {
+          "id" : "34",
+          "tags" : "Relationship",
+          "properties" : {
+            "structurizr.dsl.identifier" : "0a791f0f-6143-4fda-9dc7-24aa1b778423"
+          },
+          "sourceId" : "7",
+          "destinationId" : "30"
+        }, {
+          "id" : "26",
+          "tags" : "Relationship",
+          "properties" : {
+            "structurizr.dsl.identifier" : "453142d1-9a4e-4531-b5a2-22de51ff3e4a"
+          },
+          "sourceId" : "7",
+          "destinationId" : "25",
+          "description" : "uses"
+        }, {
+          "id" : "33",
+          "tags" : "Relationship",
+          "properties" : {
+            "structurizr.dsl.identifier" : "35c042a3-cff8-4dbb-a39d-af7e9da206a0"
+          },
+          "sourceId" : "7",
+          "destinationId" : "27"
+        }, {
+          "id" : "11",
+          "tags" : "Relationship",
+          "properties" : {
+            "structurizr.dsl.identifier" : "edfb29ff-da14-42cc-b7d5-e0abd89f445a"
+          },
+          "sourceId" : "7",
+          "destinationId" : "10",
+          "description" : "calls",
+          "technology" : "wss"
+        }, {
+          "id" : "9",
+          "tags" : "Relationship",
+          "properties" : {
+            "structurizr.dsl.identifier" : "9262d92e-a3b0-4dfb-9fe2-8a7db0c64206"
+          },
+          "sourceId" : "7",
+          "destinationId" : "8"
         } ],
-        "documentation" : { }
-      }, {
-        "id" : "52",
-        "tags" : "Element,Container,notification stack,Amazon Web Services - AWS Lambda Lambda Function",
-        "properties" : {
-          "structurizr.dsl.identifier" : "starterstack.notification"
-        },
-        "name" : "Notification",
-        "description" : "Sends email, and sms messages",
-        "relationships" : [ {
-          "id" : "53",
-          "tags" : "Relationship",
-          "properties" : {
-            "structurizr.dsl.identifier" : "96eb2e4f-da20-4097-9aee-53f7cd16d31e"
-          },
-          "sourceId" : "52",
-          "destinationId" : "2",
-          "description" : "reads/writes user data",
-          "technology" : "https"
-        }, {
-          "id" : "54",
-          "tags" : "Relationship",
-          "properties" : {
-            "structurizr.dsl.identifier" : "d4e8c5be-6b1a-4c7a-a950-45f878b2d342"
-          },
-          "sourceId" : "52",
-          "destinationId" : "16",
-          "description" : "reads config",
-          "technology" : "https"
-        }, {
-          "id" : "69",
-          "tags" : "Relationship",
-          "properties" : {
-            "structurizr.dsl.identifier" : "5582cf22-92eb-44d5-9a58-8c64845310ce"
-          },
-          "sourceId" : "52",
-          "destinationId" : "58",
-          "description" : "report errors",
-          "technology" : "https"
-        }, {
-          "id" : "71",
-          "tags" : "Relationship",
-          "properties" : {
-            "structurizr.dsl.identifier" : "47412fe9-82fe-4a9c-b527-2a25d4bfb4b8"
-          },
-          "sourceId" : "52",
-          "destinationId" : "56",
-          "description" : "sends email using SES"
-        } ],
-        "technology" : ",",
-        "documentation" : { }
-      }, {
-        "id" : "6",
-        "tags" : "Element,Container,Amazon Web Services - WAF",
-        "properties" : {
-          "structurizr.dsl.identifier" : "starterstack.cloudfrontwaf"
-        },
-        "name" : "CDN WAF",
-        "description" : "Protects CDN",
-        "relationships" : [ {
-          "id" : "32",
-          "tags" : "Relationship",
-          "properties" : {
-            "structurizr.dsl.identifier" : "b33ee341-d191-4b22-aac0-8d30b8c9be89"
-          },
-          "sourceId" : "6",
-          "destinationId" : "7"
-        }, {
-          "id" : "70",
-          "tags" : "Relationship",
-          "properties" : {
-            "structurizr.dsl.identifier" : "e69d6f14-6e57-4387-8c79-ebe33131187b"
-          },
-          "sourceId" : "6",
-          "destinationId" : "58",
-          "description" : "report errors",
-          "technology" : "https"
-        } ],
-        "technology" : "WAF",
-        "documentation" : { }
-      }, {
-        "id" : "30",
-        "tags" : "Element,Container,Amazon Web Services - Simple Storage Service Bucket With Objects",
-        "properties" : {
-          "structurizr.dsl.identifier" : "starterstack.s3media"
-        },
-        "name" : "S3 Media Bucket",
-        "description" : "media content",
+        "technology" : "CloudFront",
         "documentation" : { }
       }, {
         "id" : "43",
@@ -233,30 +201,30 @@
         "name" : "GraphQL API",
         "description" : "handle queries, mutations, and subscriptions for booking schema",
         "relationships" : [ {
-          "id" : "44",
-          "tags" : "Relationship",
-          "properties" : {
-            "structurizr.dsl.identifier" : "e258b30a-5998-4999-a743-372481872be7"
-          },
-          "sourceId" : "43",
-          "destinationId" : "2",
-          "description" : "reads/writes user data",
-          "technology" : "https"
-        }, {
           "id" : "45",
           "tags" : "Relationship",
           "properties" : {
-            "structurizr.dsl.identifier" : "941bb45b-52fd-4253-ae25-b36ed8363ce0"
+            "structurizr.dsl.identifier" : "f3f12323-2b78-4596-be67-293322e023d2"
           },
           "sourceId" : "43",
           "destinationId" : "16",
           "description" : "reads config",
           "technology" : "https"
         }, {
+          "id" : "44",
+          "tags" : "Relationship",
+          "properties" : {
+            "structurizr.dsl.identifier" : "dcadb92d-3fd1-421b-abbf-946c5cc5a9b0"
+          },
+          "sourceId" : "43",
+          "destinationId" : "2",
+          "description" : "reads/writes user data",
+          "technology" : "https"
+        }, {
           "id" : "46",
           "tags" : "Relationship",
           "properties" : {
-            "structurizr.dsl.identifier" : "147c1c1d-7c46-47a0-ac0d-10954be71c1e"
+            "structurizr.dsl.identifier" : "82d3feb1-6105-442b-84da-78a1ae494365"
           },
           "sourceId" : "43",
           "destinationId" : "35",
@@ -264,95 +232,6 @@
           "technology" : "https"
         } ],
         "technology" : "graphql stack",
-        "documentation" : { }
-      }, {
-        "id" : "38",
-        "tags" : "Element,Container,Amazon Web Services - CloudFormation",
-        "properties" : {
-          "structurizr.dsl.identifier" : "starterstack.rest"
-        },
-        "name" : "User rest API",
-        "description" : "handle user login events and session",
-        "relationships" : [ {
-          "id" : "39",
-          "tags" : "Relationship",
-          "properties" : {
-            "structurizr.dsl.identifier" : "5158153b-2a5a-4a84-bafc-935470012784"
-          },
-          "sourceId" : "38",
-          "destinationId" : "2",
-          "description" : "reads/writes user data",
-          "technology" : "https"
-        }, {
-          "id" : "40",
-          "tags" : "Relationship",
-          "properties" : {
-            "structurizr.dsl.identifier" : "cf73ba3e-e98f-430d-830f-7cb5e5ae2944"
-          },
-          "sourceId" : "38",
-          "destinationId" : "16",
-          "description" : "reads config",
-          "technology" : "https"
-        }, {
-          "id" : "41",
-          "tags" : "Relationship",
-          "properties" : {
-            "structurizr.dsl.identifier" : "1a95963a-a7f9-43a9-ae3a-33d89d9af9da"
-          },
-          "sourceId" : "38",
-          "destinationId" : "35",
-          "description" : "posts events",
-          "technology" : "https"
-        } ],
-        "technology" : "rest stack",
-        "documentation" : { }
-      }, {
-        "id" : "2",
-        "tags" : "Element,Container,Amazon Web Services - DynamoDB",
-        "properties" : {
-          "structurizr.dsl.identifier" : "starterstack.stacktable"
-        },
-        "name" : "Stack Table",
-        "description" : "Stores information about users",
-        "relationships" : [ {
-          "id" : "49",
-          "tags" : "Relationship",
-          "properties" : {
-            "structurizr.dsl.identifier" : "ddc92273-4abf-4ab9-bde2-6011a0031590"
-          },
-          "sourceId" : "2",
-          "destinationId" : "48",
-          "description" : "handle scheduled TTL documents"
-        }, {
-          "id" : "50",
-          "tags" : "Relationship",
-          "properties" : {
-            "structurizr.dsl.identifier" : "d42f6e11-49d0-49ef-b08f-c1d3a44461af"
-          },
-          "sourceId" : "2",
-          "destinationId" : "48",
-          "description" : "process booking audit data"
-        } ],
-        "technology" : "DynamoDB",
-        "documentation" : { }
-      }, {
-        "id" : "5",
-        "tags" : "Element,Container,Amazon Web Services - Route 53",
-        "properties" : {
-          "structurizr.dsl.identifier" : "starterstack.route53"
-        },
-        "name" : "DNS",
-        "description" : "starterstack",
-        "relationships" : [ {
-          "id" : "31",
-          "tags" : "Relationship",
-          "properties" : {
-            "structurizr.dsl.identifier" : "07ba7a95-d07b-4bca-920f-de211f3b4166"
-          },
-          "sourceId" : "5",
-          "destinationId" : "6"
-        } ],
-        "technology" : "Route 53",
         "documentation" : { }
       }, {
         "id" : "17",
@@ -363,30 +242,10 @@
         "name" : "API Authorizer",
         "description" : "validates session, jwt and roles",
         "relationships" : [ {
-          "id" : "18",
-          "tags" : "Relationship",
-          "properties" : {
-            "structurizr.dsl.identifier" : "5198cc76-2372-4c31-a607-0a43dbc8b6f6"
-          },
-          "sourceId" : "17",
-          "destinationId" : "2",
-          "description" : "reads/writes user data",
-          "technology" : "https"
-        }, {
-          "id" : "19",
-          "tags" : "Relationship",
-          "properties" : {
-            "structurizr.dsl.identifier" : "157e0eba-593f-4b4d-a555-f38cc0734290"
-          },
-          "sourceId" : "17",
-          "destinationId" : "16",
-          "description" : "reads config",
-          "technology" : "https"
-        }, {
           "id" : "23",
           "tags" : "Relationship",
           "properties" : {
-            "structurizr.dsl.identifier" : "50d53520-f3f5-4372-b73c-0c7c06f8b39b"
+            "structurizr.dsl.identifier" : "139dc178-6876-4932-b426-df4022261f58"
           },
           "sourceId" : "17",
           "destinationId" : "22",
@@ -396,7 +255,7 @@
           "id" : "42",
           "tags" : "Relationship",
           "properties" : {
-            "structurizr.dsl.identifier" : "c9d58819-580d-43c1-90b1-7c353fc1961a"
+            "structurizr.dsl.identifier" : "0c7cf8d6-2566-4c28-be02-e2273d7d392e"
           },
           "sourceId" : "17",
           "destinationId" : "38",
@@ -406,87 +265,34 @@
           "id" : "47",
           "tags" : "Relationship",
           "properties" : {
-            "structurizr.dsl.identifier" : "e69435bc-b221-4d96-b5bc-9bba52d0fdce"
+            "structurizr.dsl.identifier" : "aab3acc2-287f-402d-8eba-005c8e00977d"
           },
           "sourceId" : "17",
           "destinationId" : "43",
           "description" : "calls",
           "technology" : "https"
+        }, {
+          "id" : "19",
+          "tags" : "Relationship",
+          "properties" : {
+            "structurizr.dsl.identifier" : "2c7f4dea-7227-48c1-92ba-0f3ad6cbaaf7"
+          },
+          "sourceId" : "17",
+          "destinationId" : "16",
+          "description" : "reads config",
+          "technology" : "https"
+        }, {
+          "id" : "18",
+          "tags" : "Relationship",
+          "properties" : {
+            "structurizr.dsl.identifier" : "ee30cc2c-3277-4e87-a117-627be582a2a4"
+          },
+          "sourceId" : "17",
+          "destinationId" : "2",
+          "description" : "reads/writes user data",
+          "technology" : "https"
         } ],
         "technology" : "lambda",
-        "documentation" : { }
-      }, {
-        "id" : "7",
-        "tags" : "Element,Container,Amazon Web Services - CloudFront",
-        "properties" : {
-          "structurizr.dsl.identifier" : "starterstack.cloudfront"
-        },
-        "name" : "CDN",
-        "description" : "Caches and serves static and dynamodb content",
-        "relationships" : [ {
-          "id" : "9",
-          "tags" : "Relationship",
-          "properties" : {
-            "structurizr.dsl.identifier" : "bb582066-c79c-4aa9-9ab1-c165df172217"
-          },
-          "sourceId" : "7",
-          "destinationId" : "8"
-        }, {
-          "id" : "11",
-          "tags" : "Relationship",
-          "properties" : {
-            "structurizr.dsl.identifier" : "7230197b-2844-4dab-9447-3853054a9608"
-          },
-          "sourceId" : "7",
-          "destinationId" : "10",
-          "description" : "calls",
-          "technology" : "wss"
-        }, {
-          "id" : "13",
-          "tags" : "Relationship",
-          "properties" : {
-            "structurizr.dsl.identifier" : "b15ef293-5d3a-4150-be40-96ceb42701e7"
-          },
-          "sourceId" : "7",
-          "destinationId" : "12",
-          "description" : "calls"
-        }, {
-          "id" : "26",
-          "tags" : "Relationship",
-          "properties" : {
-            "structurizr.dsl.identifier" : "e740eb4b-1fc6-44e2-8616-e3ae84c8ebab"
-          },
-          "sourceId" : "7",
-          "destinationId" : "25",
-          "description" : "uses"
-        }, {
-          "id" : "33",
-          "tags" : "Relationship",
-          "properties" : {
-            "structurizr.dsl.identifier" : "2121f41b-6ad2-4fed-bf7d-1910ba000967"
-          },
-          "sourceId" : "7",
-          "destinationId" : "27"
-        }, {
-          "id" : "34",
-          "tags" : "Relationship",
-          "properties" : {
-            "structurizr.dsl.identifier" : "88fd5522-296a-4e71-a818-46363120696c"
-          },
-          "sourceId" : "7",
-          "destinationId" : "30"
-        } ],
-        "technology" : "CloudFront",
-        "documentation" : { }
-      }, {
-        "id" : "3",
-        "tags" : "Element,Container,Amazon Web Services - DynamoDB",
-        "properties" : {
-          "structurizr.dsl.identifier" : "starterstack.websockettable"
-        },
-        "name" : "WebSocket Table",
-        "description" : "Stores websocket connections",
-        "technology" : "DynamoDB",
         "documentation" : { }
       }, {
         "id" : "35",
@@ -500,7 +306,7 @@
           "id" : "37",
           "tags" : "Relationship",
           "properties" : {
-            "structurizr.dsl.identifier" : "f409cbee-1a56-42f9-93e7-65b7ccd34798"
+            "structurizr.dsl.identifier" : "11b8307f-c128-47fa-9909-da9d73b0e1c0"
           },
           "sourceId" : "35",
           "destinationId" : "36",
@@ -509,7 +315,7 @@
           "id" : "55",
           "tags" : "Relationship",
           "properties" : {
-            "structurizr.dsl.identifier" : "2a7ff79c-ef9a-49c2-9413-830de34a1e40"
+            "structurizr.dsl.identifier" : "694d9dbc-b0eb-4ebe-b935-ecce92353748"
           },
           "sourceId" : "35",
           "destinationId" : "52",
@@ -517,78 +323,81 @@
         } ],
         "documentation" : { }
       }, {
-        "id" : "28",
-        "tags" : "Element,Container",
+        "id" : "6",
+        "tags" : "Element,Container,Amazon Web Services - WAF",
         "properties" : {
-          "structurizr.dsl.identifier" : "starterstack.19cde0fa-5dc4-4319-ba52-201564bf2d4f"
+          "structurizr.dsl.identifier" : "starterstack.cloudfrontwaf"
         },
-        "name" : "Single Page Application",
-        "description" : "React",
-        "documentation" : { }
-      }, {
-        "id" : "16",
-        "tags" : "Element,Container,Amazon Web Services - AWS Systems Manager Parameter Store",
-        "properties" : {
-          "structurizr.dsl.identifier" : "starterstack.ssm"
-        },
-        "name" : "Parameter Store",
-        "description" : "SSM",
-        "documentation" : { }
-      }, {
-        "id" : "4",
-        "tags" : "Element,Container,Amazon Web Services - DynamoDB",
-        "properties" : {
-          "structurizr.dsl.identifier" : "starterstack.audittable"
-        },
-        "name" : "Audit Table",
-        "description" : "Stores versioned data",
-        "technology" : "DynamoDB",
-        "documentation" : { }
-      }, {
-        "id" : "25",
-        "tags" : "Element,Container,Amazon Web Services - Certificate Manager",
-        "properties" : {
-          "structurizr.dsl.identifier" : "starterstack.acm"
-        },
-        "name" : "Certificates",
-        "description" : "Serves starterstack certificates",
-        "technology" : "ACM",
-        "documentation" : { }
-      }, {
-        "id" : "36",
-        "tags" : "Element,Container",
-        "properties" : {
-          "structurizr.dsl.identifier" : "starterstack.2acf64f9-4ae6-4d30-a00c-33a901403d3f"
-        },
-        "name" : "archive",
-        "description" : "Store all events for future use",
-        "documentation" : { }
-      }, {
-        "id" : "8",
-        "tags" : "Element,Container",
-        "properties" : {
-          "structurizr.dsl.identifier" : "starterstack.cloudfrontfunctions"
-        },
-        "name" : "CloudFront functions",
-        "description" : "Process origin requests and responses",
-        "documentation" : { }
-      }, {
-        "id" : "22",
-        "tags" : "Element,Container,Amazon Web Services - Lambda",
-        "properties" : {
-          "structurizr.dsl.identifier" : "starterstack.websocket"
-        },
-        "name" : "WebSocket Lambda",
-        "description" : "websocket stack",
+        "name" : "CDN WAF",
+        "description" : "Protects CDN",
         "relationships" : [ {
-          "id" : "24",
+          "id" : "70",
           "tags" : "Relationship",
           "properties" : {
-            "structurizr.dsl.identifier" : "8274c406-49a5-4671-96e6-ed19e801e91d"
+            "structurizr.dsl.identifier" : "5fdb9e76-ecd7-4a0e-9f2c-193f138bf463"
           },
-          "sourceId" : "22",
-          "destinationId" : "3",
-          "description" : "writes/deletes",
+          "sourceId" : "6",
+          "destinationId" : "58",
+          "description" : "report errors",
+          "technology" : "https"
+        }, {
+          "id" : "32",
+          "tags" : "Relationship",
+          "properties" : {
+            "structurizr.dsl.identifier" : "14add7cb-f4fa-4835-a567-40204cb90aeb"
+          },
+          "sourceId" : "6",
+          "destinationId" : "7"
+        } ],
+        "technology" : "WAF",
+        "documentation" : { }
+      }, {
+        "id" : "10",
+        "tags" : "Element,Container,Amazon Web Services - Amazon API Gateway",
+        "properties" : {
+          "structurizr.dsl.identifier" : "starterstack.apigatewaywebsocket"
+        },
+        "name" : "API WebSocket Gateway",
+        "description" : "websocket api",
+        "relationships" : [ {
+          "id" : "67",
+          "tags" : "Relationship",
+          "properties" : {
+            "structurizr.dsl.identifier" : "b438f228-f95c-4fc9-995e-2d9b80206093"
+          },
+          "sourceId" : "10",
+          "destinationId" : "56",
+          "description" : "real time updates",
+          "technology" : "wss"
+        }, {
+          "id" : "21",
+          "tags" : "Relationship",
+          "properties" : {
+            "structurizr.dsl.identifier" : "b0ab5375-e3e0-4149-b095-2979f881b9b4"
+          },
+          "sourceId" : "10",
+          "destinationId" : "17",
+          "description" : "calls",
+          "technology" : "https"
+        } ],
+        "documentation" : { }
+      }, {
+        "id" : "14",
+        "tags" : "Element,Container,Amazon Web Services - Amazon API Gateway",
+        "properties" : {
+          "structurizr.dsl.identifier" : "starterstack.apigatewayhttp"
+        },
+        "name" : "REST API API Gateway",
+        "description" : "rest api",
+        "relationships" : [ {
+          "id" : "20",
+          "tags" : "Relationship",
+          "properties" : {
+            "structurizr.dsl.identifier" : "d241a58f-eaec-4243-9b73-46ffa708f4b0"
+          },
+          "sourceId" : "14",
+          "destinationId" : "17",
+          "description" : "calls",
           "technology" : "https"
         } ],
         "documentation" : { }
@@ -604,41 +413,30 @@
           "id" : "29",
           "tags" : "Relationship",
           "properties" : {
-            "structurizr.dsl.identifier" : "f9f0f2d4-d357-49e5-bd62-c90e6ca181d6"
+            "structurizr.dsl.identifier" : "04b28275-2e70-49ac-be48-ac3ad1bf701c"
           },
           "sourceId" : "27",
           "destinationId" : "28"
         } ],
         "documentation" : { }
       }, {
-        "id" : "10",
-        "tags" : "Element,Container,Amazon Web Services - Amazon API Gateway",
+        "id" : "5",
+        "tags" : "Element,Container,Amazon Web Services - Route 53",
         "properties" : {
-          "structurizr.dsl.identifier" : "starterstack.apigatewaywebsocket"
+          "structurizr.dsl.identifier" : "starterstack.route53"
         },
-        "name" : "API WebSocket Gateway",
-        "description" : "websocket api",
+        "name" : "DNS",
+        "description" : "starterstack",
         "relationships" : [ {
-          "id" : "21",
+          "id" : "31",
           "tags" : "Relationship",
           "properties" : {
-            "structurizr.dsl.identifier" : "e4141bdd-be66-401d-8291-8649cd1cc679"
+            "structurizr.dsl.identifier" : "75935685-bbf6-4490-b10f-b89db706fd7a"
           },
-          "sourceId" : "10",
-          "destinationId" : "17",
-          "description" : "calls",
-          "technology" : "https"
-        }, {
-          "id" : "67",
-          "tags" : "Relationship",
-          "properties" : {
-            "structurizr.dsl.identifier" : "2be15d5b-afbb-40d5-a2e7-cf9bb40827ed"
-          },
-          "sourceId" : "10",
-          "destinationId" : "56",
-          "description" : "real time updates",
-          "technology" : "wss"
+          "sourceId" : "5",
+          "destinationId" : "6"
         } ],
+        "technology" : "Route 53",
         "documentation" : { }
       }, {
         "id" : "12",
@@ -652,7 +450,7 @@
           "id" : "15",
           "tags" : "Relationship",
           "properties" : {
-            "structurizr.dsl.identifier" : "5ab3b40d-b609-44fa-bd26-9ccaa932119c"
+            "structurizr.dsl.identifier" : "360ac2c2-3c56-4051-9948-4fc1dc198d7b"
           },
           "sourceId" : "12",
           "destinationId" : "14",
@@ -662,24 +460,237 @@
         "technology" : "WAF",
         "documentation" : { }
       }, {
-        "id" : "14",
-        "tags" : "Element,Container,Amazon Web Services - Amazon API Gateway",
+        "id" : "16",
+        "tags" : "Element,Container,Amazon Web Services - AWS Systems Manager Parameter Store",
         "properties" : {
-          "structurizr.dsl.identifier" : "starterstack.apigatewayhttp"
+          "structurizr.dsl.identifier" : "starterstack.ssm"
         },
-        "name" : "API HTTP Gateway",
-        "description" : "https api",
+        "name" : "Parameter Store",
+        "description" : "SSM",
+        "documentation" : { }
+      }, {
+        "id" : "22",
+        "tags" : "Element,Container,Amazon Web Services - Lambda",
+        "properties" : {
+          "structurizr.dsl.identifier" : "starterstack.websocket"
+        },
+        "name" : "WebSocket Lambda",
+        "description" : "websocket stack",
         "relationships" : [ {
-          "id" : "20",
+          "id" : "24",
           "tags" : "Relationship",
           "properties" : {
-            "structurizr.dsl.identifier" : "9db2a3ab-b9bf-4666-9924-afae043539e3"
+            "structurizr.dsl.identifier" : "11ef5ef7-091f-4a79-a6cd-c4741abcb9ec"
           },
-          "sourceId" : "14",
-          "destinationId" : "17",
-          "description" : "calls",
+          "sourceId" : "22",
+          "destinationId" : "3",
+          "description" : "writes/deletes",
           "technology" : "https"
         } ],
+        "documentation" : { }
+      }, {
+        "id" : "38",
+        "tags" : "Element,Container,Amazon Web Services - CloudFormation",
+        "properties" : {
+          "structurizr.dsl.identifier" : "starterstack.rest"
+        },
+        "name" : "User rest API",
+        "description" : "handle user login events and session",
+        "relationships" : [ {
+          "id" : "40",
+          "tags" : "Relationship",
+          "properties" : {
+            "structurizr.dsl.identifier" : "7f5999c2-ec99-42ab-8912-252f090f62bf"
+          },
+          "sourceId" : "38",
+          "destinationId" : "16",
+          "description" : "reads config",
+          "technology" : "https"
+        }, {
+          "id" : "39",
+          "tags" : "Relationship",
+          "properties" : {
+            "structurizr.dsl.identifier" : "0ef2c87c-b85a-4568-92f2-b036959f50e3"
+          },
+          "sourceId" : "38",
+          "destinationId" : "2",
+          "description" : "reads/writes user data",
+          "technology" : "https"
+        }, {
+          "id" : "41",
+          "tags" : "Relationship",
+          "properties" : {
+            "structurizr.dsl.identifier" : "91dab802-b29c-4516-adff-070a280cf012"
+          },
+          "sourceId" : "38",
+          "destinationId" : "35",
+          "description" : "posts events",
+          "technology" : "https"
+        } ],
+        "technology" : "rest stack",
+        "documentation" : { }
+      }, {
+        "id" : "3",
+        "tags" : "Element,Container,Amazon Web Services - DynamoDB",
+        "properties" : {
+          "structurizr.dsl.identifier" : "starterstack.websockettable"
+        },
+        "name" : "WebSocket Table",
+        "description" : "Stores websocket connections",
+        "technology" : "DynamoDB",
+        "documentation" : { }
+      }, {
+        "id" : "4",
+        "tags" : "Element,Container,Amazon Web Services - DynamoDB",
+        "properties" : {
+          "structurizr.dsl.identifier" : "starterstack.audittable"
+        },
+        "name" : "Audit Table",
+        "description" : "Stores versioned data",
+        "technology" : "DynamoDB",
+        "documentation" : { }
+      }, {
+        "id" : "48",
+        "tags" : "Element,Container,Amazon Web Services - EventBridge Pipes",
+        "properties" : {
+          "structurizr.dsl.identifier" : "starterstack.2daa5576-a028-4909-a3c4-e068fb208ea6"
+        },
+        "name" : "EventBridge Pipe",
+        "description" : "process stack data",
+        "relationships" : [ {
+          "id" : "51",
+          "tags" : "Relationship",
+          "properties" : {
+            "structurizr.dsl.identifier" : "f49c9bc0-93d1-48d5-ba32-bdf45357c359"
+          },
+          "sourceId" : "48",
+          "destinationId" : "4"
+        } ],
+        "documentation" : { }
+      }, {
+        "id" : "36",
+        "tags" : "Element,Container",
+        "properties" : {
+          "structurizr.dsl.identifier" : "starterstack.b6dba617-91a7-49af-adcc-c49236a35314"
+        },
+        "name" : "archive",
+        "description" : "Store all events for future use",
+        "documentation" : { }
+      }, {
+        "id" : "30",
+        "tags" : "Element,Container,Amazon Web Services - Simple Storage Service Bucket With Objects",
+        "properties" : {
+          "structurizr.dsl.identifier" : "starterstack.s3media"
+        },
+        "name" : "S3 Media Bucket",
+        "description" : "media content",
+        "documentation" : { }
+      }, {
+        "id" : "52",
+        "tags" : "Element,Container,notification stack,Amazon Web Services - AWS Lambda Lambda Function",
+        "properties" : {
+          "structurizr.dsl.identifier" : "starterstack.notification"
+        },
+        "name" : "Notification",
+        "description" : "Sends email, and sms messages",
+        "relationships" : [ {
+          "id" : "53",
+          "tags" : "Relationship",
+          "properties" : {
+            "structurizr.dsl.identifier" : "697df559-583c-4817-94a1-472d03733229"
+          },
+          "sourceId" : "52",
+          "destinationId" : "2",
+          "description" : "reads/writes user data",
+          "technology" : "https"
+        }, {
+          "id" : "69",
+          "tags" : "Relationship",
+          "properties" : {
+            "structurizr.dsl.identifier" : "623dfe33-ba5f-4b25-93d1-11a05c6a35c9"
+          },
+          "sourceId" : "52",
+          "destinationId" : "58",
+          "description" : "report errors",
+          "technology" : "https"
+        }, {
+          "id" : "71",
+          "tags" : "Relationship",
+          "properties" : {
+            "structurizr.dsl.identifier" : "b32c59f9-0453-40c9-8e4a-5b4be2abab64"
+          },
+          "sourceId" : "52",
+          "destinationId" : "56",
+          "description" : "sends email using SES"
+        }, {
+          "id" : "54",
+          "tags" : "Relationship",
+          "properties" : {
+            "structurizr.dsl.identifier" : "048a2dd1-8198-440d-b5b8-0a807c3ea897"
+          },
+          "sourceId" : "52",
+          "destinationId" : "16",
+          "description" : "reads config",
+          "technology" : "https"
+        } ],
+        "technology" : ",",
+        "documentation" : { }
+      }, {
+        "id" : "25",
+        "tags" : "Element,Container,Amazon Web Services - Certificate Manager",
+        "properties" : {
+          "structurizr.dsl.identifier" : "starterstack.acm"
+        },
+        "name" : "Certificates",
+        "description" : "Serves starterstack certificates",
+        "technology" : "ACM",
+        "documentation" : { }
+      }, {
+        "id" : "2",
+        "tags" : "Element,Container,Amazon Web Services - DynamoDB",
+        "properties" : {
+          "structurizr.dsl.identifier" : "starterstack.stacktable"
+        },
+        "name" : "Stack Table",
+        "description" : "Stores information about users",
+        "relationships" : [ {
+          "id" : "49",
+          "tags" : "Relationship",
+          "properties" : {
+            "structurizr.dsl.identifier" : "47981aeb-c429-42ee-a8aa-ffaacc4afb7a"
+          },
+          "sourceId" : "2",
+          "destinationId" : "48",
+          "description" : "handle scheduled TTL documents"
+        }, {
+          "id" : "50",
+          "tags" : "Relationship",
+          "properties" : {
+            "structurizr.dsl.identifier" : "33071366-e5d2-4914-a480-de46a6b3cc1c"
+          },
+          "sourceId" : "2",
+          "destinationId" : "48",
+          "description" : "process booking audit data"
+        } ],
+        "technology" : "DynamoDB",
+        "documentation" : { }
+      }, {
+        "id" : "8",
+        "tags" : "Element,Container",
+        "properties" : {
+          "structurizr.dsl.identifier" : "starterstack.cloudfrontfunctions"
+        },
+        "name" : "CloudFront functions",
+        "description" : "Process origin requests and responses",
+        "documentation" : { }
+      }, {
+        "id" : "28",
+        "tags" : "Element,Container",
+        "properties" : {
+          "structurizr.dsl.identifier" : "starterstack.c585559a-7f52-45ab-9ab9-b0d17288e6a7"
+        },
+        "name" : "Single Page Application",
+        "description" : "React",
         "documentation" : { }
       } ],
       "documentation" : { }
@@ -694,16 +705,6 @@
       "location" : "Unspecified",
       "documentation" : { }
     }, {
-      "id" : "59",
-      "tags" : "Element,Software System",
-      "properties" : {
-        "structurizr.dsl.identifier" : "slack"
-      },
-      "name" : "Slack",
-      "description" : "Receives ops and alarm events.",
-      "location" : "Unspecified",
-      "documentation" : { }
-    }, {
       "id" : "60",
       "tags" : "Element,Software System",
       "properties" : {
@@ -715,7 +716,7 @@
         "id" : "63",
         "tags" : "Relationship",
         "properties" : {
-          "structurizr.dsl.identifier" : "954a4c88-c640-434f-8f23-a8316150bcba"
+          "structurizr.dsl.identifier" : "7adfca5f-ed44-4115-87d6-2c42d91fa699"
         },
         "sourceId" : "60",
         "destinationId" : "1"
@@ -759,6 +760,13 @@
       "title" : "Use structurizr for documentation",
       "date" : "2023-03-21T00:00:00Z",
       "status" : "Accepted"
+    }, {
+      "content" : "# 4. Use Serverless Application Model to describe our infrastructure\n\nDate: 2024-03-16\n\n## Status\n\nAccepted\n\n## Context\n\nUse an imperative technique to describe infrastructure as code, keep the structure consistent for all CloudFormation stacks.\n\n## Decision\n\nUse [SAM](https://github.com/aws/serverless-application-model) infrastructure as code templates.\n\nUse [sam-expand](https://github.com/starterstack/sam-expand) to test, validate, build, and deploy stacks.\n\n## Consequences\n\nConsistent structure for CloudFormation stacks, with the flexibility `sam-expand` brings.\n",
+      "format" : "Markdown",
+      "id" : "4",
+      "title" : "Use Serverless Application Model to describe our infrastructure",
+      "date" : "2024-03-16T00:00:00Z",
+      "status" : "Accepted"
     } ]
   },
   "views" : {
@@ -772,31 +780,6 @@
         "height" : 2516
       },
       "enterpriseBoundaryVisible" : true,
-      "elements" : [ {
-        "id" : "1",
-        "x" : 958,
-        "y" : 1408
-      }, {
-        "id" : "56",
-        "x" : 958,
-        "y" : 2008
-      }, {
-        "id" : "57",
-        "x" : 958,
-        "y" : 208
-      }, {
-        "id" : "58",
-        "x" : 208,
-        "y" : 2008
-      }, {
-        "id" : "59",
-        "x" : 1708,
-        "y" : 2008
-      }, {
-        "id" : "60",
-        "x" : 958,
-        "y" : 808
-      } ],
       "relationships" : [ {
         "id" : "61"
       }, {
@@ -829,6 +812,31 @@
           "x" : 1020,
           "y" : 1877
         } ]
+      } ],
+      "elements" : [ {
+        "id" : "1",
+        "x" : 958,
+        "y" : 1408
+      }, {
+        "id" : "56",
+        "x" : 958,
+        "y" : 2008
+      }, {
+        "id" : "57",
+        "x" : 958,
+        "y" : 208
+      }, {
+        "id" : "58",
+        "x" : 208,
+        "y" : 2008
+      }, {
+        "id" : "59",
+        "x" : 1708,
+        "y" : 2008
+      }, {
+        "id" : "60",
+        "x" : 958,
+        "y" : 808
       } ]
     } ],
     "systemContextViews" : [ {
@@ -841,6 +849,25 @@
         "height" : 1916
       },
       "enterpriseBoundaryVisible" : true,
+      "relationships" : [ {
+        "id" : "61"
+      }, {
+        "id" : "63"
+      }, {
+        "id" : "62"
+      }, {
+        "id" : "64",
+        "vertices" : [ {
+          "x" : 735,
+          "y" : 1361
+        } ]
+      }, {
+        "id" : "68",
+        "vertices" : [ {
+          "x" : 480,
+          "y" : 1204
+        } ]
+      } ],
       "elements" : [ {
         "id" : "1",
         "x" : 583,
@@ -861,25 +888,6 @@
         "id" : "60",
         "x" : 583,
         "y" : 208
-      } ],
-      "relationships" : [ {
-        "id" : "61"
-      }, {
-        "id" : "63"
-      }, {
-        "id" : "62"
-      }, {
-        "id" : "64",
-        "vertices" : [ {
-          "x" : 735,
-          "y" : 1361
-        } ]
-      }, {
-        "id" : "68",
-        "vertices" : [ {
-          "x" : 480,
-          "y" : 1204
-        } ]
       } ]
     } ],
     "containerViews" : [ {
@@ -892,107 +900,6 @@
         "height" : 7558
       },
       "externalSoftwareSystemBoundariesVisible" : true,
-      "elements" : [ {
-        "id" : "22",
-        "x" : 1145,
-        "y" : 3929
-      }, {
-        "id" : "25",
-        "x" : 329,
-        "y" : 2129
-      }, {
-        "id" : "48",
-        "x" : 3041,
-        "y" : 6329
-      }, {
-        "id" : "27",
-        "x" : 1079,
-        "y" : 2129
-      }, {
-        "id" : "28",
-        "x" : 1079,
-        "y" : 2729
-      }, {
-        "id" : "52",
-        "x" : 3329,
-        "y" : 5129
-      }, {
-        "id" : "30",
-        "x" : 1829,
-        "y" : 2129
-      }, {
-        "id" : "10",
-        "x" : 3637,
-        "y" : 2729
-      }, {
-        "id" : "56",
-        "x" : 4295,
-        "y" : 3329
-      }, {
-        "id" : "12",
-        "x" : 3329,
-        "y" : 2129
-      }, {
-        "id" : "35",
-        "x" : 2312,
-        "y" : 4529
-      }, {
-        "id" : "58",
-        "x" : 4637,
-        "y" : 5729
-      }, {
-        "id" : "36",
-        "x" : 2270,
-        "y" : 5129
-      }, {
-        "id" : "14",
-        "x" : 2358,
-        "y" : 2729
-      }, {
-        "id" : "38",
-        "x" : 2841,
-        "y" : 3929
-      }, {
-        "id" : "16",
-        "x" : 1720,
-        "y" : 5729
-      }, {
-        "id" : "17",
-        "x" : 1937,
-        "y" : 3329
-      }, {
-        "id" : "2",
-        "x" : 3041,
-        "y" : 5729
-      }, {
-        "id" : "3",
-        "x" : 945,
-        "y" : 4529
-      }, {
-        "id" : "4",
-        "x" : 3041,
-        "y" : 6929
-      }, {
-        "id" : "5",
-        "x" : 3108,
-        "y" : 329
-      }, {
-        "id" : "6",
-        "x" : 3108,
-        "y" : 929
-      }, {
-        "id" : "7",
-        "x" : 2579,
-        "y" : 1529
-      }, {
-        "id" : "8",
-        "x" : 2579,
-        "y" : 2129
-      }, {
-        "id" : "43",
-        "x" : 1937,
-        "y" : 3929
-      } ],
       "relationships" : [ {
         "id" : "70",
         "vertices" : [ {
@@ -1065,9 +972,9 @@
           "y" : 5429
         } ]
       }, {
-        "id" : "69"
-      }, {
         "id" : "46"
+      }, {
+        "id" : "69"
       }, {
         "id" : "47"
       }, {
@@ -1112,9 +1019,9 @@
           "y" : 5429
         } ]
       }, {
-        "id" : "37"
-      }, {
         "id" : "15"
+      }, {
+        "id" : "37"
       }, {
         "id" : "13"
       }, {
@@ -1152,6 +1059,107 @@
           "x" : 562,
           "y" : 5429
         } ]
+      } ],
+      "elements" : [ {
+        "id" : "22",
+        "x" : 1145,
+        "y" : 3929
+      }, {
+        "id" : "25",
+        "x" : 329,
+        "y" : 2129
+      }, {
+        "id" : "48",
+        "x" : 3041,
+        "y" : 6329
+      }, {
+        "id" : "27",
+        "x" : 1079,
+        "y" : 2129
+      }, {
+        "id" : "28",
+        "x" : 1079,
+        "y" : 2729
+      }, {
+        "id" : "30",
+        "x" : 1829,
+        "y" : 2129
+      }, {
+        "id" : "52",
+        "x" : 3329,
+        "y" : 5129
+      }, {
+        "id" : "10",
+        "x" : 3637,
+        "y" : 2729
+      }, {
+        "id" : "12",
+        "x" : 3360,
+        "y" : 2135
+      }, {
+        "id" : "56",
+        "x" : 4295,
+        "y" : 3329
+      }, {
+        "id" : "35",
+        "x" : 2312,
+        "y" : 4529
+      }, {
+        "id" : "14",
+        "x" : 2358,
+        "y" : 2729
+      }, {
+        "id" : "58",
+        "x" : 4637,
+        "y" : 5729
+      }, {
+        "id" : "36",
+        "x" : 2270,
+        "y" : 5129
+      }, {
+        "id" : "38",
+        "x" : 2841,
+        "y" : 3929
+      }, {
+        "id" : "16",
+        "x" : 1720,
+        "y" : 5729
+      }, {
+        "id" : "17",
+        "x" : 1937,
+        "y" : 3329
+      }, {
+        "id" : "2",
+        "x" : 3041,
+        "y" : 5729
+      }, {
+        "id" : "3",
+        "x" : 945,
+        "y" : 4529
+      }, {
+        "id" : "4",
+        "x" : 3041,
+        "y" : 6929
+      }, {
+        "id" : "5",
+        "x" : 3108,
+        "y" : 329
+      }, {
+        "id" : "6",
+        "x" : 3108,
+        "y" : 929
+      }, {
+        "id" : "7",
+        "x" : 2579,
+        "y" : 1529
+      }, {
+        "id" : "8",
+        "x" : 2579,
+        "y" : 2129
+      }, {
+        "id" : "43",
+        "x" : 1955,
+        "y" : 3950
       } ]
     } ],
     "configuration" : {
@@ -1172,6 +1180,7 @@
       },
       "themes" : [ "https://static.structurizr.com/themes/amazon-web-services-2023.01.31/icons.json", "https://static.structurizr.com/themes/default/theme.json" ],
       "terminology" : { },
+      "metadataSymbols" : "SquareBrackets",
       "lastSavedView" : "container"
     }
   }

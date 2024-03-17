@@ -39,7 +39,7 @@ starterstack = softwareSystem "Starterstack" "Reference architecture." {
     cloudFront -> this "calls"
   }
 
-  apiGatewayHttp = container "API HTTP Gateway" "https api"{
+  apiGatewayHttp = container "API REST API Gateway" "https api"{
     tags "Amazon Web Services - Amazon API Gateway"
     apiGatewayWAF -> this "calls" "https"
   }
