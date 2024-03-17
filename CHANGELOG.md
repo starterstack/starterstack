@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.23](https://github.com/starterstack/starterstack/compare/v0.0.22...v0.0.23) (2024-03-17)
+
+
+### Bug Fixes
+
+* remove unused env:IS_OFFLINE ([7f50330](https://github.com/starterstack/starterstack/commit/7f50330878a6e273e16d2cf4fec37caf9ac02ab2))
+
 ## [0.0.22](https://github.com/starterstack/starterstack/compare/v0.0.21...v0.0.22) (2024-03-15)
 
 
