@@ -42,6 +42,9 @@ const dependencies = await Promise.all(
       if (file !== 'deployment') {
         dependencies.push('deployment')
       }
+      if (file !== 'monitoring') {
+        dependencies.push('monitoring')
+      }
       for (const parameterOverrides of stackStageConfigParameterOverrides ??
         []) {
         for (const override of parameterOverrides.overrides) {
