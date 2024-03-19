@@ -49,7 +49,7 @@ This project was bootstrapped with [starterstack](https://github.com/starterstac
 - [x] Image resizing example (jpeg, and webp)
 - [x] PDF example
 - [x] CloudFront functions
-- [x] Custom Lambda Authorizers for HTTP API, REST API & Websockets with full offline support using JWT and DynamoDB with user roles
+- [x] Custom Lambda Authorizers for HTTP API, REST API & Websockets using JWT and DynamoDB with user roles
 - [x] X-Ray tracing, sampled debug logging, and correlationId tracing
 - [x] Examples for DynamoDB, SES (sending and receiving), SNS, SSM, S3, EventBridge
 - [x] Custom CloudFormation resource supporting SES automation
@@ -100,7 +100,7 @@ deploy without GitHub actions
 npm i
 ```
 
-run unit tests (excludes offline tests)
+run unit tests
 
 ```sh
 npm t
