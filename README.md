@@ -21,6 +21,9 @@ This project was bootstrapped with [starterstack](https://github.com/starterstac
 - [Node 20](https://nodejs.org/en/download/)
 - [Python 3.12](https://www.python.org/downloads/release/python-3121)
 - [graphviz](https://graphviz.gitlab.io/download/) to generate [docs](./docs/README.md)
+- [sam cli](https://github.com/aws/aws-sam-cli) to deploy locally
+- [aws cli](https://docs.aws.amazon.com/cli/latest/userguide/getting-started-install.html#getting-started-install-instructions) to deploy locally
+- [jq](https://github.com/jqlang/jq) to deploy locally
 
 ### Developer tool prerequisites if not using [Docker](https://www.docker.com)
 
