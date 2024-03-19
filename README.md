@@ -236,8 +236,7 @@ If and when new resource types are added, missing tags can be detected using [Ta
 The extra work to tag resources is as follows
 
 - [tag eventbus rules script (not supported yet in CloudFormation)](./scripts/tag-eventbus-rules.sh)
-- [add default tags (missed by Serverless Framework)](./packages/default-tags.mjs)
-- [default tags are defined here](./packages/settings.js)
+- [default tags are defined here](./packages/stack-stage-config.mjs)
 
 ### Manually deleting a CloudFormation stack
 
