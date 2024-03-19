@@ -69,6 +69,7 @@
       "eslint --fix --no-error-on-unmatched-pattern",
       "prettier --write --no-error-on-unmatched-pattern"
     ],
+    "*": "node ./scripts/generate-graph.mjs",
     ".github/actions/*.js": "bash ./scripts/build-actions.sh",
     "scripts/directory-hash.mjs": "bash ./scripts/build-actions.sh",
     "packages/settings.json": "bash ./scripts/build-actions.sh",
