@@ -85,29 +85,25 @@ Commit messages are [Commitizen friendly](https://github.com/commitizen/cz-cli#m
 
 ### :house: development
 
-proxy to deployed environment, or local without react
+```sh
+npm i
+```
+
+proxy to deployed environment, with or without local web
 
 ```sh
 npm run proxy
 ```
 
+graphql introspection for developer users
+
 - GraphQL - You can use [apollo studio](https://studio.apollographql.com/sandbox/explorer)
   and connect it to a local running graphql server without exposing a playground.
 
-deploy without GitHub actions
+misc scripts
 
 ```sh
-npm i
-```
-
-run unit tests
-
-```sh
-npm t
-```
-
-```sh
-npm run deploy
+npm pkg get scripts
 ```
 
 ### Initial AWS setup
@@ -133,35 +129,29 @@ npm run deploy
   cd starterstack
   npm ci --ignore-scripts --omit=dev
   # if cloudshell runs out of space use `npm run cli` with AWS credentials instead
-  cd packages/deployment
+  cd packages/deployment # repeat build/lint/deploy for all regions
   npx sam-expand build
-  # optional lint check (supplied by build output)
   npx sam-expand deploy
   cd -
-  cd packages/monitoring
+  cd packages/monitoring # repeat build/lint/deploy for all regions
   npx sam-expand build
-  # optional lint check (supplied by build output)
   npx sam-expand deploy
   cd -
   cd packages/iam
   npx sam-expand build
-  # optional lint check (supplied by build output)
   npx sam-expand deploy
   cd -
   cd packages/stack # skip this step for log and backup accounts
   npx sam-expand build
-  # optional lint check (supplied by build output)
   npx sam-expand deploy
   # when the stack is being created access aws console, and follow the DNS instructions below
   cd -
   cd packages/cloudtrail # for log account only
   npx sam-expand build
-  # optional lint check (supplied by build output)
   npx sam-expand deploy
   cd -
   cd packages/backup # for backup account only
   npx sam-expand build
-  # optional lint check (supplied by build output)
   npx sam-expand deploy
   # if log or backup account run `npm run setup # GitHub secrets only` to save s3 bucket to secrets from cloudformation output
   ```
