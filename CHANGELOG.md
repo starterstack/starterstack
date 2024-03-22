@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.0.24](https://github.com/starterstack/starterstack/compare/v0.0.23...v0.0.24) (2024-03-22)
+
+
+### Bug Fixes
+
+* **lint cloudformation:** env.INIT_CWD in Makefile ([d7d874f](https://github.com/starterstack/starterstack/commit/d7d874f6365018d7158af865bb9822b2c5551c4b))
+* move getExports to stack-stage-config ([f212211](https://github.com/starterstack/starterstack/commit/f2122113c3f7282cde57943ba65408d425eb9167))
+
 ## [0.0.23](https://github.com/starterstack/starterstack/compare/v0.0.22...v0.0.23) (2024-03-17)
 
 
