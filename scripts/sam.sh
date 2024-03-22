@@ -44,20 +44,22 @@ function sam() {
       --region "${region:?}" \
       --no-prompts
   else
-    node \
-      "$(dirname "${source:?}")/../node_modules/.bin/sam-expand" \
-      build \
-      -p \
-      --no-cached \
-      --parameter-overrides Stage="${stage:?}" \
-      --region "${region:?}"
+    if [[ ${lint_only?} -eq 1 ]] || ![[ "${stage:?}" =~ "^pr-" ]]; then
+      node \
+        "$(dirname "${source:?}")/../node_modules/.bin/sam-expand" \
+        build \
+        -p \
+        --no-cached \
+        --parameter-overrides Stage="${stage:?}" \
+        --region "${region:?}"
 
-    STAGE="${stage:?}" node \
-      "$(dirname "${source:?}")/../node_modules/.bin/sam-expand" \
-      validate \
-      --lint \
-      -t .aws-sam/build/template.yaml \
-      --region "${region:?}"
+      STAGE="${stage:?}" node \
+        "$(dirname "${source:?}")/../node_modules/.bin/sam-expand" \
+        validate \
+        --lint \
+        -t .aws-sam/build/template.yaml \
+        --region "${region:?}"
+    fi
 
     if [[ ${lint_only?} -eq 0 ]]; then
       if [[ "${stage:?}" =~ "^pr-" ]]; then

@@ -151,7 +151,7 @@ function createLintProcess(service) {
           FORCE_COLOR: '1',
           NODE_OPTIONS: '--unhandled-rejections=strict',
           ...process.env,
-          INIT_CWD: undefined,
+          INIT_CWD: path.resolve(service.directory),
           PATH: `${process.env.PATH}:${path.resolve(
             path.join(__dirname, '..', 'node_modules', '.bin')
           )}`,
