@@ -976,3 +976,35 @@ function useLocalOfflineConfig() {
   }
   settings.awsAccounts[accountId] = settings.awsAccounts[devAccountId]
 }
+
+/**
+ * @returns {Record<string, string>}
+ **/
+export function getExports() {
+  /** @type {Record<string, string>} */
+  const inputs = { cloudFrontWafACL: 'stage' }
+  const matchGet = /^\s*get\s*([^()]+)\(\)\s*{\s*$/
+  const matchOutput = /^\s*return\s*get(.*)Output\s*\(/
+  const matchEnd = /^\s*},?\s*$/
+  let exportName
+  const lines = getSettings.toString().split(/[\n\r]/)
+  for (const line of lines) {
+    if (exportName) {
+      const output = line.match(matchOutput)
+      if (output) {
+        inputs[exportName] = String(output.at(1)).toLowerCase()
+      } else {
+        const end = line.match(matchEnd)
+        if (end) {
+          exportName = ''
+        }
+      }
+    } else {
+      const get = line.match(matchGet)
+      if (get) {
+        exportName = get.at(1)
+      }
+    }
+  }
+  return inputs
+}

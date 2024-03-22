@@ -5,7 +5,7 @@
 import { readdir, stat, writeFile, readFile } from 'node:fs/promises'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import stackStageConfig from '../packages/stack-stage-config.mjs'
+import { getExports } from '../packages/stack-stage-config.mjs'
 import { yamlParse } from 'yaml-cfn'
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
@@ -91,35 +91,3 @@ ${templateDependencies
 \`\`\``
 
 await writeFile(path.join(__dirname, '..', 'README.md'), readmeLines.join('\n'))
-
-/**
- * @returns {Record<string, string>}
- **/
-function getExports() {
-  /** @type {Record<string, string>} */
-  const inputs = { cloudFrontWafACL: 'stage' }
-  const matchGet = /^\s*get\s*([^()]+)\(\)\s*{\s*$/
-  const matchOutput = /^\s*return\s*get(.*)Output\s*\(/
-  const matchEnd = /^\s*},?\s*$/
-  let exportName
-  const lines = stackStageConfig.toString().split(/[\n\r]/)
-  for (const line of lines) {
-    if (exportName) {
-      const output = line.match(matchOutput)
-      if (output) {
-        inputs[exportName] = String(output.at(1)).toLowerCase()
-      } else {
-        const end = line.match(matchEnd)
-        if (end) {
-          exportName = ''
-        }
-      }
-    } else {
-      const get = line.match(matchGet)
-      if (get) {
-        exportName = get.at(1)
-      }
-    }
-  }
-  return inputs
-}
