@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.25](https://github.com/starterstack/starterstack/compare/v0.0.24...v0.0.25) (2024-03-29)
+
+
+### Bug Fixes
+
+* pin [@aws-sdk](https://github.com/aws-sdk) to lambda version ([c78171c](https://github.com/starterstack/starterstack/commit/c78171c6e3527aa4d573b2a3db5da8fcef461d0b))
+
 ## [0.0.24](https://github.com/starterstack/starterstack/compare/v0.0.23...v0.0.24) (2024-03-22)
 
 
