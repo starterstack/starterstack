@@ -2,7 +2,7 @@
   "type": "module",
   "private": "true",
   "dependencies": {
-    "aws-xray-sdk-core": "3.5.2",
+    "aws-xray-sdk-core": "3.6.0",
     "ms": "2.1.3"
   }
 }
