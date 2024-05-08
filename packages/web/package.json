@@ -15,7 +15,7 @@
     "graphql-ws": "5.16.0",
     "react": "18.3.1",
     "react-dom": "18.3.1",
-    "styled-components": "6.1.9",
+    "styled-components": "6.1.10",
     "web-vitals": "3.5.2"
   },
   "scripts": {
