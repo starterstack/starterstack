@@ -2,7 +2,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@sentry/node": "7.113.0",
+    "@sentry/node": "7.114.0",
     "aws-xray-sdk-core": "3.6.0"
   }
 }
