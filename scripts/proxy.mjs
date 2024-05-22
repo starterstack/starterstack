@@ -87,6 +87,7 @@ const { anonymous } =
       })
     : { anonymous: args[2] === 'true' }
 
+/** @type {any} */
 const app = express()
 
 app.use(function cors(req, res, next) {
@@ -102,60 +103,52 @@ app.use(function cors(req, res, next) {
 })
 
 app.use(
-  createProxyMiddleware(
-    function filter(pathname) {
+  createProxyMiddleware({
+    target: url,
+    changeOrigin: true,
+    pathFilter(pathname) {
       return (
         (!localWeb || pathname.startsWith('/api')) &&
         !pathname.startsWith('/api/ws')
       )
     },
-    {
-      target: url,
-      changeOrigin: true,
-      onProxyReq(proxyReq) {
-        proxyReq.setHeader('cookie', `token=${token}`)
-        proxyReq.removeHeader('origin')
-        proxyReq.removeHeader('referer')
-      }
+    onProxyReq(proxyReq) {
+      proxyReq.setHeader('cookie', `token=${token}`)
+      proxyReq.removeHeader('origin')
+      proxyReq.removeHeader('referer')
     }
-  )
+  })
 )
 
 if (localWeb) {
   app.use(
-    createProxyMiddleware(
-      function filter(pathname) {
+    createProxyMiddleware({
+      pathFilter(pathname) {
         return !pathname.startsWith('/api')
       },
-      {
-        target: 'http://localhost:3000',
-        changeOrigin: true
-      }
-    )
+      target: 'http://localhost:3000',
+      changeOrigin: true
+    })
   )
 }
 
 app.use(
-  createProxyMiddleware(
-    function filter(pathname) {
+  createProxyMiddleware({
+    target: url,
+    ws: true,
+    changeOrigin: true,
+    filterPath(pathname) {
       return pathname.startsWith('/api/ws')
     },
-    {
-      target: url,
-      ws: true,
-      changeOrigin: true,
-      onProxyReqWs(proxyReq, _, socket) {
-        proxyReq.setHeader('cookie', `token=${token}`)
-        proxyReq.removeHeader('origin')
-        proxyReq.removeHeader('referer')
-        socket.on('error', (error) =>
-          console.error(
-            `\u001B[34mwebsocket error ${error.toString()}\u001B[0m`
-          )
-        )
-      }
+    onProxyReqWs(proxyReq, _, socket) {
+      proxyReq.setHeader('cookie', `token=${token}`)
+      proxyReq.removeHeader('origin')
+      proxyReq.removeHeader('referer')
+      socket.on('error', (error) =>
+        console.error(`\u001B[34mwebsocket error ${error.toString()}\u001B[0m`)
+      )
     }
-  )
+  })
 )
 
 await new Promise((resolve, reject) => {
