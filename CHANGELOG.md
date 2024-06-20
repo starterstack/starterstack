@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.0.26](https://github.com/starterstack/starterstack/compare/v0.0.25...v0.0.26) (2024-06-19)
+
+
+### Bug Fixes
+
+* **delete log group script:** remove dead code ([aec4b77](https://github.com/starterstack/starterstack/commit/aec4b7766b021d3a839799d369e6763921a8a1ed))
+* **proxy:** http-middleware v3 changes ([2c2732c](https://github.com/starterstack/starterstack/commit/2c2732c6ab31461d6ed8f4900963e5de1e53e20b))
+* web-vitals type changes ([8191e39](https://github.com/starterstack/starterstack/commit/8191e39236a3ef9492365c5d53f95406ede16fc2))
+
 ## [0.0.25](https://github.com/starterstack/starterstack/compare/v0.0.24...v0.0.25) (2024-03-29)
 
 
