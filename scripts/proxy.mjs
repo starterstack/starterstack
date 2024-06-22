@@ -112,10 +112,12 @@ app.use(
         !pathname.startsWith('/api/ws')
       )
     },
-    onProxyReq(proxyReq) {
-      proxyReq.setHeader('cookie', `token=${token}`)
-      proxyReq.removeHeader('origin')
-      proxyReq.removeHeader('referer')
+    on: {
+      proxyReq(proxyReq) {
+        proxyReq.setHeader('cookie', `token=${token}`)
+        proxyReq.removeHeader('origin')
+        proxyReq.removeHeader('referer')
+      }
     }
   })
 )
@@ -140,13 +142,17 @@ app.use(
     filterPath(pathname) {
       return pathname.startsWith('/api/ws')
     },
-    onProxyReqWs(proxyReq, _, socket) {
-      proxyReq.setHeader('cookie', `token=${token}`)
-      proxyReq.removeHeader('origin')
-      proxyReq.removeHeader('referer')
-      socket.on('error', (error) =>
-        console.error(`\u001B[34mwebsocket error ${error.toString()}\u001B[0m`)
-      )
+    on: {
+      proxyReqWs(proxyReq, _, socket) {
+        proxyReq.setHeader('cookie', `token=${token}`)
+        proxyReq.removeHeader('origin')
+        proxyReq.removeHeader('referer')
+        socket.on('error', (error) =>
+          console.error(
+            `\u001B[34mwebsocket error ${error.toString()}\u001B[0m`
+          )
+        )
+      }
     }
   })
 )
