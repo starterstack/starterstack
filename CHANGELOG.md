@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.27](https://github.com/starterstack/starterstack/compare/v0.0.26...v0.0.27) (2024-06-22)
+
+
+### Bug Fixes
+
+* **local proxy:** http middleware onProxyRes ([9b29a25](https://github.com/starterstack/starterstack/commit/9b29a25ce38326044410cf824b2aca842df5b28b))
+
 ## [0.0.26](https://github.com/starterstack/starterstack/compare/v0.0.25...v0.0.26) (2024-06-19)
 
 
