@@ -1,12 +1,14 @@
 import process from 'node:process'
 import crypto from 'node:crypto'
 import { createPresignedPost } from '@aws-sdk/s3-presigned-post'
-import s3, { encodeRfc2047 } from './s3.js'
+import { withForcePathStyle, encodeRfc2047 } from './s3.js'
 import dynamodb from './dynamodb.js'
 import { PutCommand } from '@aws-sdk/lib-dynamodb'
 import ms from 'ms'
 
 import lambdaHandler from './lambda-handler.js'
+
+const s3 = withForcePathStyle()
 
 const {
   PRESIGN_SECONDS_EXPIRY = 300,

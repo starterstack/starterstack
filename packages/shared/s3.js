@@ -7,6 +7,17 @@ import AWSXRay from 'aws-xray-sdk-core'
 /** @type S3Client */
 export default trace(middleware(new S3Client({})))
 
+/** @returns S3Client */
+export function withForcePathStyle() {
+  return trace(
+    middleware(
+      new S3Client({
+        forcePathStyle: true
+      })
+    )
+  )
+}
+
 /**
  * @param {S3Client} client
  * @returns S3Client
