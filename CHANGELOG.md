@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.0.28](https://github.com/starterstack/starterstack/compare/v0.0.27...v0.0.28) (2024-06-24)
+
+
+### Bug Fixes
+
+* **s3 upload csp:** use path style ([89a503f](https://github.com/starterstack/starterstack/commit/89a503fec8c991f7836836d7cf4f1fa744a3bdf8))
+
 ## [0.0.27](https://github.com/starterstack/starterstack/compare/v0.0.26...v0.0.27) (2024-06-22)
 
 
