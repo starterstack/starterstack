@@ -36,7 +36,7 @@ jobs:
         with:
           ref: ${{ inputs.sha }}
 
-      - uses: actions/setup-node@v4.0.2
+      - uses: actions/setup-node@v4.0.3
         with:
           node-version: ${{ inputs.node-version }}
 

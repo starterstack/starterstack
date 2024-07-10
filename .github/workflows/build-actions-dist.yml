@@ -31,7 +31,7 @@ jobs:
           result-encoding: string
           script: |
             return await (await import('${{ github.workspace }}/.github/actions/dist/get-node-version.js')).default()
-      - uses: actions/setup-node@v4.0.2
+      - uses: actions/setup-node@v4.0.3
         with:
           node-version: '${{ steps.node-version.outputs.result }}'
           cache: npm
