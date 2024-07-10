@@ -121,7 +121,7 @@ jobs:
         run: |
           echo "result=$(which node)" >> "${GITHUB_OUTPUT:?}"
 
-      - uses: actions/setup-node@v4.0.2
+      - uses: actions/setup-node@v4.0.3
         with:
           node-version: '${{ steps.node-version.outputs.result }}'
 
