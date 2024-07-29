@@ -5,8 +5,8 @@
   "scripts": {
     "setup": "node ./scripts/setup.mjs",
     "patch-files": "bash ./scripts/patch-files.sh",
-    "postinstall": "husky install && npm run patch-files",
-    "prepare": "husky install && npm run patch-files",
+    "postinstall": "husky && npm run patch-files",
+    "prepare": "husky",
     "docs": "bash ./scripts/docs.sh",
     "test": "bash ./scripts/test.sh",
     "cz": "cz",
