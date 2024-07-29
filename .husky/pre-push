@@ -1,1 +1,3 @@
-npm t
+if [ "$(git rev-parse HEAD)" != "$(git rev-parse @{push})" ]; then
+  npm t
+fi
