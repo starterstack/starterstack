@@ -96,7 +96,7 @@
     "@aws-sdk/lib-dynamodb": "3.606.0",
     "@aws-sdk/util-dynamodb": "3.606.0",
     "@starterstack/sam-expand": "0.2.19",
-    "inquirer": "10.1.4"
+    "inquirer": "10.1.5"
   },
   "devDependencies": {
     "@aws-sdk/client-acm": "3.606.0",
