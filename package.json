@@ -110,7 +110,7 @@
     "@aws-sdk/client-sfn": "3.606.0",
     "@aws-sdk/signature-v4-crt": "3.598.0",
     "@aws-sdk/signature-v4-multi-region": "3.598.0",
-    "@commitlint/cli": "19.3.0",
+    "@commitlint/cli": "19.4.0",
     "@commitlint/config-conventional": "19.2.2",
     "@sindresorhus/tsconfig": "6.0.0",
     "@types/aws-lambda": "8.10.137",
