@@ -2,7 +2,7 @@
   "type": "module",
   "private": true,
   "dependencies": {
-    "@faker-js/faker": "9.0.0",
+    "@faker-js/faker": "9.0.1",
     "aws-xray-sdk-core": "3.6.0",
     "pdf-lib": "1.17.1"
   }
