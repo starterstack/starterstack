@@ -25,7 +25,7 @@ jobs:
           result-encoding: string
           script: |
             return await (await import('${{ github.workspace }}/.github/actions/dist/get-node-version.js')).default()
-      - uses: actions/setup-node@v4.0.3
+      - uses: actions/setup-node@v4.0.4
         with:
           node-version: '${{ steps.node-version.outputs.result }}'
       - uses: actions/cache@v4
