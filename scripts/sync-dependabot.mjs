@@ -23,7 +23,8 @@ function template({ directory, ecosystem }) {
     ignore:
       - dependency-name: '@aws-sdk/*'
       - dependency-name: 'aws-xray-sdk-core'
-      - dependency-name: '@types/*'`
+      - dependency-name: '@types/*'
+      - dependency-name: '@typescript-eslint/*'`
 }
 
 async function* walk(directory) {

@@ -11,6 +11,7 @@ updates:
       - dependency-name: '@aws-sdk/*'
       - dependency-name: 'aws-xray-sdk-core'
       - dependency-name: '@types/*'
+      - dependency-name: '@typescript-eslint/*'
   - package-ecosystem: npm
     directory: '/'
     schedule:
@@ -22,6 +23,7 @@ updates:
       - dependency-name: '@aws-sdk/*'
       - dependency-name: 'aws-xray-sdk-core'
       - dependency-name: '@types/*'
+      - dependency-name: '@typescript-eslint/*'
   - package-ecosystem: npm
     directory: '.github/actions'
     schedule:
@@ -33,6 +35,7 @@ updates:
       - dependency-name: '@aws-sdk/*'
       - dependency-name: 'aws-xray-sdk-core'
       - dependency-name: '@types/*'
+      - dependency-name: '@typescript-eslint/*'
   - package-ecosystem: pip
     directory: 'docs'
     schedule:
@@ -44,6 +47,7 @@ updates:
       - dependency-name: '@aws-sdk/*'
       - dependency-name: 'aws-xray-sdk-core'
       - dependency-name: '@types/*'
+      - dependency-name: '@typescript-eslint/*'
   - package-ecosystem: npm
     directory: 'packages/cdn/functions/api-jwt-secret-changed'
     schedule:
@@ -55,6 +59,7 @@ updates:
       - dependency-name: '@aws-sdk/*'
       - dependency-name: 'aws-xray-sdk-core'
       - dependency-name: '@types/*'
+      - dependency-name: '@typescript-eslint/*'
   - package-ecosystem: npm
     directory: 'packages/cdn/functions/s3-replicate'
     schedule:
@@ -66,6 +71,7 @@ updates:
       - dependency-name: '@aws-sdk/*'
       - dependency-name: 'aws-xray-sdk-core'
       - dependency-name: '@types/*'
+      - dependency-name: '@typescript-eslint/*'
   - package-ecosystem: npm
     directory: 'packages/dynamodb-stack-audit/functions/audit'
     schedule:
@@ -77,6 +83,7 @@ updates:
       - dependency-name: '@aws-sdk/*'
       - dependency-name: 'aws-xray-sdk-core'
       - dependency-name: '@types/*'
+      - dependency-name: '@typescript-eslint/*'
   - package-ecosystem: npm
     directory: 'packages/dynamodb/functions/migration'
     schedule:
@@ -88,6 +95,7 @@ updates:
       - dependency-name: '@aws-sdk/*'
       - dependency-name: 'aws-xray-sdk-core'
       - dependency-name: '@types/*'
+      - dependency-name: '@typescript-eslint/*'
   - package-ecosystem: npm
     directory: 'packages/graphql/functions/connections'
     schedule:
@@ -99,6 +107,7 @@ updates:
       - dependency-name: '@aws-sdk/*'
       - dependency-name: 'aws-xray-sdk-core'
       - dependency-name: '@types/*'
+      - dependency-name: '@typescript-eslint/*'
   - package-ecosystem: npm
     directory: 'packages/graphql/functions/graphql'
     schedule:
@@ -110,6 +119,7 @@ updates:
       - dependency-name: '@aws-sdk/*'
       - dependency-name: 'aws-xray-sdk-core'
       - dependency-name: '@types/*'
+      - dependency-name: '@typescript-eslint/*'
   - package-ecosystem: npm
     directory: 'packages/media/functions/create-pdf'
     schedule:
@@ -121,6 +131,7 @@ updates:
       - dependency-name: '@aws-sdk/*'
       - dependency-name: 'aws-xray-sdk-core'
       - dependency-name: '@types/*'
+      - dependency-name: '@typescript-eslint/*'
   - package-ecosystem: npm
     directory: 'packages/media/functions/create-presigned-post'
     schedule:
@@ -132,6 +143,7 @@ updates:
       - dependency-name: '@aws-sdk/*'
       - dependency-name: 'aws-xray-sdk-core'
       - dependency-name: '@types/*'
+      - dependency-name: '@typescript-eslint/*'
   - package-ecosystem: npm
     directory: 'packages/media/functions/dynamodb-s3-export-assertion'
     schedule:
@@ -143,6 +155,7 @@ updates:
       - dependency-name: '@aws-sdk/*'
       - dependency-name: 'aws-xray-sdk-core'
       - dependency-name: '@types/*'
+      - dependency-name: '@typescript-eslint/*'
   - package-ecosystem: npm
     directory: 'packages/media/functions/dynamodb-s3-export'
     schedule:
@@ -154,6 +167,7 @@ updates:
       - dependency-name: '@aws-sdk/*'
       - dependency-name: 'aws-xray-sdk-core'
       - dependency-name: '@types/*'
+      - dependency-name: '@typescript-eslint/*'
   - package-ecosystem: npm
     directory: 'packages/media/functions/s3-trigger'
     schedule:
@@ -165,6 +179,7 @@ updates:
       - dependency-name: '@aws-sdk/*'
       - dependency-name: 'aws-xray-sdk-core'
       - dependency-name: '@types/*'
+      - dependency-name: '@typescript-eslint/*'
   - package-ecosystem: npm
     directory: 'packages/media/functions/upload-progress'
     schedule:
@@ -176,6 +191,7 @@ updates:
       - dependency-name: '@aws-sdk/*'
       - dependency-name: 'aws-xray-sdk-core'
       - dependency-name: '@types/*'
+      - dependency-name: '@typescript-eslint/*'
   - package-ecosystem: npm
     directory: 'packages/monitoring/functions/notify-alarm'
     schedule:
@@ -187,6 +203,7 @@ updates:
       - dependency-name: '@aws-sdk/*'
       - dependency-name: 'aws-xray-sdk-core'
       - dependency-name: '@types/*'
+      - dependency-name: '@typescript-eslint/*'
   - package-ecosystem: npm
     directory: 'packages/monitoring/functions/stack-change'
     schedule:
@@ -198,6 +215,7 @@ updates:
       - dependency-name: '@aws-sdk/*'
       - dependency-name: 'aws-xray-sdk-core'
       - dependency-name: '@types/*'
+      - dependency-name: '@typescript-eslint/*'
   - package-ecosystem: npm
     directory: 'packages/notification/functions/hello'
     schedule:
@@ -209,6 +227,7 @@ updates:
       - dependency-name: '@aws-sdk/*'
       - dependency-name: 'aws-xray-sdk-core'
       - dependency-name: '@types/*'
+      - dependency-name: '@typescript-eslint/*'
   - package-ecosystem: npm
     directory: 'packages/notification/functions/login-email'
     schedule:
@@ -220,6 +239,7 @@ updates:
       - dependency-name: '@aws-sdk/*'
       - dependency-name: 'aws-xray-sdk-core'
       - dependency-name: '@types/*'
+      - dependency-name: '@typescript-eslint/*'
   - package-ecosystem: npm
     directory: 'packages/notification/functions/sentry'
     schedule:
@@ -231,6 +251,7 @@ updates:
       - dependency-name: '@aws-sdk/*'
       - dependency-name: 'aws-xray-sdk-core'
       - dependency-name: '@types/*'
+      - dependency-name: '@typescript-eslint/*'
   - package-ecosystem: npm
     directory: 'packages/rest/functions/login-by-email'
     schedule:
@@ -242,6 +263,7 @@ updates:
       - dependency-name: '@aws-sdk/*'
       - dependency-name: 'aws-xray-sdk-core'
       - dependency-name: '@types/*'
+      - dependency-name: '@typescript-eslint/*'
   - package-ecosystem: npm
     directory: 'packages/rest/functions/logout'
     schedule:
@@ -253,6 +275,7 @@ updates:
       - dependency-name: '@aws-sdk/*'
       - dependency-name: 'aws-xray-sdk-core'
       - dependency-name: '@types/*'
+      - dependency-name: '@typescript-eslint/*'
   - package-ecosystem: pip
     directory: 'packages/rest/functions/python'
     schedule:
@@ -264,6 +287,7 @@ updates:
       - dependency-name: '@aws-sdk/*'
       - dependency-name: 'aws-xray-sdk-core'
       - dependency-name: '@types/*'
+      - dependency-name: '@typescript-eslint/*'
   - package-ecosystem: npm
     directory: 'packages/rest/functions/sentry-tunnel'
     schedule:
@@ -275,6 +299,7 @@ updates:
       - dependency-name: '@aws-sdk/*'
       - dependency-name: 'aws-xray-sdk-core'
       - dependency-name: '@types/*'
+      - dependency-name: '@typescript-eslint/*'
   - package-ecosystem: npm
     directory: 'packages/rest/functions/session'
     schedule:
@@ -286,6 +311,7 @@ updates:
       - dependency-name: '@aws-sdk/*'
       - dependency-name: 'aws-xray-sdk-core'
       - dependency-name: '@types/*'
+      - dependency-name: '@typescript-eslint/*'
   - package-ecosystem: npm
     directory: 'packages/ses/functions/events'
     schedule:
@@ -297,6 +323,7 @@ updates:
       - dependency-name: '@aws-sdk/*'
       - dependency-name: 'aws-xray-sdk-core'
       - dependency-name: '@types/*'
+      - dependency-name: '@typescript-eslint/*'
   - package-ecosystem: npm
     directory: 'packages/ses/functions/ses-receive'
     schedule:
@@ -308,6 +335,7 @@ updates:
       - dependency-name: '@aws-sdk/*'
       - dependency-name: 'aws-xray-sdk-core'
       - dependency-name: '@types/*'
+      - dependency-name: '@typescript-eslint/*'
   - package-ecosystem: npm
     directory: 'packages/ses/functions/verify-ses'
     schedule:
@@ -319,6 +347,7 @@ updates:
       - dependency-name: '@aws-sdk/*'
       - dependency-name: 'aws-xray-sdk-core'
       - dependency-name: '@types/*'
+      - dependency-name: '@typescript-eslint/*'
   - package-ecosystem: npm
     directory: 'packages/shared/functions/sentry'
     schedule:
@@ -330,6 +359,7 @@ updates:
       - dependency-name: '@aws-sdk/*'
       - dependency-name: 'aws-xray-sdk-core'
       - dependency-name: '@types/*'
+      - dependency-name: '@typescript-eslint/*'
   - package-ecosystem: npm
     directory: 'packages/stage/functions/request-auth'
     schedule:
@@ -341,6 +371,7 @@ updates:
       - dependency-name: '@aws-sdk/*'
       - dependency-name: 'aws-xray-sdk-core'
       - dependency-name: '@types/*'
+      - dependency-name: '@typescript-eslint/*'
   - package-ecosystem: npm
     directory: 'packages/stage/functions/s3-replicate'
     schedule:
@@ -352,6 +383,7 @@ updates:
       - dependency-name: '@aws-sdk/*'
       - dependency-name: 'aws-xray-sdk-core'
       - dependency-name: '@types/*'
+      - dependency-name: '@typescript-eslint/*'
   - package-ecosystem: npm
     directory: 'packages/test/functions/capture-token'
     schedule:
@@ -363,6 +395,7 @@ updates:
       - dependency-name: '@aws-sdk/*'
       - dependency-name: 'aws-xray-sdk-core'
       - dependency-name: '@types/*'
+      - dependency-name: '@typescript-eslint/*'
   - package-ecosystem: npm
     directory: 'packages/test/functions/login'
     schedule:
@@ -374,6 +407,7 @@ updates:
       - dependency-name: '@aws-sdk/*'
       - dependency-name: 'aws-xray-sdk-core'
       - dependency-name: '@types/*'
+      - dependency-name: '@typescript-eslint/*'
   - package-ecosystem: npm
     directory: 'packages/test/functions/logout'
     schedule:
@@ -385,6 +419,7 @@ updates:
       - dependency-name: '@aws-sdk/*'
       - dependency-name: 'aws-xray-sdk-core'
       - dependency-name: '@types/*'
+      - dependency-name: '@typescript-eslint/*'
   - package-ecosystem: npm
     directory: 'packages/test/functions/sanity-tests'
     schedule:
@@ -396,6 +431,7 @@ updates:
       - dependency-name: '@aws-sdk/*'
       - dependency-name: 'aws-xray-sdk-core'
       - dependency-name: '@types/*'
+      - dependency-name: '@typescript-eslint/*'
   - package-ecosystem: npm
     directory: 'packages/tracking/functions/email-status'
     schedule:
@@ -407,6 +443,7 @@ updates:
       - dependency-name: '@aws-sdk/*'
       - dependency-name: 'aws-xray-sdk-core'
       - dependency-name: '@types/*'
+      - dependency-name: '@typescript-eslint/*'
   - package-ecosystem: npm
     directory: 'packages/web/functions/ssr'
     schedule:
@@ -418,6 +455,7 @@ updates:
       - dependency-name: '@aws-sdk/*'
       - dependency-name: 'aws-xray-sdk-core'
       - dependency-name: '@types/*'
+      - dependency-name: '@typescript-eslint/*'
   - package-ecosystem: npm
     directory: 'packages/web'
     schedule:
@@ -429,3 +467,4 @@ updates:
       - dependency-name: '@aws-sdk/*'
       - dependency-name: 'aws-xray-sdk-core'
       - dependency-name: '@types/*'
+      - dependency-name: '@typescript-eslint/*'
