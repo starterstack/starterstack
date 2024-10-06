@@ -6,8 +6,8 @@
     "@aws-sdk/client-s3": "3.606.0",
     "@aws-sdk/client-ssm": "3.606.0",
     "@aws-sdk/client-sts": "3.606.0",
-    "@starterstack/sam-expand": "0.2.19",
-    "esbuild": "0.23.1",
+    "@starterstack/sam-expand": "0.2.20",
+    "esbuild": "0.24.0",
     "libsodium-wrappers": "0.7.15"
   },
   "author": "James Kyburz <james.kyburz@gmail.com>",
