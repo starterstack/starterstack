@@ -119,7 +119,7 @@
     "@types/qrcode-terminal": "0.12.2",
     "@typescript-eslint/eslint-plugin": "7.18.0",
     "@typescript-eslint/parser": "7.18.0",
-    "aws-sdk-client-mock": "4.0.2",
+    "aws-sdk-client-mock": "4.1.0",
     "aws-xray-sdk-core": "3.6.0",
     "commitizen": "4.3.1",
     "esbuild": "0.24.0",
