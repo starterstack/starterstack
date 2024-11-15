@@ -129,7 +129,7 @@
     "http-proxy-middleware": "3.0.3",
     "husky": "9.1.6",
     "lint-staged": "15.2.10",
-    "otpauth": "9.3.4",
+    "otpauth": "9.3.5",
     "prettier": "3.3.3",
     "prettier-config-standard": "7.0.0",
     "qrcode-terminal": "0.12.0",
