@@ -3,7 +3,7 @@
   "private": true,
   "type": "module",
   "dependencies": {
-    "@graphql-tools/merge": "9.0.14",
+    "@graphql-tools/merge": "9.0.15",
     "@graphql-tools/schema": "10.0.14",
     "@graphql-tools/utils": "10.6.4",
     "aws-xray-sdk-core": "3.6.0",
