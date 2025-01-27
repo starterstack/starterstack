@@ -116,7 +116,7 @@ jobs:
         with:
           ref: ${{ needs.env.outputs.sha }}
         if: ${{ github.event.pull_request.head.sha }}
-      - uses: actions/setup-node@v4.1.0
+      - uses: actions/setup-node@v4.2.0
         with:
           node-version: '${{ needs.env.outputs.node-version }}'
         if: ${{ github.event.pull_request.head.sha }}
