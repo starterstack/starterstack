@@ -47,7 +47,7 @@ jobs:
         include: ${{ fromJson(needs.sls-mentor-regions.outputs.regions) }}
     steps:
       - uses: actions/checkout@v4
-      - uses: aws-actions/configure-aws-credentials@v4.0.3
+      - uses: aws-actions/configure-aws-credentials@v4.1.0
         with:
           role-to-assume: ${{ secrets.aws-ci-role }}
           aws-region: us-east-1
