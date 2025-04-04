@@ -4,7 +4,7 @@
   "dependencies": {
     "aws-xray-sdk-core": "3.6.0",
     "mailparser": "3.7.2",
-    "mime": "4.0.6"
+    "mime": "4.0.7"
   },
   "devDependencies": {
     "@types/mailparser": "3.4.5"
