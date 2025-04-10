@@ -126,7 +126,7 @@
     "eslint-plugin": "1.0.1",
     "eslint-plugin-unicorn": "58.0.0",
     "express": "5.1.0",
-    "http-proxy-middleware": "3.0.3",
+    "http-proxy-middleware": "3.0.4",
     "husky": "9.1.7",
     "lint-staged": "15.5.0",
     "otpauth": "9.4.0",
