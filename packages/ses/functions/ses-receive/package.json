@@ -3,7 +3,7 @@
   "type": "module",
   "dependencies": {
     "aws-xray-sdk-core": "3.6.0",
-    "mailparser": "3.7.3",
+    "mailparser": "3.7.4",
     "mime": "4.0.7"
   },
   "devDependencies": {
