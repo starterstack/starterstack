@@ -63,7 +63,7 @@
     "@babel/plugin-proposal-private-property-in-object": "7.21.11",
     "@sentry/types": "9.41.0",
     "@types/styled-components": "5.1.26",
-    "cross-env": "7.0.3",
+    "cross-env": "10.0.0",
     "csp-html-webpack-plugin": "5.1.0",
     "customize-cra": "1.0.0",
     "react-app-rewired": "2.2.1"
