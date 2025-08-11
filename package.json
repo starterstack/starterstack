@@ -128,7 +128,7 @@
     "express": "5.1.0",
     "http-proxy-middleware": "3.0.5",
     "husky": "9.1.7",
-    "lint-staged": "16.1.4",
+    "lint-staged": "16.1.5",
     "otpauth": "9.4.0",
     "prettier": "3.6.2",
     "prettier-config-standard": "7.0.0",
