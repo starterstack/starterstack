@@ -21,7 +21,7 @@ jobs:
     outputs:
       regions: ${{ steps.regions.outputs.regions }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - id: regions
         run: |
           echo "regions=$(printf "${{ inputs.aws-regions }}" | \
@@ -46,7 +46,7 @@ jobs:
       matrix:
         include: ${{ fromJson(needs.sls-mentor-regions.outputs.regions) }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: aws-actions/configure-aws-credentials@v4.3.1
         with:
           role-to-assume: ${{ secrets.aws-ci-role }}
