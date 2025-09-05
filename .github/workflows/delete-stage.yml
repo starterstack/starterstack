@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/github-script@v7
+      - uses: actions/github-script@v8
         id: github-env-exists
         with:
           result-encoding: string
@@ -136,7 +136,7 @@ jobs:
     if: ${{ always() && !failure() && !cancelled() && needs.check-github-env-exists.outputs.result == 'true' }}
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/github-script@v7
+      - uses: actions/github-script@v8
         id: delete-github-environment
         with:
           github-token: ${{ secrets.PAT_GITHUB }}
