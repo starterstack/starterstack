@@ -108,7 +108,7 @@ jobs:
           ref: ${{ inputs.sha }}
           fetch-depth: 0
 
-      - uses: actions/github-script@v7
+      - uses: actions/github-script@v8
         name: get node version
         id: node-version
         with:
@@ -146,7 +146,7 @@ jobs:
           aws-region: us-east-1
           role-duration-seconds: 900
 
-      - uses: actions/github-script@v7
+      - uses: actions/github-script@v8
         name: get stack name
         id: stack-name
         with:
@@ -154,7 +154,7 @@ jobs:
           script: |
             return require('./packages/settings.json').stackName
 
-      - uses: actions/github-script@v7
+      - uses: actions/github-script@v8
         name: get stack region
         id: stack-region
         with:
@@ -184,7 +184,7 @@ jobs:
         id: ssm-parameters
         name: ssm parameters
 
-      - uses: actions/github-script@v7
+      - uses: actions/github-script@v8
         name: deploy strategy
         id: strategy
         with:
@@ -200,7 +200,7 @@ jobs:
               npmCacheHit: ${{ steps.npm-cache.outputs.cache-hit == 'true' }}
             })
 
-      - uses: actions/github-script@v7
+      - uses: actions/github-script@v8
         id: stage-root
         name: stage root
         with:

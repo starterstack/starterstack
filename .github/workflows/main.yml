@@ -120,7 +120,7 @@ jobs:
         with:
           node-version: '${{ needs.env.outputs.node-version }}'
         if: ${{ github.event.pull_request.head.sha }}
-      - uses: actions/github-script@v7
+      - uses: actions/github-script@v8
         if: ${{ github.event.pull_request.head.sha && !contains(github.event.pull_request.labels.*.name, 'environment deployed') }}
         with:
           script: |
@@ -133,7 +133,7 @@ jobs:
               context,
               body: `⚡ feature urls\n${urls.join('\n')}`
             })
-      - uses: actions/github-script@v7
+      - uses: actions/github-script@v8
         if: ${{ github.event.pull_request.head.sha && !contains(github.event.pull_request.labels.*.name, 'environment deployed') }}
         with:
           script: |
