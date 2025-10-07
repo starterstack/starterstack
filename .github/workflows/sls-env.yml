@@ -140,7 +140,7 @@ jobs:
           npm run patch-files
         if: steps.npm-cache.outputs.cache-hit != 'true'
 
-      - uses: aws-actions/configure-aws-credentials@v4.3.1
+      - uses: aws-actions/configure-aws-credentials@v5.1.0
         with:
           role-to-assume: ${{ secrets.aws-ci-role }}
           aws-region: us-east-1
