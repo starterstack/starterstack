@@ -4,7 +4,7 @@
   "type": "module",
   "dependencies": {
     "@graphql-tools/merge": "9.1.6",
-    "@graphql-tools/schema": "10.0.29",
+    "@graphql-tools/schema": "10.0.30",
     "@graphql-tools/utils": "10.11.0",
     "aws-xray-sdk-core": "3.6.0",
     "graphql": "16.8.1",
