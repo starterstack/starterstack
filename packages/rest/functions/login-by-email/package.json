@@ -3,9 +3,9 @@
   "type": "module",
   "dependencies": {
     "aws-xray-sdk-core": "3.6.0",
-    "jsonwebtoken": "9.0.2"
+    "jsonwebtoken": "9.0.3"
   },
   "devDependencies": {
-    "@types/jsonwebtoken": "9.0.6"
+    "@types/jsonwebtoken": "9.0.10"
   }
 }
