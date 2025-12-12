@@ -125,7 +125,7 @@ jobs:
         with:
           node-version: '${{ steps.node-version.outputs.result }}'
 
-      - uses: actions/cache@v4
+      - uses: actions/cache@v5
         id: npm-cache
         with:
           path: |
