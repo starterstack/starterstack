@@ -8,7 +8,7 @@
     "@aws-sdk/client-sts": "3.606.0",
     "@starterstack/sam-expand": "0.2.20",
     "esbuild": "0.27.2",
-    "libsodium-wrappers": "0.7.16"
+    "libsodium-wrappers": "0.8.0"
   },
   "author": "James Kyburz <james.kyburz@gmail.com>",
   "license": "Apache-2.0",
