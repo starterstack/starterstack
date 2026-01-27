@@ -86,7 +86,7 @@
   },
   "private": true,
   "dependencies": {
-    "@actions/github": "7.0.0",
+    "@actions/github": "8.0.0",
     "@aws-sdk/client-cloudformation": "3.632.0",
     "@aws-sdk/client-dynamodb": "3.632.0",
     "@aws-sdk/client-lambda": "3.632.0",
