@@ -22,7 +22,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/github-script@v8
+      - uses: actions/github-script@v9
         with:
           script: |
             return await (await import('${{ github.workspace }}/.github/actions/dist/slack-notification.js')).default({
