@@ -61,7 +61,7 @@ jobs:
         run: npm ci --ignore-scripts
         working-directory: ${{ matrix.directory }}
 
-      - uses: aws-actions/configure-aws-credentials@6.1.3
+      - uses: aws-actions/configure-aws-credentials@6.2
         with:
           role-to-assume: ${{ secrets.aws-ci-role }}
           aws-region: us-east-1
