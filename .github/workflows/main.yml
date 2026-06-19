@@ -112,7 +112,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - run: echo environment deployed
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
         with:
           ref: ${{ needs.env.outputs.sha }}
         if: ${{ github.event.pull_request.head.sha }}
