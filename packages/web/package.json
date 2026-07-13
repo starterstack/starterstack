@@ -12,7 +12,7 @@
     "@types/react": "19.2.16",
     "@types/react-dom": "19.2.3",
     "graphql": "17.0.2",
-    "graphql-ws": "6.0.8",
+    "graphql-ws": "6.1.0",
     "react": "19.2.7",
     "react-dom": "19.2.7",
     "styled-components": "6.4.3",
