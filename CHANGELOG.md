@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.0.29](https://github.com/starterstack/starterstack/compare/v0.0.28...v0.0.29) (2024-09-22)
+
+
+### Bug Fixes
+
+* eslint 9 broke everything... ([c6c4182](https://github.com/starterstack/starterstack/commit/c6c4182275f6b36ffa184f6507c56e919b45616a))
+* reflect aws runtime/sdk versions ([d788743](https://github.com/starterstack/starterstack/commit/d78874363510d57e6f96c6359d4aab229513f82b))
+* use new release-please action ([cace33c](https://github.com/starterstack/starterstack/commit/cace33c75be98f1170a73e38ccf91f453a538f70))
+
 ## [0.0.28](https://github.com/starterstack/starterstack/compare/v0.0.27...v0.0.28) (2024-06-24)
 
 
